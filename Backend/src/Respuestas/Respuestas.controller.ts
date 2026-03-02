@@ -5,13 +5,14 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario, Usuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
 import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
 import { RolesGuard } from '../Comun/Guards/Roles.guard';
+import { CalificarRespuestaManualDto } from './Dto/CalificarRespuestaManual.dto';
 import { SincronizarRespuestasDto } from './Dto/SincronizarRespuestas.dto';
 import { RespuestasService } from './Respuestas.service';
 
@@ -37,7 +38,21 @@ export class RespuestasController {
    */
   @Post('intentos/:idIntento/finalizar')
   @ApiOperation({ summary: 'Finaliza intento y calcula puntaje' })
-  async finalizar(@Param('idIntento') idIntento: string, @UsuarioActual() usuario: Usuario) {
+  async finalizar(@Param('idIntento', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: Usuario) {
     return this.respuestasService.finalizar(idIntento, usuario.id);
+  }
+
+  /**
+   * Registra calificación manual para respuestas abiertas y recalcúla el intento.
+   */
+  @Patch('respuestas/:id/calificar-manual')
+  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @ApiOperation({ summary: 'Califica manualmente una respuesta abierta' })
+  async calificarManual(
+    @Param('id', ParseUUIDPipe) idRespuesta: string,
+    @Body() dto: CalificarRespuestaManualDto,
+    @UsuarioActual() usuario: Usuario,
+  ) {
+    return this.respuestasService.calificarManual(idRespuesta, dto, usuario.rol, usuario.id);
   }
 }

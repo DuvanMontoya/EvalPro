@@ -6,9 +6,10 @@
  * @fecha     2026-03-02
  */
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoIntento, EstadoSesion } from '@prisma/client';
+import { EstadoIntento, EstadoSesion, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { aleatorizarConSemilla } from '../Comun/Utilidades/AleatorizadorPreguntas.util';
+import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { IniciarIntentoDto } from './Dto/IniciarIntento.dto';
 
 const LIMITE_SEMILLA_PERSONAL = 999999;
@@ -37,7 +38,10 @@ export class IntentosService {
     });
 
     if (intentoExistente) {
-      throw new ConflictException('El estudiante ya tiene un intento en esta sesión');
+      throw new ConflictException({
+        message: 'El estudiante ya tiene un intento en esta sesión',
+        codigoError: CODIGOS_ERROR.INTENTO_DUPLICADO,
+      });
     }
 
     const semillaPersonal = Math.floor(Math.random() * LIMITE_SEMILLA_PERSONAL) + 1;
@@ -114,5 +118,31 @@ export class IntentosService {
         preguntas: preguntasAleatorias,
       },
     };
+  }
+
+  /**
+   * Anula un intento en progreso o enviado validando alcance por rol y propiedad de la sesión.
+   * @param idIntento - UUID del intento a anular.
+   * @param rol - Rol del usuario autenticado.
+   * @param idUsuario - UUID del usuario autenticado.
+   */
+  async anular(idIntento: string, rol: RolUsuario, idUsuario: string) {
+    const intento = await this.prisma.intentoExamen.findUnique({
+      where: { id: idIntento },
+      include: { sesion: true },
+    });
+    if (!intento) {
+      throw new NotFoundException('Intento no encontrado');
+    }
+    if (rol === RolUsuario.DOCENTE && intento.sesion.creadaPorId !== idUsuario) {
+      throw new ForbiddenException('No tiene permisos sobre este intento');
+    }
+    if (intento.estado !== EstadoIntento.EN_PROGRESO && intento.estado !== EstadoIntento.ENVIADO) {
+      throw new BadRequestException('Solo se pueden anular intentos en progreso o enviados');
+    }
+    return this.prisma.intentoExamen.update({
+      where: { id: idIntento },
+      data: { estado: EstadoIntento.ANULADO },
+    });
   }
 }

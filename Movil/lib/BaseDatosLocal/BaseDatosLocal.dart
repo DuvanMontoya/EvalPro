@@ -26,6 +26,7 @@ part 'BaseDatosLocal.g.dart';
 )
 class BaseDatosLocal extends _$BaseDatosLocal {
   BaseDatosLocal() : super(_abrirConexion());
+  BaseDatosLocal.pruebas(QueryExecutor ejecutor) : super(ejecutor);
 
   /// Version del esquema local.
   @override

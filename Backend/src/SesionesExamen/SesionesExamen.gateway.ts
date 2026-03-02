@@ -8,13 +8,14 @@
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../Configuracion/BaseDatos.config';
 import {
   ESPACIO_NOMBRES_SESIONES,
   EVENTO_ALERTA_FRAUDE,
@@ -25,10 +26,15 @@ import {
   EVENTO_SESION_FINALIZADA,
   EVENTO_UNIRSE_SALA,
 } from '../Comun/Constantes/Eventos.constantes';
+import { AutorizacionSocketSesionesService, UsuarioSocket } from './AutorizacionSocketSesiones.service';
+
+const ORIGENES_SOCKET = (process.env.CORS_ORIGENES_PERMITIDOS ?? 'http://localhost:3000')
+  .split(',')
+  .map((origen) => origen.trim())
+  .filter((origen) => origen.length > 0);
 
 interface UnionSalaPayload {
   idSesion: string;
-  rol: string;
 }
 
 interface ProgresoPayload {
@@ -41,13 +47,36 @@ interface FraudePayload {
   tipoEvento: string;
 }
 
+interface SocketAutenticado extends Socket {
+  data: {
+    usuario?: UsuarioSocket;
+  };
+}
+
 @Injectable()
-@WebSocketGateway({ namespace: ESPACIO_NOMBRES_SESIONES, cors: { origin: '*' } })
-export class SesionesExamenGateway {
+@WebSocketGateway({
+  namespace: ESPACIO_NOMBRES_SESIONES,
+  cors: { origin: ORIGENES_SOCKET, credentials: true },
+})
+export class SesionesExamenGateway implements OnGatewayConnection {
   @WebSocketServer()
   servidor!: Server;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly autorizacionSocketService: AutorizacionSocketSesionesService) {}
+
+  /**
+   * Autentica el socket por JWT de acceso durante el handshake inicial.
+   * @param cliente - Socket recién conectado.
+   */
+  async handleConnection(cliente: SocketAutenticado): Promise<void> {
+    const usuario = await this.autorizacionSocketService.autenticarCliente(cliente);
+    if (!usuario) {
+      cliente.disconnect(true);
+      return;
+    }
+
+    cliente.data.usuario = usuario;
+  }
 
   /**
    * Une un socket a la sala de la sesión indicada.
@@ -55,7 +84,15 @@ export class SesionesExamenGateway {
    * @param cliente - Socket del cliente conectado.
    */
   @SubscribeMessage(EVENTO_UNIRSE_SALA)
-  async manejarUnionSala(@MessageBody() payload: UnionSalaPayload, @ConnectedSocket() cliente: Socket): Promise<void> {
+  async manejarUnionSala(
+    @MessageBody() payload: UnionSalaPayload,
+    @ConnectedSocket() cliente: SocketAutenticado,
+  ): Promise<void> {
+    const usuario = this.obtenerUsuarioSocket(cliente);
+    const permitido = await this.autorizacionSocketService.puedeUnirseASesion(payload.idSesion, usuario);
+    if (!permitido) {
+      throw new WsException('No tiene permisos para unirse a esta sesión');
+    }
     await cliente.join(this.obtenerNombreSala(payload.idSesion));
   }
 
@@ -64,13 +101,16 @@ export class SesionesExamenGateway {
    * @param payload - ID del intento y conteo de respuestas.
    */
   @SubscribeMessage(EVENTO_PROGRESO_ACTUALIZADO)
-  async manejarProgreso(@MessageBody() payload: ProgresoPayload): Promise<void> {
-    const intento = await this.prisma.intentoExamen.findUnique({ where: { id: payload.idIntento } });
-    if (!intento) {
-      return;
+  async manejarProgreso(
+    @MessageBody() payload: ProgresoPayload,
+    @ConnectedSocket() cliente: SocketAutenticado,
+  ): Promise<void> {
+    const usuario = this.obtenerUsuarioSocket(cliente);
+    const idSesion = await this.autorizacionSocketService.obtenerSesionAutorizadaPorIntento(payload.idIntento, usuario);
+    if (!idSesion) {
+      throw new WsException('No tiene permisos sobre este intento');
     }
-
-    this.servidor.to(this.obtenerNombreSala(intento.sesionId)).emit(EVENTO_ESTUDIANTE_PROGRESO, payload);
+    this.servidor.to(this.obtenerNombreSala(idSesion)).emit(EVENTO_ESTUDIANTE_PROGRESO, payload);
   }
 
   /**
@@ -78,13 +118,16 @@ export class SesionesExamenGateway {
    * @param payload - Datos del intento y tipo de evento.
    */
   @SubscribeMessage(EVENTO_ALERTA_FRAUDE)
-  async manejarAlertaFraude(@MessageBody() payload: FraudePayload): Promise<void> {
-    const intento = await this.prisma.intentoExamen.findUnique({ where: { id: payload.idIntento } });
-    if (!intento) {
-      return;
+  async manejarAlertaFraude(
+    @MessageBody() payload: FraudePayload,
+    @ConnectedSocket() cliente: SocketAutenticado,
+  ): Promise<void> {
+    const usuario = this.obtenerUsuarioSocket(cliente);
+    const idSesion = await this.autorizacionSocketService.obtenerSesionAutorizadaPorIntento(payload.idIntento, usuario);
+    if (!idSesion) {
+      throw new WsException('No tiene permisos sobre este intento');
     }
-
-    this.servidor.to(this.obtenerNombreSala(intento.sesionId)).emit(EVENTO_ESTUDIANTE_FRAUDE, payload);
+    this.servidor.to(this.obtenerNombreSala(idSesion)).emit(EVENTO_ESTUDIANTE_FRAUDE, payload);
   }
 
   /**
@@ -118,5 +161,12 @@ export class SesionesExamenGateway {
    */
   private obtenerNombreSala(idSesion: string): string {
     return `sesion_${idSesion}`;
+  }
+
+  private obtenerUsuarioSocket(cliente: SocketAutenticado): UsuarioSocket {
+    if (!cliente.data.usuario) {
+      throw new WsException('Socket no autenticado');
+    }
+    return cliente.data.usuario;
   }
 }

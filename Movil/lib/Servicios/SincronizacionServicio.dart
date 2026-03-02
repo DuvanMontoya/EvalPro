@@ -16,6 +16,7 @@ import 'SocketServicio.dart';
 import 'TelemetriaServicio.dart';
 
 class SincronizacionServicio {
+  final int _diasRetencionTelemetria;
   final RespuestaDao _respuestaDao;
   final TelemetriaDao _telemetriaDao;
   final RespuestaServicio _respuestaServicio;
@@ -28,7 +29,9 @@ class SincronizacionServicio {
     required RespuestaServicio respuestaServicio,
     required TelemetriaServicio telemetriaServicio,
     required SocketServicio socketServicio,
+    required int diasRetencionTelemetria,
   })  : _respuestaDao = respuestaDao,
+        _diasRetencionTelemetria = diasRetencionTelemetria,
         _telemetriaDao = telemetriaDao,
         _respuestaServicio = respuestaServicio,
         _telemetriaServicio = telemetriaServicio,
@@ -38,6 +41,7 @@ class SincronizacionServicio {
   Future<void> sincronizarPendientesAlRecuperarConexion() async {
     await _sincronizarRespuestasPendientes();
     await _sincronizarTelemetriaPendiente();
+    await _depurarTelemetriaHistorica();
   }
 
   Future<void> _sincronizarRespuestasPendientes() async {
@@ -105,10 +109,10 @@ class SincronizacionServicio {
 
     for (final evento in pendientes) {
       try {
-        await _telemetriaServicio.registrarEvento(
+        await _telemetriaServicio.sincronizarEventoPendiente(
           idIntento: evento.idIntento,
           tipo: TipoEventoTelemetriaTransformador.desdeNombre(evento.tipo),
-          metadatos: evento.metadatos == null
+          metadatos: evento.metadatos == null || evento.metadatos!.isEmpty
               ? null
               : jsonDecode(evento.metadatos!) as Map<String, dynamic>,
           numeroPregunta: evento.numeroPregunta,
@@ -119,6 +123,13 @@ class SincronizacionServicio {
         // Se mantiene pendiente para el siguiente ciclo.
       }
     }
+  }
+
+  Future<void> _depurarTelemetriaHistorica() async {
+    final fechaLimite = DateTime.now()
+        .subtract(Duration(days: _diasRetencionTelemetria))
+        .millisecondsSinceEpoch;
+    await _telemetriaDao.eliminarSincronizadosAnterioresA(fechaLimite);
   }
 
   Duration _obtenerEsperaPorReintento(int reintentos) {

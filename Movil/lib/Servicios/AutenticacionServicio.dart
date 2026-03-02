@@ -10,6 +10,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../Constantes/ApiEndpoints.dart';
 import '../Constantes/ClavesAlmacen.dart';
+import '../Constantes/Textos.dart';
+import '../Modelos/Enums/RolUsuario.dart';
 import '../Modelos/SesionAutenticada.dart';
 import '../Modelos/Usuario.dart';
 import 'ApiServicio.dart';
@@ -37,6 +39,7 @@ class AutenticacionServicio {
         'contrasena': contrasena,
       },
     );
+    _validarAccesoEstudiante(sesion.usuario);
 
     await _almacenSeguro.write(
         key: ClavesAlmacen.tokenAcceso, value: sesion.tokenAcceso);
@@ -66,13 +69,23 @@ class AutenticacionServicio {
 
   /// Retorna true cuando existe token de acceso y usuario persistido.
   Future<bool> tieneSesionActiva() async {
-    final tokenAcceso =
-        await _almacenSeguro.read(key: ClavesAlmacen.tokenAcceso);
-    final usuario = await _almacenSeguro.read(key: ClavesAlmacen.usuarioActual);
-    return tokenAcceso != null &&
-        tokenAcceso.isNotEmpty &&
-        usuario != null &&
-        usuario.isNotEmpty;
+    try {
+      final tokenAcceso =
+          await _almacenSeguro.read(key: ClavesAlmacen.tokenAcceso);
+      if (tokenAcceso == null || tokenAcceso.isEmpty) {
+        return false;
+      }
+
+      final usuario = await obtenerUsuarioActual();
+      if (usuario == null) {
+        return false;
+      }
+      _validarAccesoEstudiante(usuario);
+      return true;
+    } catch (_) {
+      await _almacenSeguro.deleteAll();
+      return false;
+    }
   }
 
   /// Obtiene usuario persistido o null si no existe.
@@ -82,6 +95,20 @@ class AutenticacionServicio {
       return null;
     }
 
-    return Usuario.fromJson(jsonDecode(usuario) as Map<String, dynamic>);
+    try {
+      return Usuario.fromJson(jsonDecode(usuario) as Map<String, dynamic>);
+    } catch (_) {
+      await _almacenSeguro.delete(key: ClavesAlmacen.usuarioActual);
+      return null;
+    }
+  }
+
+  void _validarAccesoEstudiante(Usuario usuario) {
+    if (!usuario.activo) {
+      throw StateError(Textos.errorUsuarioInactivo);
+    }
+    if (usuario.rol != RolUsuario.ESTUDIANTE) {
+      throw StateError(Textos.errorSoloEstudiantes);
+    }
   }
 }

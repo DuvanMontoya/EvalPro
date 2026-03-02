@@ -66,4 +66,13 @@ class TelemetriaDao {
       ),
     );
   }
+
+  /// Elimina eventos sincronizados anteriores al instante indicado.
+  Future<int> eliminarSincronizadosAnterioresA(int fechaLimite) {
+    return (baseDatosLocal.delete(baseDatosLocal.telemetriaLocalTabla)
+          ..where((tabla) =>
+              tabla.esSincronizada.equals(true) &
+              tabla.fechaEvento.isSmallerThanValue(fechaLimite)))
+        .go();
+  }
 }

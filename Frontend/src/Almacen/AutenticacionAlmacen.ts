@@ -9,7 +9,7 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { Usuario } from '@/Tipos';
+import { RolUsuario, Usuario } from '@/Tipos';
 import { establecerTokenAcceso, obtenerTokenAcceso } from '@/Servicios/ApiCliente';
 import {
   cerrarSesion,
@@ -19,6 +19,7 @@ import {
   IniciarSesionDto,
   refrescarDesdeCookie,
 } from '@/Servicios/Autenticacion.servicio';
+import { crearErrorApiNormalizado } from '@/Lib/ErroresApi';
 
 interface EstadoAutenticacion {
   usuario: Usuario | null;
@@ -44,6 +45,14 @@ export const useAutenticacionAlmacen = create<EstadoAutenticacion>()(
 
       try {
         const sesion = await iniciarSesion(credenciales);
+        if (sesion.usuario.rol === RolUsuario.ESTUDIANTE) {
+          throw crearErrorApiNormalizado(
+            'El rol estudiante no puede acceder al panel administrativo.',
+            403,
+            'SIN_PERMISOS',
+          );
+        }
+
         await guardarRefreshEnCookie(sesion.tokenRefresh);
         establecerTokenAcceso(sesion.tokenAcceso);
 
@@ -73,6 +82,14 @@ export const useAutenticacionAlmacen = create<EstadoAutenticacion>()(
         }
 
         const refrescada = await refrescarDesdeCookie();
+        if (refrescada.usuario.rol === RolUsuario.ESTUDIANTE) {
+          throw crearErrorApiNormalizado(
+            'El rol estudiante no puede acceder al panel administrativo.',
+            403,
+            'SIN_PERMISOS',
+          );
+        }
+
         establecerTokenAcceso(refrescada.tokenAcceso);
 
         set((estado) => {
@@ -80,6 +97,7 @@ export const useAutenticacionAlmacen = create<EstadoAutenticacion>()(
           estado.estaAutenticado = true;
         });
       } catch {
+        await eliminarRefreshDeCookie().catch(() => undefined);
         establecerTokenAcceso(null);
         set((estado) => {
           estado.usuario = null;

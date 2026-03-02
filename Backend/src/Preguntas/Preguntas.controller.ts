@@ -5,7 +5,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario, Usuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -30,8 +30,8 @@ export class PreguntasController {
    */
   @Get()
   @ApiOperation({ summary: 'Lista preguntas por examen' })
-  async listar(@Param('idExamen') idExamen: string) {
-    return this.preguntasService.listar(idExamen);
+  async listar(@Param('idExamen', ParseUUIDPipe) idExamen: string, @UsuarioActual() usuario: Usuario) {
+    return this.preguntasService.listar(idExamen, usuario.id);
   }
 
   /**
@@ -39,8 +39,12 @@ export class PreguntasController {
    */
   @Post()
   @ApiOperation({ summary: 'Crea una pregunta dentro del examen' })
-  async crear(@Param('idExamen') idExamen: string, @Body() dto: CrearPreguntaDto) {
-    return this.preguntasService.crear(idExamen, dto);
+  async crear(
+    @Param('idExamen', ParseUUIDPipe) idExamen: string,
+    @Body() dto: CrearPreguntaDto,
+    @UsuarioActual() usuario: Usuario,
+  ) {
+    return this.preguntasService.crear(idExamen, dto, usuario.id);
   }
 
   /**
@@ -49,8 +53,8 @@ export class PreguntasController {
   @Put(':id')
   @ApiOperation({ summary: 'Actualiza una pregunta existente' })
   async actualizar(
-    @Param('idExamen') idExamen: string,
-    @Param('id') idPregunta: string,
+    @Param('idExamen', ParseUUIDPipe) idExamen: string,
+    @Param('id', ParseUUIDPipe) idPregunta: string,
     @Body() dto: ActualizarPreguntaDto,
     @UsuarioActual() usuario: Usuario,
   ) {
@@ -63,8 +67,8 @@ export class PreguntasController {
   @Delete(':id')
   @ApiOperation({ summary: 'Elimina una pregunta del examen' })
   async eliminar(
-    @Param('idExamen') idExamen: string,
-    @Param('id') idPregunta: string,
+    @Param('idExamen', ParseUUIDPipe) idExamen: string,
+    @Param('id', ParseUUIDPipe) idPregunta: string,
     @UsuarioActual() usuario: Usuario,
   ) {
     return this.preguntasService.eliminar(idExamen, idPregunta, usuario.id);
@@ -76,7 +80,7 @@ export class PreguntasController {
   @Patch('reordenar')
   @ApiOperation({ summary: 'Reordena preguntas dentro del examen' })
   async reordenar(
-    @Param('idExamen') idExamen: string,
+    @Param('idExamen', ParseUUIDPipe) idExamen: string,
     @Body() dto: ReordenarPreguntasDto,
     @UsuarioActual() usuario: Usuario,
   ) {

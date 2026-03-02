@@ -4,38 +4,74 @@
 /// @autor     EvalPro
 /// @fecha     2026-03-02
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import '../Configuracion/Entorno.dart';
+import '../Constantes/ClavesAlmacen.dart';
 import '../Constantes/EventosSocket.dart';
 import '../Modelos/Enums/TipoEventoTelemetria.dart';
 
 class SocketServicio {
+  static const _namespaceSesiones = '/sesiones';
+
+  final FlutterSecureStorage _almacenSeguro;
   io.Socket? _socket;
 
+  SocketServicio({required FlutterSecureStorage almacenSeguro})
+      : _almacenSeguro = almacenSeguro;
+
+  /// Construye la URL del namespace oficial de sesiones sin duplicarlo.
+  static String construirUrlNamespaceSesiones(String urlBase) {
+    final limpia = urlBase.trim().replaceFirst(RegExp(r'/$'), '');
+    if (limpia.endsWith(_namespaceSesiones)) {
+      return limpia;
+    }
+    return '$limpia$_namespaceSesiones';
+  }
+
+  /// Arma la carga de autenticacion del handshake para el gateway.
+  static Map<String, dynamic> construirAutenticacionHandshake(
+      String tokenAcceso) {
+    return <String, dynamic>{'tokenAcceso': tokenAcceso};
+  }
+
   /// Conecta al servidor websocket y une al usuario a la sala de sesion.
-  void conectar({
+  Future<bool> conectar({
     required String idSesion,
     required String rol,
-  }) {
-    if (_socket != null) {
-      return;
+  }) async {
+    if (_socket != null && _socket!.connected) {
+      return true;
     }
 
+    final tokenAcceso =
+        await _almacenSeguro.read(key: ClavesAlmacen.tokenAcceso);
+    if (tokenAcceso == null || tokenAcceso.isEmpty) {
+      return false;
+    }
+
+    desconectar();
     _socket = io.io(
-      Entorno.websocketUrl,
+      construirUrlNamespaceSesiones(Entorno.websocketUrl),
       io.OptionBuilder()
           .setTransports(<String>['websocket'])
-          .enableAutoConnect()
+          .setAuth(construirAutenticacionHandshake(tokenAcceso))
+          .setExtraHeaders(
+              <String, dynamic>{'Authorization': 'Bearer $tokenAcceso'})
+          .disableAutoConnect()
+          .enableReconnection()
           .build(),
     );
 
-    _socket!.on(EventosSocket.conectar, (_) {
+    _socket!.onConnect((_) {
       _socket!.emit(EventosSocket.unirseSalaSesion, <String, dynamic>{
         'idSesion': idSesion,
         'rol': rol,
       });
     });
+    _socket!.connect();
+    return true;
   }
 
   /// Desconecta la sesion websocket activa.
@@ -63,7 +99,7 @@ class SocketServicio {
     required int respondidas,
     required int total,
   }) {
-    _socket?.emit(EventosSocket.progresoEstudiante, <String, dynamic>{
+    _socket?.emit(EventosSocket.progresoActualizado, <String, dynamic>{
       'idIntento': idIntento,
       'preguntasRespondidas': respondidas,
       'totalPreguntas': total,

@@ -6,6 +6,7 @@
  * @fecha     2026-03-02
  */
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './App.controller';
 import { ConfiguracionModule } from './Configuracion/Configuracion.module';
@@ -22,7 +23,14 @@ import { ReportesModule } from './Reportes/Reportes.module';
 @Module({
   imports: [
     ConfiguracionModule,
-    ThrottlerModule.forRoot([{ ttl: 60_000 * 15, limit: 10 }]),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (servicioConfiguracion: ConfigService) => {
+        const entorno = servicioConfiguracion.get<string>('ENTORNO', 'desarrollo');
+        const esPruebas = entorno === 'pruebas' || process.env.NODE_ENV === 'test';
+        return [{ ttl: 60_000 * 15, limit: esPruebas ? 10_000 : 10 }];
+      },
+    }),
     AutenticacionModule,
     UsuariosModule,
     ExamenesModule,

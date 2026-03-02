@@ -7,7 +7,7 @@ part of 'AutenticacionProvider.dart';
 // **************************************************************************
 
 String _$almacenamientoSeguroHash() =>
-    r'22f5d4ee9a15592b6b3ad139a47da0513b2638f6';
+    r'c0a6e891a44a78305980bc86cd4e9e75be06bcc4';
 
 /// See also [almacenamientoSeguro].
 @ProviderFor(almacenamientoSeguro)
@@ -25,7 +25,7 @@ final almacenamientoSeguroProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AlmacenamientoSeguroRef = AutoDisposeProviderRef<FlutterSecureStorage>;
-String _$baseDatosLocalHash() => r'd449f13e85acf6dc44132a67995dbcbf5d3b3885';
+String _$baseDatosLocalHash() => r'd346a2b68258f60c21b986282bde7f608857a55d';
 
 /// See also [baseDatosLocal].
 @ProviderFor(baseDatosLocal)
@@ -42,7 +42,7 @@ final baseDatosLocalProvider = AutoDisposeProvider<BaseDatosLocal>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef BaseDatosLocalRef = AutoDisposeProviderRef<BaseDatosLocal>;
-String _$examenDaoHash() => r'014107b8dd9e22b930b22d0cf6dcd45181840a5e';
+String _$examenDaoHash() => r'c746590d59dca2dd6efc4e03f9360f9c99e5d4f5';
 
 /// See also [examenDao].
 @ProviderFor(examenDao)
@@ -58,7 +58,7 @@ final examenDaoProvider = AutoDisposeProvider<ExamenDao>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ExamenDaoRef = AutoDisposeProviderRef<ExamenDao>;
-String _$respuestaDaoHash() => r'e3a5c259b6b708cfecdfb468d0a198799a0b61ae';
+String _$respuestaDaoHash() => r'eed4a09353d038df55927219e5ec2266864a8ca9';
 
 /// See also [respuestaDao].
 @ProviderFor(respuestaDao)
@@ -74,7 +74,7 @@ final respuestaDaoProvider = AutoDisposeProvider<RespuestaDao>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef RespuestaDaoRef = AutoDisposeProviderRef<RespuestaDao>;
-String _$telemetriaDaoHash() => r'77a6671a7421abe1949f0cba20a6a47b16595a72';
+String _$telemetriaDaoHash() => r'54339e099358f85f561d89d131f5ea675b44daa5';
 
 /// See also [telemetriaDao].
 @ProviderFor(telemetriaDao)
@@ -91,7 +91,7 @@ final telemetriaDaoProvider = AutoDisposeProvider<TelemetriaDao>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef TelemetriaDaoRef = AutoDisposeProviderRef<TelemetriaDao>;
-String _$socketServicioHash() => r'd393ab5209c569c7eb82e6c04f99555406c583dd';
+String _$socketServicioHash() => r'865312057d70fbfc084de6be6d68284015c3a346';
 
 /// See also [socketServicio].
 @ProviderFor(socketServicio)
@@ -108,7 +108,7 @@ final socketServicioProvider = AutoDisposeProvider<SocketServicio>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SocketServicioRef = AutoDisposeProviderRef<SocketServicio>;
-String _$apiServicioHash() => r'37fa8b21441d16774c30f971af55ea7afbfff4f6';
+String _$apiServicioHash() => r'5453da62743c4236b510fd5cfb8fd6362d3c638d';
 
 /// See also [apiServicio].
 @ProviderFor(apiServicio)
@@ -233,7 +233,7 @@ final telemetriaServicioProvider =
 // ignore: unused_element
 typedef TelemetriaServicioRef = AutoDisposeProviderRef<TelemetriaServicio>;
 String _$sincronizacionServicioHash() =>
-    r'01da80e9d5edcade5afe456b5211b182a3919264';
+    r'dc8ab85b04cd84774f3f7e6eff50269fc1823e89';
 
 /// See also [sincronizacionServicio].
 @ProviderFor(sincronizacionServicio)
@@ -253,7 +253,7 @@ final sincronizacionServicioProvider =
 typedef SincronizacionServicioRef
     = AutoDisposeProviderRef<SincronizacionServicio>;
 String _$autenticacionEstadoHash() =>
-    r'b91d6ac5c916e977aaae2f805fee072a1bed45ce';
+    r'9dcb5a9d52d28063f838b6236ca21a05af84d634';
 
 /// See also [AutenticacionEstado].
 @ProviderFor(AutenticacionEstado)

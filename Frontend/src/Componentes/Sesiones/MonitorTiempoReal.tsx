@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { EstadoIntento } from '@/Tipos';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
+import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useMonitorTiempoReal } from '@/Hooks/useMonitorTiempoReal';
 import { useSesiones } from '@/Hooks/useSesiones';
 import { Boton } from '@/Componentes/Ui/Boton';
@@ -19,6 +20,8 @@ import { ModalConfirmacion } from '@/Componentes/Comunes/ModalConfirmacion';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { TarjetaEstudianteMonitor } from '@/Componentes/Sesiones/TarjetaEstudianteMonitor';
 import { AlertaFraude } from '@/Componentes/Sesiones/AlertaFraude';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
+import { rolPuedeGestionarSesiones } from '@/Lib/Permisos';
 
 interface PropiedadesMonitorTiempoReal {
   idSesion: string;
@@ -38,7 +41,9 @@ export function MonitorTiempoReal({ idSesion, totalPreguntas }: PropiedadesMonit
   const router = useRouter();
   const [modalFinalizarAbierto, setModalFinalizarAbierto] = useState(false);
   const { mutacionFinalizarSesion } = useSesiones();
-  const { listaEstudiantes, alertasFraude, sesionFinalizada } = useMonitorTiempoReal(idSesion);
+  const { usuario } = useAutenticacion();
+  const { listaEstudiantes, alertasFraude, sesionFinalizada, conexionActiva } = useMonitorTiempoReal(idSesion);
+  const puedeFinalizar = rolPuedeGestionarSesiones(usuario?.rol);
 
   useEffect(() => {
     if (sesionFinalizada) {
@@ -53,7 +58,8 @@ export function MonitorTiempoReal({ idSesion, totalPreguntas }: PropiedadesMonit
 
     const ultima = alertasFraude[0]!;
     const tipoLegible = MAPA_EVENTOS[ultima.tipoEvento] ?? ultima.tipoEvento;
-    toast.error(`${ultima.nombreEstudiante}: ${tipoLegible}`);
+    const hora = new Date(ultima.fecha).toLocaleTimeString();
+    toast.error(`${ultima.nombreEstudiante}: ${tipoLegible} (${hora})`);
   }, [alertasFraude]);
 
   const estudiantesNormalizados = useMemo(
@@ -69,10 +75,18 @@ export function MonitorTiempoReal({ idSesion, totalPreguntas }: PropiedadesMonit
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Monitor en tiempo real</h2>
-        <Boton variante="peligro" onClick={() => setModalFinalizarAbierto(true)}>
-          Finalizar Sesión para Todos
-        </Boton>
+        {puedeFinalizar ? (
+          <Boton variante="peligro" onClick={() => setModalFinalizarAbierto(true)}>
+            Finalizar Sesión para Todos
+          </Boton>
+        ) : null}
       </div>
+
+      {!conexionActiva ? (
+        <div className="rounded-md border border-[var(--estado-advertencia-borde)] bg-[var(--estado-advertencia-sutil)] px-4 py-3 text-sm text-[var(--estado-advertencia)]">
+          Conexión en tiempo real interrumpida. Reintentando reconexión automáticamente.
+        </div>
+      ) : null}
 
       {estudiantesNormalizados.length === 0 ? (
         <EstadoVacio
@@ -113,19 +127,25 @@ export function MonitorTiempoReal({ idSesion, totalPreguntas }: PropiedadesMonit
         )}
       </div>
 
-      <ModalConfirmacion
-        abierto={modalFinalizarAbierto}
-        onCambiarAbierto={setModalFinalizarAbierto}
-        titulo="Finalizar sesión"
-        descripcion="Esta acción enviará cierre para todos los estudiantes conectados."
-        textoConfirmar="Finalizar ahora"
-        cargando={mutacionFinalizarSesion.isPending}
-        onConfirmar={async () => {
-          await mutacionFinalizarSesion.mutateAsync(idSesion);
-          setModalFinalizarAbierto(false);
-          router.push(RUTAS.SESION_RESULTADOS(idSesion));
-        }}
-      />
+      {puedeFinalizar ? (
+        <ModalConfirmacion
+          abierto={modalFinalizarAbierto}
+          onCambiarAbierto={setModalFinalizarAbierto}
+          titulo="Finalizar sesión"
+          descripcion="Esta acción enviará cierre para todos los estudiantes conectados."
+          textoConfirmar="Finalizar ahora"
+          cargando={mutacionFinalizarSesion.isPending}
+          onConfirmar={async () => {
+            try {
+              await mutacionFinalizarSesion.mutateAsync(idSesion);
+              setModalFinalizarAbierto(false);
+              router.push(RUTAS.SESION_RESULTADOS(idSesion));
+            } catch (error) {
+              toast.error(obtenerMensajeError(error, 'No se pudo finalizar la sesión.'));
+            }
+          }}
+        />
+      ) : null}
     </section>
   );
 }

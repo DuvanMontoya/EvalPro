@@ -5,7 +5,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Controller, ForbiddenException, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario, Usuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -27,7 +27,7 @@ export class ReportesController {
   @Get('sesion/:idSesion')
   @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Obtiene reporte de sesión' })
-  async obtenerReporteSesion(@Param('idSesion') idSesion: string, @UsuarioActual() usuario: Usuario) {
+  async obtenerReporteSesion(@Param('idSesion', ParseUUIDPipe) idSesion: string, @UsuarioActual() usuario: Usuario) {
     return this.reportesService.obtenerReporteSesion(idSesion, usuario.rol, usuario.id);
   }
 
@@ -37,7 +37,10 @@ export class ReportesController {
   @Get('estudiante/:idEstudiante')
   @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Obtiene reporte por estudiante' })
-  async obtenerReporteEstudiante(@Param('idEstudiante') idEstudiante: string, @UsuarioActual() usuario: Usuario) {
+  async obtenerReporteEstudiante(
+    @Param('idEstudiante', ParseUUIDPipe) idEstudiante: string,
+    @UsuarioActual() usuario: Usuario,
+  ) {
     if (usuario.rol === RolUsuario.ESTUDIANTE && usuario.id !== idEstudiante) {
       throw new ForbiddenException('No tiene permisos para consultar este estudiante');
     }

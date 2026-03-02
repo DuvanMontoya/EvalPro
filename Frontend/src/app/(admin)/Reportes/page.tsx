@@ -23,6 +23,7 @@ import { GraficaDistribucion } from '@/Componentes/Reportes/GraficaDistribucion'
 import { GraficaDificultadPreguntas } from '@/Componentes/Reportes/GraficaDificultadPreguntas';
 import { TablaResultadosDetallada } from '@/Componentes/Reportes/TablaResultadosDetallada';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
 
 /**
  * Renderiza módulo principal de reportes.
@@ -41,6 +42,15 @@ export default function PaginaReportes() {
 
   if (consultaSesiones.isLoading) {
     return <Cargando mensaje="Cargando sesiones para reportes..." />;
+  }
+
+  if (consultaSesiones.isError) {
+    return (
+      <EstadoVacio
+        titulo="No fue posible cargar sesiones"
+        descripcion={obtenerMensajeError(consultaSesiones.error, 'Intenta nuevamente en unos segundos.')}
+      />
+    );
   }
 
   const sesiones = consultaSesiones.data ?? [];
@@ -65,8 +75,18 @@ export default function PaginaReportes() {
         </Seleccion>
       </div>
 
-      {reporte.isLoading || !reporte.data ? (
+      {reporte.isLoading ? (
         <Cargando mensaje="Cargando reporte seleccionado..." />
+      ) : reporte.isError ? (
+        <EstadoVacio
+          titulo="No fue posible cargar el reporte"
+          descripcion={obtenerMensajeError(reporte.error, 'Intenta nuevamente en unos segundos.')}
+        />
+      ) : !reporte.data ? (
+        <EstadoVacio
+          titulo="Sin datos para mostrar"
+          descripcion="No existe información disponible para la sesión seleccionada."
+        />
       ) : (
         <>
           <Tarjeta>

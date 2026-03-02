@@ -11,10 +11,14 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { EstadoExamen } from '@/Tipos';
+import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useExamenes } from '@/Hooks/useExamenes';
 import { useSesiones } from '@/Hooks/useSesiones';
 import { CrearSesionFormulario, esquemaCrearSesion } from '@/Lib/validaciones';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
+import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
+import { Cargando } from '@/Componentes/Comunes/Cargando';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
 import { Etiqueta } from '@/Componentes/Ui/Etiqueta';
 import { AreaTexto } from '@/Componentes/Ui/AreaTexto';
@@ -26,12 +30,15 @@ import {
   SeleccionItem,
   SeleccionValor,
 } from '@/Componentes/Ui/Seleccion';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
+import { rolPuedeGestionarSesiones } from '@/Lib/Permisos';
 
 /**
  * Renderiza formulario de creación de sesiones.
  */
 export default function PaginaNuevaSesion() {
   const router = useRouter();
+  const { usuario } = useAutenticacion();
   const { consultaExamenes } = useExamenes();
   const { mutacionCrearSesion } = useSesiones();
 
@@ -41,10 +48,42 @@ export default function PaginaNuevaSesion() {
   });
 
   const enviar = async (datos: CrearSesionFormulario) => {
-    const sesion = await mutacionCrearSesion.mutateAsync(datos);
-    toast.success('Sesión creada correctamente.');
-    router.push(RUTAS.SESION_DETALLE(sesion.id));
+    try {
+      const sesion = await mutacionCrearSesion.mutateAsync(datos);
+      toast.success('Sesión creada correctamente.');
+      router.push(RUTAS.SESION_DETALLE(sesion.id));
+    } catch (error) {
+      toast.error(obtenerMensajeError(error, 'No se pudo crear la sesión.'));
+    }
   };
+
+  if (!rolPuedeGestionarSesiones(usuario?.rol)) {
+    return (
+      <EstadoVacio
+        titulo="Acción no permitida"
+        descripcion="Solo un docente puede crear sesiones."
+        etiquetaAccion="Volver a sesiones"
+        hrefAccion={RUTAS.SESIONES}
+      />
+    );
+  }
+
+  if (consultaExamenes.isLoading) {
+    return <Cargando mensaje="Cargando exámenes publicados..." />;
+  }
+
+  if (consultaExamenes.isError) {
+    return (
+      <EstadoVacio
+        titulo="No fue posible cargar exámenes"
+        descripcion={obtenerMensajeError(consultaExamenes.error, 'Intenta nuevamente en unos segundos.')}
+      />
+    );
+  }
+
+  const examenesPublicados = (consultaExamenes.data ?? []).filter(
+    (examen) => examen.estado === EstadoExamen.PUBLICADO,
+  );
 
   return (
     <Tarjeta>
@@ -60,21 +99,41 @@ export default function PaginaNuevaSesion() {
                 <SeleccionValor placeholder="Selecciona un examen" />
               </SeleccionDisparador>
               <SeleccionContenido>
-                {(consultaExamenes.data ?? []).map((examen) => (
+                {examenesPublicados.map((examen) => (
                   <SeleccionItem key={examen.id} value={examen.id}>
                     {examen.titulo}
                   </SeleccionItem>
                 ))}
               </SeleccionContenido>
             </Seleccion>
+            {formulario.formState.errors.idExamen ? (
+              <p className="text-sm text-[var(--estado-peligro)]">{formulario.formState.errors.idExamen.message}</p>
+            ) : null}
+            {examenesPublicados.length === 0 ? (
+              <p className="text-sm text-[var(--estado-advertencia)]">
+                Debes tener al menos un examen publicado para crear una sesión.
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
             <Etiqueta htmlFor="descripcion">Descripción</Etiqueta>
             <AreaTexto id="descripcion" {...formulario.register('descripcion')} />
+            {formulario.formState.errors.descripcion ? (
+              <p className="text-sm text-[var(--estado-peligro)]">
+                {formulario.formState.errors.descripcion.message}
+              </p>
+            ) : null}
           </div>
 
-          <Boton type="submit" disabled={formulario.formState.isSubmitting || mutacionCrearSesion.isPending}>
+          <Boton
+            type="submit"
+            disabled={
+              formulario.formState.isSubmitting ||
+              mutacionCrearSesion.isPending ||
+              examenesPublicados.length === 0
+            }
+          >
             {formulario.formState.isSubmitting || mutacionCrearSesion.isPending ? 'Creando...' : 'Crear sesión'}
           </Boton>
         </form>

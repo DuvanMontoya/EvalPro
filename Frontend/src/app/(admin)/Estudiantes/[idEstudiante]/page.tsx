@@ -12,6 +12,7 @@ import { useReporteEstudiante } from '@/Hooks/useReportes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
 
 /**
  * Renderiza página de detalle de estudiante.
@@ -21,8 +22,26 @@ export default function PaginaDetalleEstudiante() {
   const idEstudiante = parametros.idEstudiante;
   const reporte = useReporteEstudiante(idEstudiante);
 
-  if (reporte.isLoading || !reporte.data) {
+  if (reporte.isLoading) {
     return <Cargando mensaje="Cargando historial..." />;
+  }
+
+  if (reporte.isError) {
+    return (
+      <EstadoVacio
+        titulo="No fue posible cargar el historial"
+        descripcion={obtenerMensajeError(reporte.error, 'Intenta nuevamente en unos segundos.')}
+      />
+    );
+  }
+
+  if (!reporte.data) {
+    return (
+      <EstadoVacio
+        titulo="Sin datos del estudiante"
+        descripcion="No existe información disponible para este estudiante."
+      />
+    );
   }
 
   return (

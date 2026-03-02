@@ -12,6 +12,7 @@ import { useTableroReportes } from '@/Hooks/useReportes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
 
 function TarjetaMetrica({ titulo, valor }: { titulo: string; valor: number }) {
   return (
@@ -40,6 +41,22 @@ export default function PaginaTablero() {
 
   if (sesionesActivasHoy.isLoading || sesionesActivasAhora.isLoading || estudiantesConectados.isLoading) {
     return <Cargando mensaje="Cargando métricas del tablero..." />;
+  }
+
+  const errorTablero =
+    sesionesActivasHoy.error ??
+    sesionesActivasAhora.error ??
+    estudiantesConectados.error ??
+    ultimasSesiones.error ??
+    actividadSemanal.error;
+
+  if (errorTablero) {
+    return (
+      <EstadoVacio
+        titulo="No fue posible cargar el tablero"
+        descripcion={obtenerMensajeError(errorTablero, 'Intenta nuevamente en unos segundos.')}
+      />
+    );
   }
 
   return (

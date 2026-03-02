@@ -5,7 +5,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario, Usuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -29,7 +29,7 @@ export class TelemetriaController {
   @Roles(RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Registra evento de telemetría' })
   async registrar(@Body() dto: RegistrarEventoDto, @UsuarioActual() usuario: Usuario) {
-    return this.telemetriaService.registrar(dto, dto.idIntento);
+    return this.telemetriaService.registrar(dto, usuario.id);
   }
 
   /**
@@ -38,7 +38,7 @@ export class TelemetriaController {
   @Get('intentos/:idIntento/telemetria')
   @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Lista telemetría de un intento' })
-  async listarPorIntento(@Param('idIntento') idIntento: string, @UsuarioActual() usuario: Usuario) {
+  async listarPorIntento(@Param('idIntento', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: Usuario) {
     return this.telemetriaService.listarPorIntento(idIntento, usuario.rol, usuario.id);
   }
 }

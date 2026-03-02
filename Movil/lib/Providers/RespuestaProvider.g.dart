@@ -6,7 +6,7 @@ part of 'RespuestaProvider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$respuestaActualHash() => r'f79bda127ff4b482aef3e6cb9ff01a582c0229af';
+String _$respuestaActualHash() => r'1267d71085b7c47b2827084329f9d82c6106fc6c';
 
 /// See also [RespuestaActual].
 @ProviderFor(RespuestaActual)

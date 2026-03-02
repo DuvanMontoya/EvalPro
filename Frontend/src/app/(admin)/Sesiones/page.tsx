@@ -9,21 +9,35 @@
 
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useSesiones } from '@/Hooks/useSesiones';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { Boton } from '@/Componentes/Ui/Boton';
 import { TablaSesiones } from '@/Componentes/Sesiones/TablaSesiones';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
+import { rolPuedeGestionarSesiones } from '@/Lib/Permisos';
 
 /**
  * Renderiza catálogo de sesiones del docente.
  */
 export default function PaginaSesiones() {
   const { consultaSesiones, mutacionActivarSesion, mutacionFinalizarSesion } = useSesiones();
+  const { usuario } = useAutenticacion();
+  const puedeGestionar = rolPuedeGestionarSesiones(usuario?.rol);
 
   if (consultaSesiones.isLoading) {
     return <Cargando mensaje="Cargando sesiones..." />;
+  }
+
+  if (consultaSesiones.isError) {
+    return (
+      <EstadoVacio
+        titulo="No fue posible cargar sesiones"
+        descripcion={obtenerMensajeError(consultaSesiones.error, 'Intenta nuevamente en unos segundos.')}
+      />
+    );
   }
 
   const sesiones = consultaSesiones.data ?? [];
@@ -32,28 +46,39 @@ export default function PaginaSesiones() {
       <EstadoVacio
         titulo="No hay sesiones"
         descripcion="Crea una sesión para iniciar exámenes con tus estudiantes."
-        etiquetaAccion="Nueva sesión"
-        hrefAccion={RUTAS.SESION_NUEVA}
+        etiquetaAccion={puedeGestionar ? 'Nueva sesión' : undefined}
+        hrefAccion={puedeGestionar ? RUTAS.SESION_NUEVA : undefined}
       />
     );
   }
 
   return (
     <section className="space-y-4">
-      <div className="flex justify-end">
-        <Boton comoHijo>
-          <Link href={RUTAS.SESION_NUEVA}>Nueva sesión</Link>
-        </Boton>
-      </div>
+      {puedeGestionar ? (
+        <div className="flex justify-end">
+          <Boton comoHijo>
+            <Link href={RUTAS.SESION_NUEVA}>Nueva sesión</Link>
+          </Boton>
+        </div>
+      ) : null}
       <TablaSesiones
         sesiones={sesiones}
+        rolUsuario={usuario?.rol}
         onActivar={async (idSesion) => {
-          await mutacionActivarSesion.mutateAsync(idSesion);
-          toast.success('Sesión activada correctamente.');
+          try {
+            await mutacionActivarSesion.mutateAsync(idSesion);
+            toast.success('Sesión activada correctamente.');
+          } catch (error) {
+            toast.error(obtenerMensajeError(error, 'No se pudo activar la sesión.'));
+          }
         }}
         onFinalizar={async (idSesion) => {
-          await mutacionFinalizarSesion.mutateAsync(idSesion);
-          toast.success('Sesión finalizada correctamente.');
+          try {
+            await mutacionFinalizarSesion.mutateAsync(idSesion);
+            toast.success('Sesión finalizada correctamente.');
+          } catch (error) {
+            toast.error(obtenerMensajeError(error, 'No se pudo finalizar la sesión.'));
+          }
         }}
       />
     </section>

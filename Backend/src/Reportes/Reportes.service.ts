@@ -109,10 +109,19 @@ export class ReportesService {
       throw new NotFoundException('Estudiante no encontrado');
     }
 
+    const intentosFiltrados =
+      rol === RolUsuario.DOCENTE
+        ? estudiante.intentos.filter((intento) => intento.sesion.creadaPorId === idUsuario)
+        : estudiante.intentos;
+
+    if (rol === RolUsuario.DOCENTE && intentosFiltrados.length === 0) {
+      throw new ForbiddenException('No tiene permisos para consultar este estudiante');
+    }
+
     return {
       idEstudiante: estudiante.id,
       nombreCompleto: `${estudiante.nombre} ${estudiante.apellidos}`,
-      intentos: estudiante.intentos.map((intento) => ({
+      intentos: intentosFiltrados.map((intento) => ({
         idSesion: intento.sesionId,
         codigoAcceso: intento.sesion.codigoAcceso,
         tituloExamen: intento.sesion.examen.titulo,

@@ -8,7 +8,9 @@ import 'dart:convert';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../Constantes/Textos.dart';
 import '../Modelos/RespuestaLocal.dart';
+import '../Utilidades/MapeadorErroresNegocio.dart';
 import 'AutenticacionProvider.dart';
 
 part 'RespuestaProvider.g.dart';
@@ -94,7 +96,10 @@ class RespuestaActual extends _$RespuestaActual {
       state = state.copyWith(
         sincronizando: false,
         pendientes: cantidad.length,
-        error: '$error',
+        error: MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorSincronizacion,
+        ),
       );
     }
   }

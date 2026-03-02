@@ -70,21 +70,3 @@ export async function obtenerReporteEstudiante(idEstudiante: string): Promise<Re
   const respuesta = await apiCliente.get<RespuestaApi<ReporteEstudiante>>(`${API.REPORTES}/estudiante/${idEstudiante}`);
   return extraerDatos(respuesta);
 }
-
-/**
- * Consulta total de sesiones activas hoy para tablero.
- */
-export async function obtenerSesionesActivasHoy(): Promise<number> {
-  const respuesta = await apiCliente.get<RespuestaApi<{ total: number }>>(`${API.REPORTES}/sesion/activas-hoy`);
-  return extraerDatos(respuesta).total;
-}
-
-/**
- * Consulta actividad semanal para gráfica del tablero.
- */
-export async function obtenerActividadSemanal(): Promise<{ dia: string; cantidad: number }[]> {
-  const respuesta = await apiCliente.get<RespuestaApi<{ dia: string; cantidad: number }[]>>(
-    `${API.REPORTES}/actividad-semanal`,
-  );
-  return extraerDatos(respuesta);
-}

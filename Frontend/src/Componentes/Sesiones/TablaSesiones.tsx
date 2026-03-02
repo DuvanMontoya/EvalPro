@@ -9,10 +9,11 @@
 
 import Link from 'next/link';
 import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { EstadoSesion, SesionExamen } from '@/Tipos';
+import { EstadoSesion, RolUsuario, SesionExamen } from '@/Tipos';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { Boton } from '@/Componentes/Ui/Boton';
 import { Insignia } from '@/Componentes/Ui/Insignia';
+import { puedeActivarSesion, puedeFinalizarSesion } from '@/Lib/Permisos';
 import {
   Tabla,
   TablaCabeza,
@@ -24,6 +25,7 @@ import {
 
 interface PropiedadesTablaSesiones {
   sesiones: SesionExamen[];
+  rolUsuario: RolUsuario | null | undefined;
   onActivar: (idSesion: string) => void;
   onFinalizar: (idSesion: string) => void;
 }
@@ -44,7 +46,12 @@ function renderEstado(estado: EstadoSesion) {
 /**
  * Renderiza tabla de sesiones con acciones según estado.
  */
-export function TablaSesiones({ sesiones, onActivar, onFinalizar }: PropiedadesTablaSesiones) {
+export function TablaSesiones({
+  sesiones,
+  rolUsuario,
+  onActivar,
+  onFinalizar,
+}: PropiedadesTablaSesiones) {
   const columnas: ColumnDef<SesionExamen>[] = [
     {
       accessorKey: 'codigoAcceso',
@@ -62,17 +69,19 @@ export function TablaSesiones({ sesiones, onActivar, onFinalizar }: PropiedadesT
       header: 'Acciones',
       cell: ({ row }) => {
         const sesion = row.original;
+        const activarHabilitado = puedeActivarSesion(rolUsuario, sesion.estado);
+        const finalizarHabilitado = puedeFinalizarSesion(rolUsuario, sesion.estado);
         return (
           <div className="flex flex-wrap gap-2">
             <Boton comoHijo tamano="pequeno" variante="contorno">
               <Link href={RUTAS.SESION_DETALLE(sesion.id)}>Ver</Link>
             </Boton>
-            {sesion.estado === EstadoSesion.PENDIENTE ? (
+            {activarHabilitado ? (
               <Boton tamano="pequeno" onClick={() => onActivar(sesion.id)}>
                 Activar
               </Boton>
             ) : null}
-            {sesion.estado === EstadoSesion.ACTIVA ? (
+            {finalizarHabilitado ? (
               <Boton tamano="pequeno" variante="peligro" onClick={() => onFinalizar(sesion.id)}>
                 Finalizar
               </Boton>

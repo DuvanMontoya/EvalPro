@@ -30,6 +30,27 @@ interface AlertaFraude {
   nombreEstudiante: string;
 }
 
+interface PayloadProgreso {
+  idIntento: string;
+  preguntasRespondidas: number;
+  totalPreguntas?: number;
+  nombreCompleto?: string;
+  modoKioscoActivo?: boolean;
+  eventosFraude?: number;
+  estadoIntento?: string;
+}
+
+interface PayloadFraude {
+  idIntento: string;
+  tipoEvento: TipoEventoTelemetria;
+  nombreEstudiante?: string;
+  fecha?: string;
+}
+
+function obtenerNombreFallback(idIntento: string): string {
+  return `Intento ${idIntento.slice(0, 8)}`;
+}
+
 /**
  * Conecta al gateway de sesiones y escucha progreso/fraude en tiempo real.
  * @param idSesion - UUID de la sesión en monitoreo.
@@ -39,6 +60,7 @@ export function useMonitorTiempoReal(idSesion: string) {
   const [progresoEstudiantes, setProgresoEstudiantes] = useState<Record<string, ProgresoEstudiante>>({});
   const [alertasFraude, setAlertasFraude] = useState<AlertaFraude[]>([]);
   const [sesionFinalizada, setSesionFinalizada] = useState(false);
+  const [conexionActiva, setConexionActiva] = useState(false);
 
   useEffect(() => {
     if (!idSesion) {
@@ -47,11 +69,22 @@ export function useMonitorTiempoReal(idSesion: string) {
 
     const socketSesion = io(`${API.WEBSOCKET}${API.EVENTOS_SOCKET.ESPACIO_SESIONES}`, {
       transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 8,
+      reconnectionDelay: 1000,
+      timeout: 10000,
     });
 
-    socketSesion.emit(API.EVENTOS_SOCKET.UNIRSE_SALA, { idSesion, rol: RolUsuario.DOCENTE });
+    socketSesion.on('connect', () => {
+      setConexionActiva(true);
+      socketSesion.emit(API.EVENTOS_SOCKET.UNIRSE_SALA, { idSesion, rol: RolUsuario.DOCENTE });
+    });
 
-    socketSesion.on(API.EVENTOS_SOCKET.ESTUDIANTE_PROGRESO, (payload: { idIntento: string; preguntasRespondidas: number }) => {
+    socketSesion.on('disconnect', () => {
+      setConexionActiva(false);
+    });
+
+    socketSesion.on(API.EVENTOS_SOCKET.ESTUDIANTE_PROGRESO, (payload: PayloadProgreso) => {
       setProgresoEstudiantes((previo) => {
         const actual = previo[payload.idIntento];
         return {
@@ -59,37 +92,43 @@ export function useMonitorTiempoReal(idSesion: string) {
           [payload.idIntento]: {
             idIntento: payload.idIntento,
             preguntasRespondidas: payload.preguntasRespondidas,
-            totalPreguntas: actual?.totalPreguntas ?? 0,
-            nombreCompleto: actual?.nombreCompleto ?? 'Estudiante',
-            modoKioscoActivo: actual?.modoKioscoActivo ?? true,
-            eventosFraude: actual?.eventosFraude ?? 0,
-            estadoIntento: actual?.estadoIntento ?? 'EN_PROGRESO',
+            totalPreguntas: payload.totalPreguntas ?? actual?.totalPreguntas ?? 0,
+            nombreCompleto: payload.nombreCompleto ?? actual?.nombreCompleto ?? obtenerNombreFallback(payload.idIntento),
+            modoKioscoActivo: payload.modoKioscoActivo ?? actual?.modoKioscoActivo ?? true,
+            eventosFraude: payload.eventosFraude ?? actual?.eventosFraude ?? 0,
+            estadoIntento: payload.estadoIntento ?? actual?.estadoIntento ?? 'EN_PROGRESO',
           },
         };
       });
     });
 
-    socketSesion.on(API.EVENTOS_SOCKET.ESTUDIANTE_FRAUDE, (payload: { idIntento: string; tipoEvento: TipoEventoTelemetria }) => {
+    socketSesion.on(API.EVENTOS_SOCKET.ESTUDIANTE_FRAUDE, (payload: PayloadFraude) => {
       const alerta: AlertaFraude = {
         id: crypto.randomUUID(),
         idIntento: payload.idIntento,
         tipoEvento: payload.tipoEvento,
-        fecha: new Date().toISOString(),
-        nombreEstudiante: 'Estudiante',
+        fecha: payload.fecha ?? new Date().toISOString(),
+        nombreEstudiante: payload.nombreEstudiante ?? obtenerNombreFallback(payload.idIntento),
       };
       setAlertasFraude((previo) => [alerta, ...previo]);
 
       setProgresoEstudiantes((previo) => {
         const actual = previo[payload.idIntento];
-        if (!actual) {
-          return previo;
-        }
+        const base = actual ?? {
+          idIntento: payload.idIntento,
+          preguntasRespondidas: 0,
+          totalPreguntas: 0,
+          nombreCompleto: payload.nombreEstudiante ?? obtenerNombreFallback(payload.idIntento),
+          modoKioscoActivo: false,
+          eventosFraude: 0,
+          estadoIntento: 'EN_PROGRESO',
+        };
 
         return {
           ...previo,
           [payload.idIntento]: {
-            ...actual,
-            eventosFraude: actual.eventosFraude + 1,
+            ...base,
+            eventosFraude: base.eventosFraude + 1,
             modoKioscoActivo: false,
           },
         };
@@ -104,6 +143,7 @@ export function useMonitorTiempoReal(idSesion: string) {
     return () => {
       socketSesion.disconnect();
       setSocket(null);
+      setConexionActiva(false);
     };
   }, [idSesion]);
 
@@ -114,5 +154,6 @@ export function useMonitorTiempoReal(idSesion: string) {
     listaEstudiantes,
     alertasFraude,
     sesionFinalizada,
+    conexionActiva,
   };
 }

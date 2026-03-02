@@ -12,6 +12,7 @@ import {
   ForbiddenException,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
@@ -63,7 +64,7 @@ export class UsuariosController {
   @Get(':id')
   @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Obtiene detalles de usuario por id' })
-  async obtenerPorId(@Param('id') id: string, @UsuarioActual() usuario: Usuario) {
+  async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
     this.validarPropiedad(id, usuario);
     return this.usuariosService.obtenerPorId(id);
   }
@@ -77,7 +78,11 @@ export class UsuariosController {
   @Patch(':id')
   @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Actualiza un usuario por id' })
-  async actualizar(@Param('id') id: string, @Body() dto: ActualizarUsuarioDto, @UsuarioActual() usuario: Usuario) {
+  async actualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ActualizarUsuarioDto,
+    @UsuarioActual() usuario: Usuario,
+  ) {
     this.validarPropiedad(id, usuario);
     return this.usuariosService.actualizar(id, dto);
   }
@@ -89,7 +94,7 @@ export class UsuariosController {
   @Delete(':id')
   @Roles(RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Desactiva un usuario' })
-  async desactivar(@Param('id') id: string) {
+  async desactivar(@Param('id', ParseUUIDPipe) id: string) {
     return this.usuariosService.desactivar(id);
   }
 

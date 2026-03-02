@@ -97,15 +97,7 @@ export class SesionesExamenService {
    * @param idDocente - UUID del docente propietario.
    */
   async activar(idSesion: string, idDocente: string) {
-    const sesion = await this.prisma.sesionExamen.findUnique({ where: { id: idSesion } });
-    if (!sesion) {
-      throw new NotFoundException('Sesión no encontrada');
-    }
-
-    if (sesion.creadaPorId !== idDocente) {
-      throw new ForbiddenException('No tiene permisos sobre esta sesión');
-    }
-
+    const sesion = await this.obtenerSesionPropia(idSesion, idDocente);
     if (sesion.estado !== EstadoSesion.PENDIENTE) {
       throw new BadRequestException('La sesión no está en estado pendiente');
     }
@@ -125,15 +117,7 @@ export class SesionesExamenService {
    * @param idDocente - UUID del docente propietario.
    */
   async finalizar(idSesion: string, idDocente: string) {
-    const sesion = await this.prisma.sesionExamen.findUnique({ where: { id: idSesion } });
-    if (!sesion) {
-      throw new NotFoundException('Sesión no encontrada');
-    }
-
-    if (sesion.creadaPorId !== idDocente) {
-      throw new ForbiddenException('No tiene permisos sobre esta sesión');
-    }
-
+    const sesion = await this.obtenerSesionPropia(idSesion, idDocente);
     if (sesion.estado !== EstadoSesion.ACTIVA) {
       throw new BadRequestException('La sesión no está activa');
     }
@@ -147,6 +131,23 @@ export class SesionesExamenService {
     this.gateway.emitirSesionFinalizada(idSesion);
     await this.respuestasService.calcularPuntajesTodosIntentos(idSesion);
     return actualizada;
+  }
+  /**
+   * Cancela una sesión pendiente o activa por decisión del docente propietario.
+   * @param idSesion - UUID de sesión.
+   * @param idDocente - UUID del docente propietario.
+   */
+  async cancelar(idSesion: string, idDocente: string) {
+    const sesion = await this.obtenerSesionPropia(idSesion, idDocente);
+    if (sesion.estado !== EstadoSesion.PENDIENTE && sesion.estado !== EstadoSesion.ACTIVA) {
+      throw new BadRequestException('La sesión no se puede cancelar desde su estado actual');
+    }
+
+    const fechaFin = sesion.estado === EstadoSesion.ACTIVA ? new Date() : null;
+    return this.prisma.sesionExamen.update({
+      where: { id: idSesion },
+      data: { estado: EstadoSesion.CANCELADA, fechaFin },
+    });
   }
 
   /**
@@ -171,9 +172,6 @@ export class SesionesExamenService {
     };
   }
 
-  /**
-   * Genera un código de acceso único con máximo de intentos permitido.
-   */
   private async generarCodigoUnico(): Promise<string> {
     let intentos = 0;
     while (intentos < MAX_INTENTOS_GENERAR_CODIGO) {
@@ -187,5 +185,16 @@ export class SesionesExamenService {
     }
 
     throw new ConflictException('No fue posible generar un código de sesión único');
+  }
+
+  private async obtenerSesionPropia(idSesion: string, idDocente: string) {
+    const sesion = await this.prisma.sesionExamen.findUnique({ where: { id: idSesion } });
+    if (!sesion) {
+      throw new NotFoundException('Sesión no encontrada');
+    }
+    if (sesion.creadaPorId !== idDocente) {
+      throw new ForbiddenException('No tiene permisos sobre esta sesión');
+    }
+    return sesion;
   }
 }

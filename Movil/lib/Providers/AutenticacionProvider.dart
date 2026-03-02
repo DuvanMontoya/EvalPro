@@ -11,6 +11,8 @@ import '../BaseDatosLocal/BaseDatosLocal.dart';
 import '../BaseDatosLocal/Daos/ExamenDao.dart';
 import '../BaseDatosLocal/Daos/RespuestaDao.dart';
 import '../BaseDatosLocal/Daos/TelemetriaDao.dart';
+import '../Configuracion/Entorno.dart';
+import '../Constantes/Textos.dart';
 import '../Modelos/Usuario.dart';
 import '../Servicios/ApiServicio.dart';
 import '../Servicios/AutenticacionServicio.dart';
@@ -21,6 +23,7 @@ import '../Servicios/SesionServicio.dart';
 import '../Servicios/SincronizacionServicio.dart';
 import '../Servicios/SocketServicio.dart';
 import '../Servicios/TelemetriaServicio.dart';
+import '../Utilidades/MapeadorErroresNegocio.dart';
 
 part 'AutenticacionProvider.g.dart';
 
@@ -59,39 +62,32 @@ class EstadoAutenticacion {
 }
 
 @riverpod
-FlutterSecureStorage almacenamientoSeguro(AlmacenamientoSeguroRef ref) {
-  return const FlutterSecureStorage();
-}
+FlutterSecureStorage almacenamientoSeguro(AlmacenamientoSeguroRef ref) =>
+    const FlutterSecureStorage();
 
 @riverpod
-BaseDatosLocal baseDatosLocal(BaseDatosLocalRef ref) {
-  return BaseDatosLocal();
-}
+BaseDatosLocal baseDatosLocal(BaseDatosLocalRef ref) => BaseDatosLocal();
 
 @riverpod
-ExamenDao examenDao(ExamenDaoRef ref) {
-  return ExamenDao(ref.watch(baseDatosLocalProvider));
-}
+ExamenDao examenDao(ExamenDaoRef ref) =>
+    ExamenDao(ref.watch(baseDatosLocalProvider));
 
 @riverpod
-RespuestaDao respuestaDao(RespuestaDaoRef ref) {
-  return RespuestaDao(ref.watch(baseDatosLocalProvider));
-}
+RespuestaDao respuestaDao(RespuestaDaoRef ref) =>
+    RespuestaDao(ref.watch(baseDatosLocalProvider));
 
 @riverpod
-TelemetriaDao telemetriaDao(TelemetriaDaoRef ref) {
-  return TelemetriaDao(ref.watch(baseDatosLocalProvider));
-}
+TelemetriaDao telemetriaDao(TelemetriaDaoRef ref) =>
+    TelemetriaDao(ref.watch(baseDatosLocalProvider));
 
 @riverpod
-SocketServicio socketServicio(SocketServicioRef ref) {
-  return SocketServicio();
-}
+SocketServicio socketServicio(SocketServicioRef ref) => SocketServicio(
+      almacenSeguro: ref.watch(almacenamientoSeguroProvider),
+    );
 
 @riverpod
-ApiServicio apiServicio(ApiServicioRef ref) {
-  return ApiServicio(almacenSeguro: ref.watch(almacenamientoSeguroProvider));
-}
+ApiServicio apiServicio(ApiServicioRef ref) =>
+    ApiServicio(almacenSeguro: ref.watch(almacenamientoSeguroProvider));
 
 @riverpod
 AutenticacionServicio autenticacionServicio(AutenticacionServicioRef ref) {
@@ -133,6 +129,7 @@ SincronizacionServicio sincronizacionServicio(SincronizacionServicioRef ref) {
     respuestaServicio: ref.watch(respuestaServicioProvider),
     telemetriaServicio: ref.watch(telemetriaServicioProvider),
     socketServicio: ref.watch(socketServicioProvider),
+    diasRetencionTelemetria: Entorno.diasRetencionTelemetria,
   );
 }
 
@@ -176,7 +173,10 @@ class AutenticacionEstado extends _$AutenticacionEstado {
           inicializado: true,
           estaAutenticado: false,
           usuario: null,
-          error: '$error');
+          error: MapeadorErroresNegocio.mapear(
+            error,
+            mensajePorDefecto: Textos.errorInicioSesion,
+          ));
     }
   }
 

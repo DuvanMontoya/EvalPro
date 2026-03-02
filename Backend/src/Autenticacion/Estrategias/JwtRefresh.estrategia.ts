@@ -5,11 +5,14 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
+
+const EMISOR_JWT_DEFECTO = 'evalpro-backend';
+const AUDIENCIA_JWT_DEFECTO = 'evalpro-cliente';
 
 interface PayloadRefresh {
   sub: string;
@@ -21,9 +24,15 @@ interface PayloadRefresh {
 export class JwtRefreshEstrategia extends PassportStrategy(Strategy, 'jwt-refresh') {
   constructor(servicioConfiguracion: ConfigService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (solicitud: Request): string | null =>
+          typeof solicitud.body?.tokenRefresh === 'string' ? solicitud.body.tokenRefresh : null,
+      ]),
       ignoreExpiration: false,
       secretOrKey: servicioConfiguracion.get<string>('JWT_SECRETO_REFRESH', ''),
+      issuer: servicioConfiguracion.get<string>('JWT_EMISOR', EMISOR_JWT_DEFECTO),
+      audience: servicioConfiguracion.get<string>('JWT_AUDIENCIA', AUDIENCIA_JWT_DEFECTO),
       passReqToCallback: true,
     });
   }
@@ -35,10 +44,16 @@ export class JwtRefreshEstrategia extends PassportStrategy(Strategy, 'jwt-refres
    * @returns Datos requeridos para rotación de tokens.
    */
   validate(solicitud: Request, payload: PayloadRefresh): { idUsuario: string; tokenRefreshRecibido: string } {
-    const tokenEncabezado = solicitud.headers.authorization?.replace('Bearer ', '') ?? '';
+    const tokenEncabezado = solicitud.headers.authorization?.replace('Bearer ', '')?.trim() ?? '';
+    const tokenBody = typeof solicitud.body?.tokenRefresh === 'string' ? solicitud.body.tokenRefresh : '';
+    const tokenRecibido = tokenEncabezado || tokenBody;
+    if (!tokenRecibido) {
+      throw new UnauthorizedException('Refresh token no proporcionado');
+    }
+
     return {
       idUsuario: payload.sub,
-      tokenRefreshRecibido: tokenEncabezado,
+      tokenRefreshRecibido: tokenRecibido,
     };
   }
 }

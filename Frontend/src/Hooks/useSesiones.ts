@@ -22,25 +22,33 @@ import {
  */
 export function useSesiones() {
   const cliente = useQueryClient();
+  const invalidarDominioSesiones = (idSesion?: string) => {
+    cliente.invalidateQueries({ queryKey: ['sesiones'] });
+    if (idSesion) {
+      cliente.invalidateQueries({ queryKey: ['sesiones', idSesion] });
+      cliente.invalidateQueries({ queryKey: ['reportes', 'sesion', idSesion] });
+    }
+  };
 
   const consultaSesiones = useQuery({
     queryKey: ['sesiones'],
     queryFn: () => listarSesiones(),
+    staleTime: 1000 * 60 * 2,
   });
 
   const mutacionCrearSesion = useMutation({
     mutationFn: (dto: CrearSesionDto) => crearSesion(dto),
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['sesiones'] }),
+    onSuccess: (sesion) => invalidarDominioSesiones(sesion.id),
   });
 
   const mutacionActivarSesion = useMutation({
     mutationFn: (idSesion: string) => activarSesion(idSesion),
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['sesiones'] }),
+    onSuccess: (sesion) => invalidarDominioSesiones(sesion.id),
   });
 
   const mutacionFinalizarSesion = useMutation({
     mutationFn: (idSesion: string) => finalizarSesion(idSesion),
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['sesiones'] }),
+    onSuccess: (sesion) => invalidarDominioSesiones(sesion.id),
   });
 
   return {

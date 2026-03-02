@@ -12,6 +12,7 @@ import {
   actualizarExamen,
   archivarExamen,
   crearExamen,
+  ActualizarExamenDto,
   CrearExamenDto,
   listarExamenes,
   obtenerExamenPorId,
@@ -30,6 +31,13 @@ import {
  */
 export function useExamenes() {
   const cliente = useQueryClient();
+  const invalidarDominioExamenes = (idExamen?: string) => {
+    cliente.invalidateQueries({ queryKey: ['examenes'] });
+    if (idExamen) {
+      cliente.invalidateQueries({ queryKey: ['examenes', idExamen] });
+      cliente.invalidateQueries({ queryKey: ['preguntas', idExamen] });
+    }
+  };
 
   const consultaExamenes = useQuery({
     queryKey: ['examenes'],
@@ -40,25 +48,31 @@ export function useExamenes() {
 
   const mutacionCrearExamen = useMutation({
     mutationFn: (dto: CrearExamenDto) => crearExamen(dto),
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['examenes'] }),
+    onSuccess: () => invalidarDominioExamenes(),
+  });
+
+  const mutacionActualizarExamen = useMutation({
+    mutationFn: ({ idExamen, dto }: { idExamen: string; dto: ActualizarExamenDto }) =>
+      actualizarExamen(idExamen, dto),
+    onSuccess: (examen) => invalidarDominioExamenes(examen.id),
   });
 
   const mutacionPublicarExamen = useMutation({
     mutationFn: (idExamen: string) => publicarExamen(idExamen),
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['examenes'] }),
+    onSuccess: (examen) => invalidarDominioExamenes(examen.id),
   });
 
   const mutacionArchivarExamen = useMutation({
     mutationFn: (idExamen: string) => archivarExamen(idExamen),
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['examenes'] }),
+    onSuccess: (examen) => invalidarDominioExamenes(examen.id),
   });
 
   return {
     consultaExamenes,
     mutacionCrearExamen,
+    mutacionActualizarExamen,
     mutacionPublicarExamen,
     mutacionArchivarExamen,
-    actualizarExamen,
   };
 }
 
@@ -100,7 +114,10 @@ export function useExamenDetalle(idExamen: string) {
 
   const mutacionReordenarPreguntas = useMutation({
     mutationFn: (preguntas: { idPregunta: string; orden: number }[]) => reordenarPreguntas(idExamen, preguntas),
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['preguntas', idExamen] }),
+    onSuccess: () => {
+      cliente.invalidateQueries({ queryKey: ['preguntas', idExamen] });
+      cliente.invalidateQueries({ queryKey: ['examenes', idExamen] });
+    },
   });
 
   return {

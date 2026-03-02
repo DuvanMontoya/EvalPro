@@ -1,6 +1,6 @@
 /**
  * @archivo   Respuestas.service.ts
- * @descripcion Sincroniza respuestas y calcula puntajes finales de intentos.
+ * @descripcion Orquesta sincronización de respuestas y delega calificación de intentos.
  * @modulo    Respuestas
  * @autor     EvalPro
  * @fecha     2026-03-02
@@ -13,16 +13,19 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { EstadoIntento, TipoPregunta } from '@prisma/client';
+import { EstadoIntento, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
-import { calcularPorcentaje, compararConjuntosLetras } from '../Comun/Utilidades/CalculadorPuntaje.util';
 import { TelemetriaService } from '../Telemetria/Telemetria.service';
+import { CalificacionRespuestasService } from './CalificacionRespuestas.service';
+import { CalificarRespuestaManualDto } from './Dto/CalificarRespuestaManual.dto';
 import { SincronizarRespuestasDto } from './Dto/SincronizarRespuestas.dto';
 import { ResultadoFinalDto } from './Dto/ResultadoFinal.dto';
+
 @Injectable()
 export class RespuestasService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly calificacionRespuestasService: CalificacionRespuestasService,
     @Inject(forwardRef(() => TelemetriaService))
     private readonly telemetriaService: TelemetriaService,
   ) {}
@@ -33,16 +36,38 @@ export class RespuestasService {
    * @param idEstudiante - UUID del estudiante autenticado.
    */
   async sincronizarLote(dto: SincronizarRespuestasDto, idEstudiante: string) {
-    const intento = await this.prisma.intentoExamen.findUnique({ where: { id: dto.idIntento } });
+    const intento = await this.prisma.intentoExamen.findUnique({
+      where: { id: dto.idIntento },
+      include: {
+        sesion: {
+          include: {
+            examen: {
+              include: { preguntas: { select: { id: true } } },
+            },
+          },
+        },
+      },
+    });
     if (!intento) {
       throw new NotFoundException('Intento no encontrado');
     }
     if (intento.estudianteId !== idEstudiante) {
       throw new ForbiddenException('No tiene permisos sobre este intento');
     }
-    await this.prisma.$transaction(
-      dto.respuestas.map((respuesta) =>
-        this.prisma.respuesta.upsert({
+    if (intento.estado !== EstadoIntento.EN_PROGRESO) {
+      throw new BadRequestException('Solo se pueden sincronizar respuestas en intentos en progreso');
+    }
+
+    const preguntasValidas = new Set(intento.sesion.examen.preguntas.map((pregunta) => pregunta.id));
+    for (const respuesta of dto.respuestas) {
+      if (!preguntasValidas.has(respuesta.idPregunta)) {
+        throw new BadRequestException('El lote contiene preguntas que no pertenecen al examen');
+      }
+    }
+
+    await this.prisma.$transaction(async (prismaTransaccional) => {
+      for (const respuesta of dto.respuestas) {
+        await prismaTransaccional.respuesta.upsert({
           where: {
             intentoId_preguntaId: {
               intentoId: dto.idIntento,
@@ -53,19 +78,20 @@ export class RespuestasService {
             intentoId: dto.idIntento,
             preguntaId: respuesta.idPregunta,
             valorTexto: respuesta.valorTexto,
-            opcionesSeleccionadas: respuesta.opcionesSeleccionadas,
+            opcionesSeleccionadas: this.normalizarOpcionesSeleccionadas(respuesta.opcionesSeleccionadas),
             tiempoRespuesta: respuesta.tiempoRespuesta,
             esSincronizada: true,
           },
           update: {
             valorTexto: respuesta.valorTexto,
-            opcionesSeleccionadas: respuesta.opcionesSeleccionadas,
+            opcionesSeleccionadas: this.normalizarOpcionesSeleccionadas(respuesta.opcionesSeleccionadas),
             tiempoRespuesta: respuesta.tiempoRespuesta,
             esSincronizada: true,
           },
-        }),
-      ),
-    );
+        });
+      }
+    });
+
     return { sincronizadas: dto.respuestas.length };
   }
 
@@ -102,7 +128,7 @@ export class RespuestasService {
     if (intento.estado !== EstadoIntento.EN_PROGRESO) {
       throw new BadRequestException('El intento no se encuentra en progreso');
     }
-    const { puntajeObtenido, porcentaje } = await this.calificarIntento(intento.id);
+    const { puntajeObtenido, porcentaje } = await this.calificacionRespuestasService.calificarIntento(intento.id);
     await this.telemetriaService.detectarAnomalias(intento.id);
     const mostrarPuntaje = intento.sesion.examen.mostrarPuntaje;
     return {
@@ -123,68 +149,33 @@ export class RespuestasService {
       select: { id: true },
     });
     for (const intento of intentos) {
-      await this.calificarIntento(intento.id);
+      await this.calificacionRespuestasService.calificarIntento(intento.id);
       await this.telemetriaService.detectarAnomalias(intento.id);
     }
   }
-  private async calificarIntento(idIntento: string): Promise<{ puntajeObtenido: number; porcentaje: number }> {
-    const intento = await this.prisma.intentoExamen.findUnique({
-      where: { id: idIntento },
-      include: {
-        respuestas: true,
-        sesion: {
-          include: {
-            examen: {
-              include: {
-                preguntas: {
-                  include: { opciones: true },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-    if (!intento) {
-      throw new NotFoundException('Intento no encontrado');
-    }
-    let puntajeObtenido = 0;
-    for (const pregunta of intento.sesion.examen.preguntas) {
-      const respuesta = intento.respuestas.find((item) => item.preguntaId === pregunta.id);
-      if (!respuesta) {
+
+  /**
+   * Califica manualmente una respuesta abierta y recalcúla el puntaje consolidado del intento.
+   * @param idRespuesta - UUID de la respuesta abierta.
+   * @param dto - Puntaje y observación del docente.
+   * @param rol - Rol del usuario autenticado.
+   * @param idUsuario - UUID del usuario autenticado.
+   */
+  async calificarManual(idRespuesta: string, dto: CalificarRespuestaManualDto, rol: RolUsuario, idUsuario: string) {
+    return this.calificacionRespuestasService.calificarManual(idRespuesta, dto, rol, idUsuario);
+  }
+
+  private normalizarOpcionesSeleccionadas(opcionesSeleccionadas: string[]): string[] {
+    const vistas = new Set<string>();
+    const normalizadas: string[] = [];
+    for (const opcion of opcionesSeleccionadas) {
+      const valor = opcion.trim().toUpperCase();
+      if (!valor || vistas.has(valor)) {
         continue;
       }
-      const letrasCorrectas = pregunta.opciones.filter((opcion) => opcion.esCorrecta).map((opcion) => opcion.letra);
-      let esCorrecta: boolean | null = false;
-      if (pregunta.tipo === TipoPregunta.OPCION_MULTIPLE || pregunta.tipo === TipoPregunta.VERDADERO_FALSO) {
-        esCorrecta = respuesta.opcionesSeleccionadas[0] === letrasCorrectas[0];
-      } else if (pregunta.tipo === TipoPregunta.SELECCION_MULTIPLE) {
-        esCorrecta = compararConjuntosLetras(respuesta.opcionesSeleccionadas, letrasCorrectas);
-      } else if (pregunta.tipo === TipoPregunta.RESPUESTA_ABIERTA) {
-        esCorrecta = null;
-      }
-      const puntajeRespuesta = esCorrecta ? pregunta.puntaje : 0;
-      if (esCorrecta) {
-        puntajeObtenido += pregunta.puntaje;
-      }
-      await this.prisma.respuesta.update({
-        where: { intentoId_preguntaId: { intentoId: intento.id, preguntaId: pregunta.id } },
-        data: {
-          esCorrecta,
-          puntajeObtenido: puntajeRespuesta,
-        },
-      });
+      vistas.add(valor);
+      normalizadas.push(valor);
     }
-    const porcentaje = calcularPorcentaje(puntajeObtenido, intento.sesion.examen.puntajeMaximo);
-    await this.prisma.intentoExamen.update({
-      where: { id: intento.id },
-      data: {
-        estado: EstadoIntento.ENVIADO,
-        fechaEnvio: new Date(),
-        puntajeObtenido,
-        porcentaje,
-      },
-    });
-    return { puntajeObtenido, porcentaje };
+    return normalizadas;
   }
 }

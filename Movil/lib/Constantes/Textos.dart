@@ -30,6 +30,25 @@ abstract class Textos {
   static const enLinea = 'En linea';
 
   static const errorGeneral = 'Ocurrio un error. Intenta de nuevo.';
+  static const errorInicioSesion = 'No fue posible iniciar sesion.';
+  static const errorBusquedaSesion =
+      'No fue posible buscar la sesion. Intenta nuevamente.';
+  static const errorEnvioExamen =
+      'No fue posible enviar el examen. Se conservaron los datos locales.';
+  static const errorSincronizacion =
+      'No fue posible sincronizar respuestas pendientes.';
+  static const errorSoloEstudiantes =
+      'Solo estudiantes pueden acceder desde la app movil.';
+  static const errorUsuarioInactivo =
+      'Tu usuario esta inactivo. Contacta al administrador.';
+  static const errorSesionNoActiva =
+      'La sesion no esta activa. Espera al docente o solicita un nuevo codigo.';
+  static const errorIntentoDuplicado =
+      'Ya existe un intento para esta sesion. Contacta al docente.';
+  static const errorTokenInvalido =
+      'Tu sesion expiro. Inicia sesion nuevamente.';
+  static const errorValidacion = 'Los datos enviados no son validos.';
+  static const errorSinPermisos = 'No tienes permisos para esta operacion.';
   static const sinSesionActiva = 'No hay sesion activa en este momento.';
   static const examenSinPuntaje =
       'El docente no habilito visualizacion de puntaje.';

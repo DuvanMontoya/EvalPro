@@ -7,6 +7,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../Modelos/SesionExamen.dart';
+import '../Constantes/Textos.dart';
+import '../Utilidades/MapeadorErroresNegocio.dart';
 import 'AutenticacionProvider.dart';
 
 part 'SesionProvider.g.dart';
@@ -53,7 +55,14 @@ class SesionActual extends _$SesionActual {
           await ref.read(sesionServicioProvider).buscarPorCodigo(codigo);
       state = state.copyWith(cargando: false, sesion: sesion, error: null);
     } catch (error) {
-      state = state.copyWith(cargando: false, sesion: null, error: '$error');
+      state = state.copyWith(
+        cargando: false,
+        sesion: null,
+        error: MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorBusquedaSesion,
+        ),
+      );
     }
   }
 

@@ -15,6 +15,7 @@ import '../../Modelos/Enums/EstadoSesion.dart';
 import '../../Modelos/Enums/ModalidadExamen.dart';
 import '../../Providers/ExamenProvider.dart';
 import '../../Providers/SesionProvider.dart';
+import '../../Utilidades/MapeadorErroresNegocio.dart';
 import '../Inicio/Widgets/TarjetaSesionDisponible.dart';
 
 class UnirseASesionPantalla extends ConsumerStatefulWidget {
@@ -50,17 +51,36 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
     }
 
     setState(() => _uniendo = true);
-    await ref.read(examenActivoProvider.notifier).iniciarExamen(sesion);
-    if (!mounted) {
-      return;
-    }
+    try {
+      await ref.read(examenActivoProvider.notifier).iniciarExamen(sesion);
+      if (!mounted) {
+        return;
+      }
 
-    setState(() => _uniendo = false);
-    if (sesion.examen.modalidad == ModalidadExamen.HOJA_RESPUESTAS) {
-      context.go(Rutas.hojaRespuestas);
-      return;
+      if (sesion.examen.modalidad == ModalidadExamen.HOJA_RESPUESTAS) {
+        context.go(Rutas.hojaRespuestas);
+        return;
+      }
+      context.go(Rutas.examenActivo);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            MapeadorErroresNegocio.mapear(
+              error,
+              mensajePorDefecto: Textos.errorGeneral,
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _uniendo = false);
+      }
     }
-    context.go(Rutas.examenActivo);
   }
 
   String? _mensajeEstado(EstadoSesion estado) {

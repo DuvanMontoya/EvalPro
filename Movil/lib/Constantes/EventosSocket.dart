@@ -9,6 +9,10 @@ abstract class EventosSocket {
   static const conectar = 'connect';
   static const desconectar = 'disconnect';
   static const unirseSalaSesion = 'unirse_sala_sesion';
-  static const progresoEstudiante = 'estudiante:progreso';
-  static const alertaFraude = 'estudiante:fraude_detectado';
+  static const progresoActualizado = 'progreso_actualizado';
+  static const alertaFraude = 'alerta_fraude';
+  static const estudianteProgreso = 'estudiante:progreso';
+  static const estudianteFraude = 'estudiante:fraude_detectado';
+  static const sesionActivada = 'sesion:activada';
+  static const sesionFinalizada = 'sesion:finalizada';
 }

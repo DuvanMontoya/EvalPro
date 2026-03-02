@@ -10,15 +10,19 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RolUsuario, Usuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { RegistrarUsuarioDto } from './Dto/RegistrarUsuario.dto';
 
-interface UsuarioSinContrasena extends Omit<Usuario, 'contrasena'> {}
+const EMISOR_JWT_DEFECTO = 'evalpro-backend';
+const AUDIENCIA_JWT_DEFECTO = 'evalpro-cliente';
+
+interface UsuarioSinDatosSensibles extends Omit<Usuario, 'contrasena' | 'tokenRefresh'> {}
 
 export interface RespuestaSesion {
   tokenAcceso: string;
   tokenRefresh: string;
-  usuario: UsuarioSinContrasena;
+  usuario: UsuarioSinDatosSensibles;
 }
 
 @Injectable()
@@ -35,9 +39,9 @@ export class AutenticacionService {
    * @param contrasena - Contraseña en texto plano.
    * @returns Usuario sin contraseña o nulo cuando las credenciales son inválidas.
    */
-  async validarCredenciales(correo: string, contrasena: string): Promise<UsuarioSinContrasena | null> {
+  async validarCredenciales(correo: string, contrasena: string): Promise<UsuarioSinDatosSensibles | null> {
     const usuario = await this.prisma.usuario.findUnique({ where: { correo } });
-    if (!usuario) {
+    if (!usuario || !usuario.activo) {
       return null;
     }
 
@@ -46,9 +50,7 @@ export class AutenticacionService {
       return null;
     }
 
-    // Omitimos únicamente la contraseña como exige la lógica del servicio.
-    const { contrasena: _contrasena, ...usuarioSinContrasena } = usuario;
-    return usuarioSinContrasena;
+    return this.mapearUsuarioSinDatosSensibles(usuario);
   }
 
   /**
@@ -56,19 +58,28 @@ export class AutenticacionService {
    * @param usuario - Usuario autenticado sin contraseña.
    * @returns Tokens emitidos y usuario de respuesta.
    */
-  async iniciarSesion(usuario: UsuarioSinContrasena): Promise<RespuestaSesion> {
+  async iniciarSesion(usuario: UsuarioSinDatosSensibles): Promise<RespuestaSesion> {
+    const configuracionFirmado = {
+      issuer: this.servicioConfiguracion.get<string>('JWT_EMISOR', EMISOR_JWT_DEFECTO),
+      audience: this.servicioConfiguracion.get<string>('JWT_AUDIENCIA', AUDIENCIA_JWT_DEFECTO),
+    };
     const payload = { sub: usuario.id, correo: usuario.correo, rol: usuario.rol };
     const tokenAcceso = await this.jwtService.signAsync(payload, {
       secret: this.servicioConfiguracion.get<string>('JWT_SECRETO_ACCESO', ''),
       expiresIn: this.servicioConfiguracion.get<string>('JWT_EXPIRACION_ACCESO', '15m'),
+      jwtid: randomUUID(),
+      ...configuracionFirmado,
     });
 
     const tokenRefresh = await this.jwtService.signAsync(payload, {
       secret: this.servicioConfiguracion.get<string>('JWT_SECRETO_REFRESH', ''),
       expiresIn: this.servicioConfiguracion.get<string>('JWT_EXPIRACION_REFRESH', '7d'),
+      jwtid: randomUUID(),
+      ...configuracionFirmado,
     });
 
-    const hashRefresh = await bcrypt.hash(tokenRefresh, 12);
+    const rondasHash = Number(this.servicioConfiguracion.get<string>('BCRYPT_RONDAS_HASH', '12'));
+    const hashRefresh = await bcrypt.hash(tokenRefresh, rondasHash);
     await this.prisma.usuario.update({
       where: { id: usuario.id },
       data: { tokenRefresh: hashRefresh },
@@ -85,7 +96,7 @@ export class AutenticacionService {
    */
   async refrescarTokens(idUsuario: string, tokenRefreshRecibido: string): Promise<RespuestaSesion> {
     const usuario = await this.prisma.usuario.findUnique({ where: { id: idUsuario } });
-    if (!usuario || !usuario.tokenRefresh) {
+    if (!usuario || !usuario.activo || !usuario.tokenRefresh) {
       throw new ForbiddenException('No autorizado para refrescar tokens');
     }
 
@@ -94,8 +105,7 @@ export class AutenticacionService {
       throw new ForbiddenException('No autorizado para refrescar tokens');
     }
 
-    const { contrasena: _contrasena, ...usuarioSinContrasena } = usuario;
-    return this.iniciarSesion(usuarioSinContrasena);
+    return this.iniciarSesion(this.mapearUsuarioSinDatosSensibles(usuario));
   }
 
   /**
@@ -114,7 +124,7 @@ export class AutenticacionService {
    * @param dto - Datos de creación de usuario.
    * @returns Usuario creado sin datos sensibles.
    */
-  async registrar(dto: RegistrarUsuarioDto): Promise<UsuarioSinContrasena> {
+  async registrar(dto: RegistrarUsuarioDto): Promise<UsuarioSinDatosSensibles> {
     const rondasHash = Number(this.servicioConfiguracion.get<string>('BCRYPT_RONDAS_HASH', '12'));
     const contrasena = await bcrypt.hash(dto.contrasena, rondasHash);
 
@@ -128,7 +138,16 @@ export class AutenticacionService {
       },
     });
 
-    const { contrasena: _contrasena, ...usuarioSinContrasena } = usuarioCreado;
-    return usuarioSinContrasena;
+    return this.mapearUsuarioSinDatosSensibles(usuarioCreado);
+  }
+
+  /**
+   * Remueve campos sensibles del usuario para retornarlo en respuestas de autenticación.
+   * @param usuario - Entidad de usuario obtenida desde base de datos.
+   * @returns Usuario listo para enviar al cliente sin secretos.
+   */
+  private mapearUsuarioSinDatosSensibles(usuario: Usuario): UsuarioSinDatosSensibles {
+    const { contrasena: _contrasena, tokenRefresh: _tokenRefresh, ...usuarioSinDatosSensibles } = usuario;
+    return usuarioSinDatosSensibles;
   }
 }

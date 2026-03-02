@@ -7,41 +7,62 @@
  */
 'use client';
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { EstadoSesion, RolUsuario, SesionExamen, Usuario } from '@/Tipos';
-import {
-  obtenerActividadSemanal,
-  obtenerReporteEstudiante,
-  obtenerReporteSesion,
-  obtenerSesionesActivasHoy,
-} from '@/Servicios/Reportes.servicio';
+import { obtenerReporteEstudiante, obtenerReporteSesion } from '@/Servicios/Reportes.servicio';
 import { listarSesiones } from '@/Servicios/Sesiones.servicio';
 import { apiCliente, extraerDatos } from '@/Servicios/ApiCliente';
 import { API } from '@/Constantes/Api.constantes';
 import { RespuestaApi } from '@/Tipos';
 
+interface SerieActividadDia {
+  dia: string;
+  cantidad: number;
+}
+
+function obtenerClaveDia(fecha: Date): string {
+  return fecha.toISOString().slice(0, 10);
+}
+
+function construirActividadSemanal(sesiones: SesionExamen[]): SerieActividadDia[] {
+  const dias: Date[] = [];
+  const contador = new Map<string, number>();
+
+  for (let desplazamiento = 6; desplazamiento >= 0; desplazamiento -= 1) {
+    const fecha = new Date();
+    fecha.setHours(0, 0, 0, 0);
+    fecha.setDate(fecha.getDate() - desplazamiento);
+    const clave = obtenerClaveDia(fecha);
+    dias.push(fecha);
+    contador.set(clave, 0);
+  }
+
+  for (const sesion of sesiones) {
+    const fechaSesion = new Date(sesion.fechaCreacion);
+    fechaSesion.setHours(0, 0, 0, 0);
+    const clave = obtenerClaveDia(fechaSesion);
+    if (contador.has(clave)) {
+      contador.set(clave, (contador.get(clave) ?? 0) + 1);
+    }
+  }
+
+  return dias.map((fecha) => {
+    const clave = obtenerClaveDia(fecha);
+    return {
+      dia: fecha.toLocaleDateString('es-CO', { weekday: 'short' }),
+      cantidad: contador.get(clave) ?? 0,
+    };
+  });
+}
+
 /**
  * Obtiene métricas reales para la vista de tablero.
  */
 export function useTableroReportes() {
-  const sesionesActivasHoy = useQuery({
-    queryKey: ['reportes', 'sesion', 'activas-hoy'],
-    queryFn: async () => {
-      try {
-        return await obtenerSesionesActivasHoy();
-      } catch {
-        return 0;
-      }
-    },
-    refetchInterval: 30000,
-  });
-
-  const sesionesActivasAhora = useQuery({
-    queryKey: ['sesiones', 'activas'],
-    queryFn: async () => {
-      const sesiones = await listarSesiones({ estado: EstadoSesion.ACTIVA });
-      return sesiones.filter((sesion) => sesion.estado === EstadoSesion.ACTIVA).length;
-    },
+  const consultaSesionesTablero = useQuery({
+    queryKey: ['sesiones', 'tablero'],
+    queryFn: () => listarSesiones(),
     refetchInterval: 30000,
   });
 
@@ -53,29 +74,83 @@ export function useTableroReportes() {
       });
       return extraerDatos(respuesta).filter((usuario) => usuario.rol === RolUsuario.ESTUDIANTE).length;
     },
+    staleTime: 1000 * 30,
     refetchInterval: 30000,
   });
 
-  const ultimasSesiones = useQuery({
-    queryKey: ['sesiones', 'ultimas'],
-    queryFn: async () => {
-      const sesiones = await listarSesiones({ limite: 5, orden: 'fechaCreacion_desc' });
-      return sesiones.slice(0, 5) as SesionExamen[];
-    },
-    refetchInterval: 30000,
-  });
-
-  const actividadSemanal = useQuery({
-    queryKey: ['reportes', 'actividad-semanal'],
-    queryFn: async () => {
-      try {
-        return await obtenerActividadSemanal();
-      } catch {
-        return [];
+  const sesionesActivasHoy = useMemo(() => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const sesiones = consultaSesionesTablero.data ?? [];
+    const total = sesiones.filter((sesion) => {
+      if (sesion.estado !== EstadoSesion.ACTIVA) {
+        return false;
       }
-    },
-    refetchInterval: 30000,
-  });
+
+      const fechaReferencia = sesion.fechaInicio ? new Date(sesion.fechaInicio) : new Date(sesion.fechaCreacion);
+      fechaReferencia.setHours(0, 0, 0, 0);
+      return fechaReferencia.getTime() === hoy.getTime();
+    }).length;
+
+    return {
+      data: total,
+      isLoading: consultaSesionesTablero.isLoading,
+      isError: consultaSesionesTablero.isError,
+      error: consultaSesionesTablero.error,
+    };
+  }, [
+    consultaSesionesTablero.data,
+    consultaSesionesTablero.error,
+    consultaSesionesTablero.isError,
+    consultaSesionesTablero.isLoading,
+  ]);
+
+  const sesionesActivasAhora = useMemo(() => {
+    const sesiones = consultaSesionesTablero.data ?? [];
+    return {
+      data: sesiones.filter((sesion) => sesion.estado === EstadoSesion.ACTIVA).length,
+      isLoading: consultaSesionesTablero.isLoading,
+      isError: consultaSesionesTablero.isError,
+      error: consultaSesionesTablero.error,
+    };
+  }, [
+    consultaSesionesTablero.data,
+    consultaSesionesTablero.error,
+    consultaSesionesTablero.isError,
+    consultaSesionesTablero.isLoading,
+  ]);
+
+  const ultimasSesiones = useMemo(() => {
+    const sesiones = [...(consultaSesionesTablero.data ?? [])].sort(
+      (a, b) => new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime(),
+    );
+    return {
+      data: sesiones.slice(0, 5) as SesionExamen[],
+      isLoading: consultaSesionesTablero.isLoading,
+      isError: consultaSesionesTablero.isError,
+      error: consultaSesionesTablero.error,
+    };
+  }, [
+    consultaSesionesTablero.data,
+    consultaSesionesTablero.error,
+    consultaSesionesTablero.isError,
+    consultaSesionesTablero.isLoading,
+  ]);
+
+  const actividadSemanal = useMemo(() => {
+    const sesiones = consultaSesionesTablero.data ?? [];
+    return {
+      data: construirActividadSemanal(sesiones),
+      isLoading: consultaSesionesTablero.isLoading,
+      isError: consultaSesionesTablero.isError,
+      error: consultaSesionesTablero.error,
+    };
+  }, [
+    consultaSesionesTablero.data,
+    consultaSesionesTablero.error,
+    consultaSesionesTablero.isError,
+    consultaSesionesTablero.isLoading,
+  ]);
 
   return {
     sesionesActivasHoy,

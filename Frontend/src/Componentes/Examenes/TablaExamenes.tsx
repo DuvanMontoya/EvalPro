@@ -9,10 +9,15 @@
 
 import Link from 'next/link';
 import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Examen, EstadoExamen } from '@/Tipos';
+import { Examen, RolUsuario } from '@/Tipos';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { Boton } from '@/Componentes/Ui/Boton';
 import { InsigniaEstado } from '@/Componentes/Examenes/InsigniaEstado';
+import {
+  puedeArchivarExamen,
+  puedeEditarContenidoExamen,
+  puedePublicarExamen,
+} from '@/Lib/Permisos';
 import {
   Tabla,
   TablaCabeza,
@@ -24,6 +29,7 @@ import {
 
 interface PropiedadesTablaExamenes {
   examenes: Examen[];
+  rolUsuario: RolUsuario | null | undefined;
   onPublicar: (idExamen: string) => void;
   onArchivar: (idExamen: string) => void;
 }
@@ -31,7 +37,12 @@ interface PropiedadesTablaExamenes {
 /**
  * Renderiza tabla interactiva de exámenes con acciones rápidas.
  */
-export function TablaExamenes({ examenes, onPublicar, onArchivar }: PropiedadesTablaExamenes) {
+export function TablaExamenes({
+  examenes,
+  rolUsuario,
+  onPublicar,
+  onArchivar,
+}: PropiedadesTablaExamenes) {
   const columnas: ColumnDef<Examen>[] = [
     { accessorKey: 'titulo', header: 'Título' },
     { accessorKey: 'modalidad', header: 'Modalidad' },
@@ -50,23 +61,26 @@ export function TablaExamenes({ examenes, onPublicar, onArchivar }: PropiedadesT
       header: 'Acciones',
       cell: ({ row }) => {
         const examen = row.original;
-        const puedePublicar = examen.estado === EstadoExamen.BORRADOR;
-        const puedeArchivar = examen.estado !== EstadoExamen.ARCHIVADO;
+        const publicarHabilitado = puedePublicarExamen(rolUsuario, examen.estado);
+        const editarHabilitado = puedeEditarContenidoExamen(rolUsuario, examen.estado);
+        const archivarHabilitado = puedeArchivarExamen(rolUsuario, examen.estado);
 
         return (
           <div className="flex flex-wrap gap-2">
             <Boton comoHijo tamano="pequeno" variante="contorno">
               <Link href={RUTAS.EXAMEN_DETALLE(examen.id)}>Ver</Link>
             </Boton>
-            <Boton comoHijo tamano="pequeno" variante="contorno">
-              <Link href={RUTAS.EXAMEN_EDITAR(examen.id)}>Editar</Link>
-            </Boton>
-            {puedePublicar ? (
+            {editarHabilitado ? (
+              <Boton comoHijo tamano="pequeno" variante="contorno">
+                <Link href={RUTAS.EXAMEN_EDITAR(examen.id)}>Editar</Link>
+              </Boton>
+            ) : null}
+            {publicarHabilitado ? (
               <Boton tamano="pequeno" onClick={() => onPublicar(examen.id)}>
                 Publicar
               </Boton>
             ) : null}
-            {puedeArchivar ? (
+            {archivarHabilitado ? (
               <Boton tamano="pequeno" variante="peligro" onClick={() => onArchivar(examen.id)}>
                 Archivar
               </Boton>

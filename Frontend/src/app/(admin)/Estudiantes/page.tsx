@@ -9,6 +9,7 @@
 
 import Link from 'next/link';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
+import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useEstudiantes } from '@/Hooks/useEstudiantes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
@@ -21,15 +22,28 @@ import {
   TablaEncabezado,
   TablaFila,
 } from '@/Componentes/Ui/Tabla';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
+import { rolPuedeCrearEstudiantes } from '@/Lib/Permisos';
 
 /**
  * Renderiza tabla de estudiantes.
  */
 export default function PaginaEstudiantes() {
   const { consultaEstudiantes } = useEstudiantes();
+  const { usuario } = useAutenticacion();
+  const puedeCrear = rolPuedeCrearEstudiantes(usuario?.rol);
 
   if (consultaEstudiantes.isLoading) {
     return <Cargando mensaje="Cargando estudiantes..." />;
+  }
+
+  if (consultaEstudiantes.isError) {
+    return (
+      <EstadoVacio
+        titulo="No fue posible cargar estudiantes"
+        descripcion={obtenerMensajeError(consultaEstudiantes.error, 'Intenta nuevamente en unos segundos.')}
+      />
+    );
   }
 
   const estudiantes = consultaEstudiantes.data ?? [];
@@ -39,19 +53,21 @@ export default function PaginaEstudiantes() {
       <EstadoVacio
         titulo="No hay estudiantes"
         descripcion="Registra estudiantes para habilitar participación en sesiones."
-        etiquetaAccion="Nuevo estudiante"
-        hrefAccion={RUTAS.ESTUDIANTE_NUEVO}
+        etiquetaAccion={puedeCrear ? 'Nuevo estudiante' : undefined}
+        hrefAccion={puedeCrear ? RUTAS.ESTUDIANTE_NUEVO : undefined}
       />
     );
   }
 
   return (
     <section className="space-y-4">
-      <div className="flex justify-end">
-        <Boton comoHijo>
-          <Link href={RUTAS.ESTUDIANTE_NUEVO}>Nuevo estudiante</Link>
-        </Boton>
-      </div>
+      {puedeCrear ? (
+        <div className="flex justify-end">
+          <Boton comoHijo>
+            <Link href={RUTAS.ESTUDIANTE_NUEVO}>Nuevo estudiante</Link>
+          </Boton>
+        </div>
+      ) : null}
 
       <Tabla>
         <TablaEncabezado>

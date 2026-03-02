@@ -5,7 +5,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario, Usuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -49,7 +49,7 @@ export class ExamenesController {
   @Get(':id')
   @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Obtiene examen por id' })
-  async obtenerPorId(@Param('id') id: string, @UsuarioActual() usuario: Usuario) {
+  async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
     return this.examenesService.obtenerPorId(id, usuario.rol, usuario.id);
   }
 
@@ -59,7 +59,11 @@ export class ExamenesController {
   @Patch(':id')
   @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Actualiza examen en estado borrador' })
-  async actualizar(@Param('id') id: string, @Body() dto: ActualizarExamenDto, @UsuarioActual() usuario: Usuario) {
+  async actualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ActualizarExamenDto,
+    @UsuarioActual() usuario: Usuario,
+  ) {
     return this.examenesService.actualizar(id, dto, usuario.id);
   }
 
@@ -69,7 +73,7 @@ export class ExamenesController {
   @Delete(':id')
   @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Archiva un examen' })
-  async eliminar(@Param('id') id: string, @UsuarioActual() usuario: Usuario) {
+  async eliminar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
     return this.examenesService.archivar(id, usuario.id);
   }
 
@@ -79,7 +83,7 @@ export class ExamenesController {
   @Post(':id/publicar')
   @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Publica un examen en borrador' })
-  async publicar(@Param('id') id: string, @UsuarioActual() usuario: Usuario) {
+  async publicar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
     return this.examenesService.publicar(id, usuario.id);
   }
 }

@@ -3,12 +3,10 @@
 /// @modulo    Providers
 /// @autor     EvalPro
 /// @fecha     2026-03-02
-
 import 'dart:convert';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-import '../Modelos/Enums/ModalidadExamen.dart';
+import '../Constantes/Textos.dart';
+import '../Modelos/Enums/RolUsuario.dart';
 import '../Modelos/Enums/TipoPregunta.dart';
 import '../Modelos/Enums/TipoEventoTelemetria.dart';
 import '../Modelos/Pregunta.dart';
@@ -16,15 +14,16 @@ import '../Modelos/RespuestaLocal.dart';
 import '../Modelos/ResultadoFinal.dart';
 import '../Modelos/SesionExamen.dart';
 import '../Utilidades/AleatorizadorLocal.dart';
-import 'Modelos/ExamenActivoEstado.dart';
+import '../Utilidades/MapeadorErroresNegocio.dart';
 import 'AutenticacionProvider.dart';
 import 'ConectividadProvider.dart';
+import 'Mixins/ExamenNavegacionMixin.dart';
+import 'Modelos/ExamenActivoEstado.dart';
 import 'ModoExamenProvider.dart';
-
 part 'ExamenProvider.g.dart';
 
 @riverpod
-class ExamenActivo extends _$ExamenActivo {
+class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
   @override
   ExamenActivoEstado? build() => null;
 
@@ -34,7 +33,6 @@ class ExamenActivo extends _$ExamenActivo {
     if (idEstudiante == null) {
       throw StateError('No hay estudiante autenticado');
     }
-
     final intento = await ref.read(intentoServicioProvider).iniciar(sesion.id);
     final examenBase =
         await ref.read(examenServicioProvider).obtenerParaIntento(intento.id);
@@ -51,7 +49,6 @@ class ExamenActivo extends _$ExamenActivo {
           .aleatorizar(pregunta.opciones);
       return pregunta.copyWith(opciones: opcionesMezcladas);
     }).toList();
-
     final examenAleatorizado =
         examenBase.copyWith(preguntas: preguntasMezcladas);
     await ref.read(examenDaoProvider).guardarExamen(
@@ -61,15 +58,17 @@ class ExamenActivo extends _$ExamenActivo {
           idIntento: intento.id,
           fechaDescarga: DateTime.now().millisecondsSinceEpoch,
         );
-
     final modo = ref.read(modoExamenServicioProvider);
     modo.iniciarMonitoreo(intento.id);
     await modo.activarModoKiosco();
+    await ref.read(socketServicioProvider).conectar(
+          idSesion: sesion.id,
+          rol: RolUsuario.ESTUDIANTE.name,
+        );
     await ref.read(telemetriaServicioProvider).registrarEvento(
           idIntento: intento.id,
           tipo: TipoEventoTelemetria.INICIO_EXAMEN,
         );
-
     final ahora = DateTime.now();
     state = ExamenActivoEstado(
       examen: examenAleatorizado,
@@ -112,7 +111,6 @@ class ExamenActivo extends _$ExamenActivo {
       esSincronizada: false,
       reintentosSincronizacion: 0,
     );
-
     await ref.read(respuestaDaoProvider).guardarRespuesta(respuesta);
     final nuevas = Map<String, RespuestaLocal>.from(actual.respuestasLocales)
       ..[idPregunta] = respuesta;
@@ -131,44 +129,11 @@ class ExamenActivo extends _$ExamenActivo {
           .read(respuestaDaoProvider)
           .marcarSincronizadas(<String>[respuesta.id]);
     }
-  }
-
-  /// Avanza a la siguiente pregunta y registra telemetria de cambio.
-  Future<void> avanzarPregunta() async {
-    final actual = state;
-    if (actual == null ||
-        actual.indicePreguntaActual >= actual.preguntasAleatorizadas.length - 1)
-      return;
-    state = actual.copyWith(
-      indicePreguntaActual: actual.indicePreguntaActual + 1,
-      tiempoInicioPreguntaActual: DateTime.now(),
-    );
-    await ref.read(telemetriaServicioProvider).registrarEvento(
+    ref.read(socketServicioProvider).emitirProgreso(
           idIntento: actual.idIntento,
-          tipo: TipoEventoTelemetria.CAMBIO_PREGUNTA,
-          numeroPregunta: actual.indicePreguntaActual + 2,
+          respondidas: nuevas.length,
+          total: actual.preguntasAleatorizadas.length,
         );
-  }
-
-  void retrocederPregunta() {
-    final actual = state;
-    if (actual == null || actual.indicePreguntaActual <= 0) return;
-    state = actual.copyWith(
-        indicePreguntaActual: actual.indicePreguntaActual - 1,
-        tiempoInicioPreguntaActual: DateTime.now());
-  }
-
-  void irAPregunta(int indicePregunta) {
-    final actual = state;
-    if (actual == null) return;
-    final permite = actual.examen.permitirNavegacion ||
-        actual.examen.modalidad == ModalidadExamen.HOJA_RESPUESTAS;
-    if (!permite ||
-        indicePregunta < 0 ||
-        indicePregunta >= actual.preguntasAleatorizadas.length) return;
-    state = actual.copyWith(
-        indicePreguntaActual: indicePregunta,
-        tiempoInicioPreguntaActual: DateTime.now());
   }
 
   Future<ResultadoFinal?> finalizarYEnviar() async {
@@ -184,6 +149,7 @@ class ExamenActivo extends _$ExamenActivo {
           .finalizarIntento(actual.idIntento);
       await ref.read(modoExamenServicioProvider).desactivarModoKiosco();
       ref.read(modoExamenServicioProvider).detenerMonitoreo();
+      ref.read(socketServicioProvider).desconectar();
       await ref.read(examenDaoProvider).eliminarPorIntento(actual.idIntento);
       await ref.read(telemetriaServicioProvider).registrarEvento(
             idIntento: actual.idIntento,
@@ -192,7 +158,13 @@ class ExamenActivo extends _$ExamenActivo {
       state = null;
       return resultado.mostrarPuntaje ? resultado : null;
     } catch (error) {
-      state = actual.copyWith(estaEnviando: false, errorEnvio: '$error');
+      state = actual.copyWith(
+        estaEnviando: false,
+        errorEnvio: MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorEnvioExamen,
+        ),
+      );
       return null;
     }
   }

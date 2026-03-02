@@ -9,6 +9,10 @@ import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'ax
 import { API } from '@/Constantes/Api.constantes';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { RespuestaApi } from '@/Tipos';
+import {
+  crearErrorApiNormalizado,
+  normalizarErrorApi,
+} from '@/Lib/ErroresApi';
 
 let tokenAccesoMemoria: string | null = null;
 let promesaRefresco: Promise<string | null> | null = null;
@@ -40,7 +44,11 @@ export function obtenerTokenAcceso(): string | null {
  */
 export function extraerDatos<T>(respuesta: AxiosResponse<RespuestaApi<T>>): T {
   if (!respuesta.data.exito || respuesta.data.datos === null) {
-    throw new Error(respuesta.data.mensaje || 'No fue posible completar la operación.');
+    throw crearErrorApiNormalizado(
+      respuesta.data.mensaje || 'No fue posible completar la operación.',
+      respuesta.status,
+      respuesta.data.codigoError,
+    );
   }
 
   return respuesta.data.datos;
@@ -77,8 +85,16 @@ async function manejarSesionExpirada(): Promise<void> {
   establecerTokenAcceso(null);
   await fetch('/api/auth/sesion', { method: 'DELETE', credentials: 'include' }).catch(() => undefined);
 
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
   if (typeof window !== 'undefined') {
-    window.location.href = RUTAS.INICIO_SESION;
+    try {
+      window.location.replace(RUTAS.INICIO_SESION);
+    } catch {
+      window.location.href = RUTAS.INICIO_SESION;
+    }
   }
 }
 
@@ -116,8 +132,11 @@ apiCliente.interceptors.response.use(
       }
 
       await manejarSesionExpirada();
+      return Promise.reject(
+        crearErrorApiNormalizado('La sesión expiró. Inicia sesión nuevamente.', 401, 'TOKEN_EXPIRADO'),
+      );
     }
 
-    return Promise.reject(error);
+    return Promise.reject(normalizarErrorApi(error));
   },
 );

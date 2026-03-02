@@ -25,17 +25,20 @@ export class TelemetriaService {
   /**
    * Registra un evento de telemetría y marca fraude inmediato cuando corresponde.
    * @param dto - Datos del evento a persistir.
-   * @param idIntento - UUID del intento propietario.
+   * @param idEstudiante - UUID del estudiante autenticado.
    */
-  async registrar(dto: RegistrarEventoDto, idIntento: string) {
-    const intento = await this.prisma.intentoExamen.findUnique({ where: { id: idIntento } });
+  async registrar(dto: RegistrarEventoDto, idEstudiante: string) {
+    const intento = await this.prisma.intentoExamen.findUnique({ where: { id: dto.idIntento } });
     if (!intento) {
       throw new NotFoundException('Intento no encontrado');
+    }
+    if (intento.estudianteId !== idEstudiante) {
+      throw new ForbiddenException('No tiene permisos sobre este intento');
     }
 
     const evento = await this.prisma.eventoTelemetria.create({
       data: {
-        intentoId: idIntento,
+        intentoId: dto.idIntento,
         tipo: dto.tipo,
         descripcion: dto.descripcion,
         metadatos: dto.metadatos as Prisma.InputJsonValue | undefined,
@@ -46,13 +49,13 @@ export class TelemetriaService {
 
     if (esEventoFraudeCritico(dto.tipo)) {
       this.sesionesGateway.emitirFraude(intento.sesionId, {
-        idIntento,
+        idIntento: dto.idIntento,
         tipoEvento: dto.tipo,
       });
 
       const razonBase = intento.razonSospecha ? `${intento.razonSospecha}; ` : '';
       await this.prisma.intentoExamen.update({
-        where: { id: idIntento },
+        where: { id: dto.idIntento },
         data: {
           esSospechoso: true,
           razonSospecha: `${razonBase}${dto.descripcion ?? dto.tipo}`,

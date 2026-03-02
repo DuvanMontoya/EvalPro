@@ -5,7 +5,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario, Usuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -37,7 +37,17 @@ export class IntentosController {
    */
   @Get(':id/examen')
   @ApiOperation({ summary: 'Obtiene examen para un intento' })
-  async obtenerExamen(@Param('id') idIntento: string, @UsuarioActual() usuario: Usuario) {
+  async obtenerExamen(@Param('id', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: Usuario) {
     return this.intentosService.obtenerExamen(idIntento, usuario.id);
+  }
+
+  /**
+   * Anula un intento por decisión del docente propietario de la sesión o administrador.
+   */
+  @Post(':id/anular')
+  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @ApiOperation({ summary: 'Anula un intento por fraude o contingencia' })
+  async anular(@Param('id', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: Usuario) {
+    return this.intentosService.anular(idIntento, usuario.rol, usuario.id);
   }
 }

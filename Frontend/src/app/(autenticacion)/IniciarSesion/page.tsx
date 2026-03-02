@@ -18,6 +18,7 @@ import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { Entrada } from '@/Componentes/Ui/Entrada';
 import { Etiqueta } from '@/Componentes/Ui/Etiqueta';
 import { Boton } from '@/Componentes/Ui/Boton';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
 
 /**
  * Renderiza la página de acceso del panel administrativo.
@@ -42,8 +43,10 @@ export default function PaginaIniciarSesion() {
       await iniciarSesion(valores);
       toast.success('Sesión iniciada correctamente.');
       router.push(RUTAS.TABLERO);
-    } catch {
-      toast.error('Credenciales inválidas. Verifica tu correo y contraseña.');
+    } catch (error) {
+      toast.error(
+        obtenerMensajeError(error, 'Credenciales inválidas. Verifica tu correo y contraseña.'),
+      );
     }
   };
 

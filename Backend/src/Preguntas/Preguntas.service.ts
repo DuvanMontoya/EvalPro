@@ -6,20 +6,22 @@
  * @fecha     2026-03-02
  */
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoExamen, TipoPregunta } from '@prisma/client';
+import { EstadoExamen, Prisma, TipoPregunta } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { CrearPreguntaDto } from './Dto/CrearPregunta.dto';
 import { ActualizarPreguntaDto } from './Dto/ActualizarPregunta.dto';
 import { ReordenarPreguntasDto } from './Dto/ReordenarPreguntas.dto';
+
 @Injectable()
 export class PreguntasService {
   constructor(private readonly prisma: PrismaService) {}
-
   /**
    * Lista preguntas de un examen ordenadas de forma ascendente.
    * @param idExamen - UUID del examen.
+   * @param idDocente - UUID del docente autenticado.
    */
-  async listar(idExamen: string) {
+  async listar(idExamen: string, idDocente: string) {
+    await this.validarPropiedadExamen(idExamen, idDocente);
     return this.prisma.pregunta.findMany({
       where: { examenId: idExamen },
       include: { opciones: { orderBy: { orden: 'asc' } } },
@@ -31,17 +33,13 @@ export class PreguntasService {
    * Crea una pregunta usando transacción y actualiza acumulados del examen.
    * @param idExamen - UUID del examen.
    * @param dto - Datos de la pregunta.
+   * @param idDocente - UUID del docente autenticado.
    */
-  async crear(idExamen: string, dto: CrearPreguntaDto) {
+  async crear(idExamen: string, dto: CrearPreguntaDto, idDocente: string) {
     return this.prisma.$transaction(async (prismaTransaccional) => {
-      const examen = await prismaTransaccional.examen.findUnique({ where: { id: idExamen }, include: { preguntas: true } });
-      if (!examen) {
-        throw new NotFoundException('Examen no encontrado');
-      }
-      if (examen.estado !== EstadoExamen.BORRADOR) {
-        throw new BadRequestException('Solo se pueden agregar preguntas a exámenes en borrador');
-      }
-      const orden = examen.preguntas.length + 1;
+      const examen = await this.validarExamenEditable(idExamen, idDocente, prismaTransaccional);
+      const totalActual = await prismaTransaccional.pregunta.count({ where: { examenId: idExamen } });
+      const orden = totalActual + 1;
       this.validarOpcionesSegunTipo(dto.tipo, dto.opciones ?? []);
       const pregunta = await prismaTransaccional.pregunta.create({
         data: {
@@ -78,7 +76,6 @@ export class PreguntasService {
       });
     });
   }
-
   /**
    * Actualiza una pregunta verificando propiedad del examen y estado borrador.
    * @param idExamen - UUID del examen.
@@ -111,7 +108,6 @@ export class PreguntasService {
     }
     return actualizada;
   }
-
   /**
    * Elimina una pregunta y descuenta su puntaje del examen padre.
    * @param idExamen - UUID del examen.
@@ -134,7 +130,6 @@ export class PreguntasService {
     });
     return { eliminada: true };
   }
-
   /**
    * Reordena preguntas existentes dentro del examen indicado.
    * @param idExamen - UUID del examen.
@@ -143,15 +138,23 @@ export class PreguntasService {
    */
   async reordenar(idExamen: string, dto: ReordenarPreguntasDto, idDocente: string) {
     await this.validarExamenEditable(idExamen, idDocente);
-    await this.prisma.$transaction(
-      dto.preguntas.map((entrada) =>
-        this.prisma.pregunta.update({
+    const idsSolicitados = dto.preguntas.map((entrada) => entrada.idPregunta);
+    const preguntas = await this.prisma.pregunta.findMany({
+      where: { examenId: idExamen, id: { in: idsSolicitados } },
+      select: { id: true },
+    });
+    if (preguntas.length !== idsSolicitados.length) {
+      throw new BadRequestException('La lista de preguntas incluye elementos fuera del examen');
+    }
+    await this.prisma.$transaction(async (prismaTransaccional) => {
+      for (const entrada of dto.preguntas) {
+        await prismaTransaccional.pregunta.update({
           where: { id: entrada.idPregunta },
           data: { orden: entrada.orden },
-        }),
-      ),
-    );
-    return this.listar(idExamen);
+        });
+      }
+    });
+    return this.listar(idExamen, idDocente);
   }
   private validarOpcionesSegunTipo(tipo: TipoPregunta, opciones: { esCorrecta: boolean }[]): void {
     if (tipo === TipoPregunta.RESPUESTA_ABIERTA) {
@@ -168,16 +171,29 @@ export class PreguntasService {
       throw new BadRequestException('Debe existir al menos una opción correcta');
     }
   }
-  private async validarExamenEditable(idExamen: string, idDocente: string) {
-    const examen = await this.prisma.examen.findUnique({ where: { id: idExamen } });
+
+  private async validarExamenEditable(
+    idExamen: string,
+    idDocente: string,
+    prismaTransaccional: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const examen = await this.validarPropiedadExamen(idExamen, idDocente, prismaTransaccional);
+    if (examen.estado !== EstadoExamen.BORRADOR) {
+      throw new BadRequestException('Solo se pueden modificar preguntas en borrador');
+    }
+    return examen;
+  }
+  private async validarPropiedadExamen(
+    idExamen: string,
+    idDocente: string,
+    prismaTransaccional: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const examen = await prismaTransaccional.examen.findUnique({ where: { id: idExamen } });
     if (!examen) {
       throw new NotFoundException('Examen no encontrado');
     }
     if (examen.creadoPorId !== idDocente) {
       throw new ForbiddenException('No tiene permisos sobre este examen');
-    }
-    if (examen.estado !== EstadoExamen.BORRADOR) {
-      throw new BadRequestException('Solo se pueden modificar preguntas en borrador');
     }
     return examen;
   }

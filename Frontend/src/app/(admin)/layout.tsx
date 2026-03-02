@@ -16,6 +16,7 @@ import { EncabezadoAdmin } from '@/Componentes/Layout/EncabezadoAdmin';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
 import { ErrorLimite } from '@/Componentes/Comunes/ErrorLimite';
 import { ProveedorConsulta } from '@/Componentes/Comunes/ProveedorConsulta';
+import { rolPuedeAccederPanel } from '@/Lib/Permisos';
 
 interface PropiedadesLayoutAdmin {
   children: React.ReactNode;
@@ -26,7 +27,13 @@ interface PropiedadesLayoutAdmin {
  */
 export default function LayoutAdmin({ children }: PropiedadesLayoutAdmin) {
   const router = useRouter();
-  const { verificarSesion, cargando, estaAutenticado } = useAutenticacion();
+  const {
+    verificarSesion,
+    cerrarSesion,
+    usuario,
+    cargando,
+    estaAutenticado,
+  } = useAutenticacion();
 
   useEffect(() => {
     verificarSesion().catch(() => {
@@ -34,12 +41,26 @@ export default function LayoutAdmin({ children }: PropiedadesLayoutAdmin) {
     });
   }, [router, verificarSesion]);
 
+  useEffect(() => {
+    if (cargando || !estaAutenticado || rolPuedeAccederPanel(usuario?.rol)) {
+      return;
+    }
+
+    cerrarSesion().finally(() => {
+      router.replace(RUTAS.INICIO_SESION);
+    });
+  }, [cargando, cerrarSesion, estaAutenticado, router, usuario?.rol]);
+
   if (cargando) {
     return <Cargando mensaje="Verificando sesión..." />;
   }
 
   if (!estaAutenticado) {
     return null;
+  }
+
+  if (!rolPuedeAccederPanel(usuario?.rol)) {
+    return <Cargando mensaje="Validando permisos..." />;
   }
 
   return (

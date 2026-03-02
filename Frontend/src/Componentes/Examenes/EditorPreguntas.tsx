@@ -25,9 +25,11 @@ import { Cargando } from '@/Componentes/Comunes/Cargando';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { FormularioPregunta } from '@/Componentes/Examenes/FormularioPregunta';
 import { TarjetaPregunta } from '@/Componentes/Examenes/TarjetaPregunta';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
 
 interface PropiedadesEditorPreguntas {
   idExamen: string;
+  soloLectura?: boolean;
 }
 
 function ItemOrdenable({ id, children }: { id: string; children: (props: { escuchadores: Record<string, (...args: unknown[]) => void>; atributos: Record<string, unknown>; estilo: React.CSSProperties; }) => React.ReactNode; }) {
@@ -47,7 +49,10 @@ function ItemOrdenable({ id, children }: { id: string; children: (props: { escuc
 /**
  * Renderiza editor de preguntas con creación y reordenamiento inmediato.
  */
-export function EditorPreguntas({ idExamen }: PropiedadesEditorPreguntas) {
+export function EditorPreguntas({
+  idExamen,
+  soloLectura = false,
+}: PropiedadesEditorPreguntas) {
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
   const sensores = useSensors(useSensor(PointerSensor));
   const {
@@ -60,6 +65,10 @@ export function EditorPreguntas({ idExamen }: PropiedadesEditorPreguntas) {
   const preguntas = useMemo(() => consultaPreguntas.data ?? [], [consultaPreguntas.data]);
 
   const manejarArrastreFinalizado = async (evento: DragEndEvent) => {
+    if (soloLectura) {
+      return;
+    }
+
     const { active, over } = evento;
     if (!over || active.id === over.id) {
       return;
@@ -74,8 +83,8 @@ export function EditorPreguntas({ idExamen }: PropiedadesEditorPreguntas) {
 
     try {
       await mutacionReordenarPreguntas.mutateAsync(reordenadas);
-    } catch {
-      toast.error('No fue posible reordenar las preguntas.');
+    } catch (error) {
+      toast.error(obtenerMensajeError(error, 'No fue posible reordenar las preguntas.'));
     }
   };
 
@@ -87,11 +96,17 @@ export function EditorPreguntas({ idExamen }: PropiedadesEditorPreguntas) {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Preguntas del examen</h3>
-        <Boton onClick={() => setDialogoAbierto(true)}>Agregar pregunta</Boton>
+        {soloLectura ? null : <Boton onClick={() => setDialogoAbierto(true)}>Agregar pregunta</Boton>}
       </div>
 
       {preguntas.length === 0 ? (
         <EstadoVacio titulo="Sin preguntas" descripcion="Agrega la primera pregunta para continuar." />
+      ) : soloLectura ? (
+        <div className="space-y-3">
+          {preguntas.map((pregunta) => (
+            <TarjetaPregunta key={pregunta.id} pregunta={pregunta} soloLectura />
+          ))}
+        </div>
       ) : (
         <DndContext sensors={sensores} onDragEnd={manejarArrastreFinalizado}>
           <SortableContext items={preguntas.map((pregunta) => pregunta.id)} strategy={verticalListSortingStrategy}>
@@ -101,7 +116,14 @@ export function EditorPreguntas({ idExamen }: PropiedadesEditorPreguntas) {
                   {({ escuchadores, atributos }) => (
                     <TarjetaPregunta
                       pregunta={pregunta}
-                      onEliminar={(idPregunta) => mutacionEliminarPregunta.mutate(idPregunta)}
+                      onEliminar={async (idPregunta) => {
+                        try {
+                          await mutacionEliminarPregunta.mutateAsync(idPregunta);
+                          toast.success('Pregunta eliminada correctamente.');
+                        } catch (error) {
+                          toast.error(obtenerMensajeError(error, 'No se pudo eliminar la pregunta.'));
+                        }
+                      }}
                       escuchadores={escuchadores}
                       atributos={atributos}
                     />
@@ -125,8 +147,8 @@ export function EditorPreguntas({ idExamen }: PropiedadesEditorPreguntas) {
                 await mutacionAgregarPregunta.mutateAsync(dto);
                 toast.success('Pregunta creada correctamente.');
                 setDialogoAbierto(false);
-              } catch {
-                toast.error('No se pudo crear la pregunta.');
+              } catch (error) {
+                toast.error(obtenerMensajeError(error, 'No se pudo crear la pregunta.'));
               }
             }}
           />

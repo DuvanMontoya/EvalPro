@@ -131,7 +131,7 @@ model OpcionRespuesta {
 
 model SesionExamen {
   id                 String          @id @default(uuid())
-  codigoAcceso       String          @unique @db.VarChar(8)
+  codigoAcceso       String          @unique @db.VarChar(9)
   estado             EstadoSesion    @default(PENDIENTE)
   fechaInicio        DateTime?
   fechaFin           DateTime?
@@ -180,6 +180,8 @@ model Respuesta {
   opcionesSeleccionadas String[]
   esCorrecta            Boolean?
   puntajeObtenido       Float?
+  observacionCalificacion String?     @db.VarChar(500)
+  fechaCalificacion     DateTime?
   tiempoRespuesta       Int?
   fechaRespuesta        DateTime      @default(now())
   esSincronizada        Boolean       @default(true)

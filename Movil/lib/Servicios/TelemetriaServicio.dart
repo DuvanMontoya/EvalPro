@@ -79,6 +79,29 @@ class TelemetriaServicio {
     );
   }
 
+  /// Sincroniza un evento pendiente sin volver a guardarlo en local al fallar.
+  Future<void> sincronizarEventoPendiente({
+    required String idIntento,
+    required TipoEventoTelemetria tipo,
+    String? descripcion,
+    Map<String, dynamic>? metadatos,
+    int? numeroPregunta,
+    int? tiempoTranscurrido,
+  }) {
+    return _apiServicio.publicar<void>(
+      ApiEndpoints.telemetria,
+      (_) => null,
+      cuerpo: <String, dynamic>{
+        'idIntento': idIntento,
+        'tipo': tipo.name,
+        'descripcion': descripcion,
+        'metadatos': metadatos,
+        'numeroPregunta': numeroPregunta,
+        'tiempoTranscurrido': tiempoTranscurrido,
+      },
+    );
+  }
+
   /// Registra un error tecnico como evento de sesion invalida.
   Future<void> registrarError(String codigo, String? detalle,
       {String? idIntento}) {

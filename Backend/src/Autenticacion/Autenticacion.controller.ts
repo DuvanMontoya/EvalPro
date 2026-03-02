@@ -5,15 +5,24 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Body, Controller, HttpCode, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Usuario } from '@prisma/client';
+import { Request } from 'express';
 import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
+import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
+import { JwtRefreshGuard } from '../Comun/Guards/JwtRefresh.guard';
 import { IniciarSesionDto } from './Dto/IniciarSesion.dto';
-import { RefrescarTokenDto } from './Dto/RefrescarToken.dto';
 import { AutenticacionService } from './Autenticacion.service';
+
+interface SolicitudConRefresh extends Request {
+  user: {
+    idUsuario: string;
+    tokenRefreshRecibido: string;
+  };
+}
 
 @ApiTags('Autenticacion')
 @Controller('autenticacion')
@@ -32,7 +41,10 @@ export class AutenticacionController {
   async iniciarSesion(@Body() dto: IniciarSesionDto): Promise<unknown> {
     const usuario = await this.autenticacionService.validarCredenciales(dto.correo, dto.contrasena);
     if (!usuario) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException({
+        message: 'Credenciales inválidas',
+        codigoError: CODIGOS_ERROR.CREDENCIALES_INVALIDAS,
+      });
     }
 
     return this.autenticacionService.iniciarSesion(usuario);
@@ -40,15 +52,20 @@ export class AutenticacionController {
 
   /**
    * Rota tokens de autenticación a partir de un refresh token válido.
-   * @param dto - Datos para refrescar tokens.
+   * @param solicitud - Solicitud con datos extraídos del refresh token validado.
    * @returns Nuevo par de tokens para la sesión.
    */
   @Post('refrescar-tokens')
   @HttpCode(200)
+  @UseGuards(JwtRefreshGuard)
+  @ApiBearerAuth()
   @Throttle({ default: { limit: 10, ttl: 60_000 * 15 } })
   @ApiOperation({ summary: 'Refresca access token y refresh token' })
-  async refrescarTokens(@Body() dto: RefrescarTokenDto): Promise<unknown> {
-    return this.autenticacionService.refrescarTokens(dto.idUsuario, dto.tokenRefresh);
+  async refrescarTokens(@Req() solicitud: SolicitudConRefresh): Promise<unknown> {
+    return this.autenticacionService.refrescarTokens(
+      solicitud.user.idUsuario,
+      solicitud.user.tokenRefreshRecibido,
+    );
   }
 
   /**

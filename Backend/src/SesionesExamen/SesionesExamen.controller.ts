@@ -5,7 +5,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario, Usuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -58,7 +58,7 @@ export class SesionesExamenController {
   @Get(':id')
   @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Obtiene una sesión por id' })
-  async obtenerPorId(@Param('id') id: string, @UsuarioActual() usuario: Usuario) {
+  async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
     return this.sesionesService.obtenerPorId(id, usuario.rol, usuario.id);
   }
 
@@ -68,7 +68,7 @@ export class SesionesExamenController {
   @Post(':id/activar')
   @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Activa una sesión pendiente' })
-  async activar(@Param('id') id: string, @UsuarioActual() usuario: Usuario) {
+  async activar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
     return this.sesionesService.activar(id, usuario.id);
   }
 
@@ -78,7 +78,17 @@ export class SesionesExamenController {
   @Post(':id/finalizar')
   @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Finaliza una sesión activa' })
-  async finalizar(@Param('id') id: string, @UsuarioActual() usuario: Usuario) {
+  async finalizar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
     return this.sesionesService.finalizar(id, usuario.id);
+  }
+
+  /**
+   * Cancela una sesión pendiente o activa por decisión del docente propietario.
+   */
+  @Post(':id/cancelar')
+  @Roles(RolUsuario.DOCENTE)
+  @ApiOperation({ summary: 'Cancela una sesión pendiente o activa' })
+  async cancelar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
+    return this.sesionesService.cancelar(id, usuario.id);
   }
 }

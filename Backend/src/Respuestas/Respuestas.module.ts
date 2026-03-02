@@ -7,13 +7,14 @@
  */
 import { Module, forwardRef } from '@nestjs/common';
 import { TelemetriaModule } from '../Telemetria/Telemetria.module';
+import { CalificacionRespuestasService } from './CalificacionRespuestas.service';
 import { RespuestasController } from './Respuestas.controller';
 import { RespuestasService } from './Respuestas.service';
 
 @Module({
   imports: [forwardRef(() => TelemetriaModule)],
   controllers: [RespuestasController],
-  providers: [RespuestasService],
+  providers: [RespuestasService, CalificacionRespuestasService],
   exports: [RespuestasService],
 })
 export class RespuestasModule {}

@@ -19,6 +19,10 @@ abstract class Entorno {
     'WEBSOCKET_URL',
     defaultValue: _websocketUrlPorDefecto,
   );
+  static const diasRetencionTelemetria = int.fromEnvironment(
+    'DIAS_RETENCION_TELEMETRIA',
+    defaultValue: 7,
+  );
   static const versionApp =
       String.fromEnvironment('VERSION_APP', defaultValue: '1.0.0');
 
@@ -42,6 +46,12 @@ abstract class Entorno {
     if (!apiValida || !socketValido) {
       throw StateError(
         '${Textos.errorGeneral} API_URL o WEBSOCKET_URL no tienen formato valido.',
+      );
+    }
+
+    if (diasRetencionTelemetria < 1) {
+      throw StateError(
+        '${Textos.errorGeneral} DIAS_RETENCION_TELEMETRIA debe ser mayor o igual a 1.',
       );
     }
   }

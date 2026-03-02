@@ -9,11 +9,13 @@
 
 import { useParams } from 'next/navigation';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { GraficaDistribucion } from '@/Componentes/Reportes/GraficaDistribucion';
 import { GraficaDificultadPreguntas } from '@/Componentes/Reportes/GraficaDificultadPreguntas';
 import { TablaResultadosDetallada } from '@/Componentes/Reportes/TablaResultadosDetallada';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
 import { useReporteSesion } from '@/Hooks/useReportes';
+import { obtenerMensajeError } from '@/Lib/ErroresApi';
 
 /**
  * Renderiza reporte completo de resultados de la sesión.
@@ -23,8 +25,26 @@ export default function PaginaResultadosSesion() {
   const idSesion = parametros.idSesion;
   const reporte = useReporteSesion(idSesion);
 
-  if (reporte.isLoading || !reporte.data) {
+  if (reporte.isLoading) {
     return <Cargando mensaje="Cargando reporte de sesión..." />;
+  }
+
+  if (reporte.isError) {
+    return (
+      <EstadoVacio
+        titulo="No fue posible cargar resultados"
+        descripcion={obtenerMensajeError(reporte.error, 'Intenta nuevamente en unos segundos.')}
+      />
+    );
+  }
+
+  if (!reporte.data) {
+    return (
+      <EstadoVacio
+        titulo="Sin resultados"
+        descripcion="La sesión aún no tiene información de resultados disponible."
+      />
+    );
   }
 
   const datos = reporte.data;
