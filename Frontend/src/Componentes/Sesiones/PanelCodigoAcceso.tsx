@@ -21,7 +21,7 @@ export function PanelCodigoAcceso({ codigoAcceso }: PropiedadesPanelCodigoAcceso
         <TarjetaTitulo>Código de Acceso</TarjetaTitulo>
       </TarjetaEncabezado>
       <TarjetaContenido>
-        <div className="rounded-md bg-slate-100 p-4 text-center text-3xl font-bold tracking-widest text-primario">
+        <div className="rounded-md border border-[var(--acento-primario-borde)] bg-[var(--acento-primario-sutil)] p-4 text-center font-mono text-3xl font-bold tracking-widest text-[var(--acento-primario-hover)]">
           {codigoAcceso}
         </div>
       </TarjetaContenido>

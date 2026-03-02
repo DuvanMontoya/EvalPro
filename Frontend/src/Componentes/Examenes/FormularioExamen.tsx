@@ -59,19 +59,23 @@ export function FormularioExamen({
       <div className="space-y-2">
         <Etiqueta htmlFor="titulo">Título</Etiqueta>
         <Entrada id="titulo" {...register('titulo')} />
-        {errors.titulo ? <p className="text-sm text-peligro">{errors.titulo.message}</p> : null}
+        {errors.titulo ? <p className="text-sm text-[var(--estado-peligro)]">{errors.titulo.message}</p> : null}
       </div>
 
       <div className="space-y-2">
         <Etiqueta htmlFor="descripcion">Descripción</Etiqueta>
         <AreaTexto id="descripcion" {...register('descripcion')} />
-        {errors.descripcion ? <p className="text-sm text-peligro">{errors.descripcion.message}</p> : null}
+        {errors.descripcion ? (
+          <p className="text-sm text-[var(--estado-peligro)]">{errors.descripcion.message}</p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
         <Etiqueta htmlFor="instrucciones">Instrucciones</Etiqueta>
         <AreaTexto id="instrucciones" {...register('instrucciones')} />
-        {errors.instrucciones ? <p className="text-sm text-peligro">{errors.instrucciones.message}</p> : null}
+        {errors.instrucciones ? (
+          <p className="text-sm text-[var(--estado-peligro)]">{errors.instrucciones.message}</p>
+        ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -97,7 +101,9 @@ export function FormularioExamen({
             max={480}
             {...register('duracionMinutos', { valueAsNumber: true })}
           />
-          {errors.duracionMinutos ? <p className="text-sm text-peligro">{errors.duracionMinutos.message}</p> : null}
+          {errors.duracionMinutos ? (
+            <p className="text-sm text-[var(--estado-peligro)]">{errors.duracionMinutos.message}</p>
+          ) : null}
         </div>
       </div>
 

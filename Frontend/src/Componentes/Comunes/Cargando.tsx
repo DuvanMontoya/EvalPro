@@ -18,8 +18,8 @@ interface PropiedadesCargando {
  */
 export function Cargando({ mensaje = 'Cargando información...' }: PropiedadesCargando) {
   return (
-    <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-borde bg-white/60 p-8">
-      <Loader2 className="h-7 w-7 animate-spin text-primario" />
+    <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-[var(--borde-default)] bg-fondo-elevado-2 p-8">
+      <Loader2 className="h-7 w-7 animate-spin text-[var(--acento-primario)]" strokeWidth={1.5} />
       <p className="texto-muted">{mensaje}</p>
     </div>
   );

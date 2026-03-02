@@ -30,12 +30,14 @@ export function EncabezadoAdmin() {
   const alternarBarraLateral = useUiAlmacen((estado) => estado.alternarBarraLateral);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-borde bg-white/95 px-4 backdrop-blur">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[var(--borde-sutil)] bg-[var(--fondo-encabezado)] px-4 backdrop-blur-xl md:px-8">
       <div className="flex items-center gap-3">
         <Boton variante="fantasma" tamano="pequeno" onClick={alternarBarraLateral}>
-          <Menu className="h-4 w-4" />
+          <Menu className="h-4 w-4" strokeWidth={1.5} />
         </Boton>
-        <h1 className="text-lg font-semibold capitalize">{obtenerTituloDesdeRuta(ruta)}</h1>
+        <h1 className="font-display text-lg font-bold capitalize text-[var(--texto-primario)]">
+          {obtenerTituloDesdeRuta(ruta)}
+        </h1>
       </div>
       <MenuUsuario />
     </header>

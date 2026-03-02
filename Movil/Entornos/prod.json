@@ -1,0 +1,5 @@
+{
+  "API_URL": "https://api.evalpro.com/api/v1",
+  "WEBSOCKET_URL": "https://api.evalpro.com",
+  "VERSION_APP": "1.0.0"
+}

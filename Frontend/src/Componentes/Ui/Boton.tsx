@@ -13,15 +13,20 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/Lib/utils';
 
 const variantesBoton = cva(
-  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center rounded-md text-sm font-semibold transicion-rapida focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--acento-primario)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--fondo-raiz)] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variante: {
-        primario: 'bg-primario text-primario-frente hover:opacity-90',
-        secundario: 'bg-secundario text-secundario-frente hover:opacity-90',
-        peligro: 'bg-peligro text-peligro-frente hover:opacity-90',
-        contorno: 'border border-borde bg-white hover:bg-slate-50',
-        fantasma: 'hover:bg-slate-100',
+        primario:
+          'border border-transparent bg-[var(--acento-primario)] text-[var(--texto-invertido)] shadow-sombra-azul hover:bg-[var(--acento-primario-hover)] active:brightness-95',
+        secundario:
+          'border border-[var(--borde-default)] bg-fondo-elevado-3 text-[var(--texto-primario)] hover:border-[var(--borde-interactivo)] hover:bg-fondo-elevado-4',
+        peligro:
+          'border border-[var(--estado-peligro-borde)] bg-[var(--estado-peligro-sutil)] text-[var(--estado-peligro)] hover:bg-[var(--estado-peligro)] hover:text-[var(--texto-invertido)]',
+        contorno:
+          'border border-[var(--borde-default)] bg-transparent text-[var(--texto-primario)] hover:border-[var(--borde-interactivo)] hover:bg-fondo-elevado-3',
+        fantasma:
+          'border border-transparent bg-transparent text-[var(--texto-secundario)] hover:bg-fondo-elevado-3 hover:text-[var(--texto-primario)]',
       },
       tamano: {
         normal: 'h-10 px-4 py-2',

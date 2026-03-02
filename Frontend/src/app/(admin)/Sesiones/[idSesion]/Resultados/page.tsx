@@ -32,9 +32,36 @@ export default function PaginaResultadosSesion() {
   return (
     <section className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
-        <Tarjeta><TarjetaEncabezado><TarjetaTitulo>Total estudiantes</TarjetaTitulo></TarjetaEncabezado><TarjetaContenido><p className="text-3xl font-bold">{datos.totalEstudiantes}</p></TarjetaContenido></Tarjeta>
-        <Tarjeta><TarjetaEncabezado><TarjetaTitulo>Entregaron</TarjetaTitulo></TarjetaEncabezado><TarjetaContenido><p className="text-3xl font-bold">{datos.estudiantesQueEnviaron}</p></TarjetaContenido></Tarjeta>
-        <Tarjeta><TarjetaEncabezado><TarjetaTitulo>Sospechosos</TarjetaTitulo></TarjetaEncabezado><TarjetaContenido><p className="text-3xl font-bold">{datos.estudiantesSospechosos}</p></TarjetaContenido></Tarjeta>
+        <Tarjeta>
+          <TarjetaEncabezado>
+            <TarjetaTitulo>Total estudiantes</TarjetaTitulo>
+          </TarjetaEncabezado>
+          <TarjetaContenido>
+            <p className="font-mono text-3xl font-bold text-[var(--acento-primario-hover)]">
+              {datos.totalEstudiantes}
+            </p>
+          </TarjetaContenido>
+        </Tarjeta>
+        <Tarjeta>
+          <TarjetaEncabezado>
+            <TarjetaTitulo>Entregaron</TarjetaTitulo>
+          </TarjetaEncabezado>
+          <TarjetaContenido>
+            <p className="font-mono text-3xl font-bold text-[var(--estado-exito)]">
+              {datos.estudiantesQueEnviaron}
+            </p>
+          </TarjetaContenido>
+        </Tarjeta>
+        <Tarjeta>
+          <TarjetaEncabezado>
+            <TarjetaTitulo>Sospechosos</TarjetaTitulo>
+          </TarjetaEncabezado>
+          <TarjetaContenido>
+            <p className="font-mono text-3xl font-bold text-[var(--estado-peligro)]">
+              {datos.estudiantesSospechosos}
+            </p>
+          </TarjetaContenido>
+        </Tarjeta>
       </div>
 
       <Tarjeta>

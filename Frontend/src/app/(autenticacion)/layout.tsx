@@ -14,8 +14,8 @@ interface PropiedadesLayoutAutenticacion {
  */
 export default function LayoutAutenticacion({ children }: PropiedadesLayoutAutenticacion) {
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <section className="w-full max-w-md rounded-xl border border-borde bg-white p-8 shadow-lg">
+    <main className="flex min-h-screen items-center justify-center bg-fondo-raiz p-4">
+      <section className="w-full max-w-md rounded-xl border border-[var(--borde-default)] bg-fondo-elevado-2 p-8 shadow-sombra-lg">
         {children}
       </section>
     </main>

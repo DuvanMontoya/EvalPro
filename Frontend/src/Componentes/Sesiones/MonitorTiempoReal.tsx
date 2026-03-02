@@ -16,6 +16,7 @@ import { useMonitorTiempoReal } from '@/Hooks/useMonitorTiempoReal';
 import { useSesiones } from '@/Hooks/useSesiones';
 import { Boton } from '@/Componentes/Ui/Boton';
 import { ModalConfirmacion } from '@/Componentes/Comunes/ModalConfirmacion';
+import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { TarjetaEstudianteMonitor } from '@/Componentes/Sesiones/TarjetaEstudianteMonitor';
 import { AlertaFraude } from '@/Componentes/Sesiones/AlertaFraude';
 
@@ -73,19 +74,26 @@ export function MonitorTiempoReal({ idSesion, totalPreguntas }: PropiedadesMonit
         </Boton>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {estudiantesNormalizados.map((estudiante) => (
-          <TarjetaEstudianteMonitor
-            key={estudiante.idIntento}
-            nombreCompleto={estudiante.nombreCompleto}
-            preguntasRespondidas={estudiante.preguntasRespondidas}
-            totalPreguntas={estudiante.totalPreguntas}
-            modoKioscoActivo={estudiante.modoKioscoActivo}
-            eventosFraude={estudiante.eventosFraude}
-            estadoIntento={estudiante.estadoIntento as EstadoIntento}
-          />
-        ))}
-      </div>
+      {estudiantesNormalizados.length === 0 ? (
+        <EstadoVacio
+          titulo="Sin estudiantes conectados"
+          descripcion="Cuando los estudiantes se unan a la sesión aparecerán aquí."
+        />
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {estudiantesNormalizados.map((estudiante) => (
+            <TarjetaEstudianteMonitor
+              key={estudiante.idIntento}
+              nombreCompleto={estudiante.nombreCompleto}
+              preguntasRespondidas={estudiante.preguntasRespondidas}
+              totalPreguntas={estudiante.totalPreguntas}
+              modoKioscoActivo={estudiante.modoKioscoActivo}
+              eventosFraude={estudiante.eventosFraude}
+              estadoIntento={estudiante.estadoIntento as EstadoIntento}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Alertas de fraude</h3>

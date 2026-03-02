@@ -21,11 +21,18 @@ export function GraficaDificultadPreguntas({ datos }: PropiedadesGraficaDificult
     <div className="h-80 w-full">
       <ResponsiveContainer>
         <BarChart data={datos} layout="vertical" margin={{ left: 40 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" domain={[0, 100]} />
-          <YAxis type="category" dataKey="idPregunta" width={70} />
-          <Tooltip />
-          <Bar dataKey="porcentajeAcierto" fill="hsl(var(--secundario))" radius={[0, 6, 6, 0]} />
+          <CartesianGrid stroke="var(--borde-default)" strokeDasharray="3 3" />
+          <XAxis type="number" domain={[0, 100]} stroke="var(--texto-terciario)" />
+          <YAxis type="category" dataKey="idPregunta" width={70} stroke="var(--texto-terciario)" />
+          <Tooltip
+            contentStyle={{
+              background: 'var(--fondo-elevado-3)',
+              border: '1px solid var(--borde-default)',
+              borderRadius: 'var(--radio-md)',
+              color: 'var(--texto-primario)',
+            }}
+          />
+          <Bar dataKey="porcentajeAcierto" fill="var(--acento-cyan)" radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

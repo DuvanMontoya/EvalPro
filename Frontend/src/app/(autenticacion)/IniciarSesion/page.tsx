@@ -59,7 +59,9 @@ export default function PaginaIniciarSesion() {
           <Etiqueta htmlFor="correo">Correo</Etiqueta>
           <Entrada id="correo" type="email" {...formulario.register('correo')} />
           {formulario.formState.errors.correo ? (
-            <p className="text-sm text-peligro">{formulario.formState.errors.correo.message}</p>
+            <p className="text-sm text-[var(--estado-peligro)]">
+              {formulario.formState.errors.correo.message}
+            </p>
           ) : null}
         </div>
 
@@ -67,7 +69,9 @@ export default function PaginaIniciarSesion() {
           <Etiqueta htmlFor="contrasena">Contraseña</Etiqueta>
           <Entrada id="contrasena" type="password" {...formulario.register('contrasena')} />
           {formulario.formState.errors.contrasena ? (
-            <p className="text-sm text-peligro">{formulario.formState.errors.contrasena.message}</p>
+            <p className="text-sm text-[var(--estado-peligro)]">
+              {formulario.formState.errors.contrasena.message}
+            </p>
           ) : null}
         </div>
 

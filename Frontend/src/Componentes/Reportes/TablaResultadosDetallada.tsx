@@ -48,8 +48,8 @@ export function TablaResultadosDetallada({ filas }: PropiedadesTablaResultadosDe
         {filas.map((fila) => (
           <TablaFila key={`${fila.nombre}-${fila.apellidos}`}>
             <TablaCelda>{fila.nombre} {fila.apellidos}</TablaCelda>
-            <TablaCelda>{fila.puntaje ?? 'N/A'}</TablaCelda>
-            <TablaCelda>{fila.porcentaje !== null ? `${fila.porcentaje}%` : 'N/A'}</TablaCelda>
+            <TablaCelda className="font-mono">{fila.puntaje ?? 'N/A'}</TablaCelda>
+            <TablaCelda className="font-mono">{fila.porcentaje !== null ? `${fila.porcentaje}%` : 'N/A'}</TablaCelda>
             <TablaCelda>{fila.estado}</TablaCelda>
             <TablaCelda>
               <Insignia variante={fila.esSospechoso ? 'peligro' : 'exito'}>

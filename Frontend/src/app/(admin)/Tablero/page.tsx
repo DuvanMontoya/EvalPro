@@ -10,16 +10,17 @@
 import { Line, LineChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTableroReportes } from '@/Hooks/useReportes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
 
 function TarjetaMetrica({ titulo, valor }: { titulo: string; valor: number }) {
   return (
     <Tarjeta>
       <TarjetaEncabezado>
-        <TarjetaTitulo className="text-sm text-slate-600">{titulo}</TarjetaTitulo>
+        <TarjetaTitulo className="text-sm text-[var(--texto-secundario)]">{titulo}</TarjetaTitulo>
       </TarjetaEncabezado>
       <TarjetaContenido>
-        <p className="text-3xl font-bold text-primario">{valor}</p>
+        <p className="font-mono text-3xl font-bold text-[var(--acento-primario-hover)]">{valor}</p>
       </TarjetaContenido>
     </Tarjeta>
   );
@@ -57,11 +58,18 @@ export default function PaginaTablero() {
           <div className="h-72 w-full">
             <ResponsiveContainer>
               <LineChart data={actividadSemanal.data ?? []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="dia" />
-                <YAxis />
-                <Tooltip />
-                <Line dataKey="cantidad" stroke="hsl(var(--primario))" strokeWidth={3} />
+                <CartesianGrid stroke="var(--borde-default)" strokeDasharray="3 3" />
+                <XAxis dataKey="dia" stroke="var(--texto-terciario)" />
+                <YAxis stroke="var(--texto-terciario)" />
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--fondo-elevado-3)',
+                    border: '1px solid var(--borde-default)',
+                    borderRadius: 'var(--radio-md)',
+                    color: 'var(--texto-primario)',
+                  }}
+                />
+                <Line dataKey="cantidad" stroke="var(--acento-primario)" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -73,13 +81,20 @@ export default function PaginaTablero() {
           <TarjetaTitulo>Últimas sesiones</TarjetaTitulo>
         </TarjetaEncabezado>
         <TarjetaContenido>
-          <ul className="space-y-2">
-            {(ultimasSesiones.data ?? []).map((sesion) => (
-              <li key={sesion.id} className="rounded-md border border-borde p-3 text-sm">
-                <strong>{sesion.codigoAcceso}</strong> - {sesion.estado}
-              </li>
-            ))}
-          </ul>
+          {(ultimasSesiones.data ?? []).length === 0 ? (
+            <EstadoVacio
+              titulo="Sin actividad reciente"
+              descripcion="Aún no se han creado sesiones para mostrar en el tablero."
+            />
+          ) : (
+            <ul className="space-y-2">
+              {(ultimasSesiones.data ?? []).map((sesion) => (
+                <li key={sesion.id} className="rounded-md border border-[var(--borde-sutil)] bg-fondo-elevado-3 p-3 text-sm">
+                  <strong className="font-mono text-[var(--texto-primario)]">{sesion.codigoAcceso}</strong> - {sesion.estado}
+                </li>
+              ))}
+            </ul>
+          )}
         </TarjetaContenido>
       </Tarjeta>
     </section>

@@ -22,7 +22,7 @@ export const Entrada = React.forwardRef<HTMLInputElement, PropiedadesEntrada>(
     <input
       type={type}
       className={cn(
-        'flex h-10 w-full rounded-md border border-borde bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primario disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-10 w-full rounded-md border border-[var(--borde-default)] bg-fondo-elevado-2 px-3 py-2 text-sm text-[var(--texto-primario)] placeholder:text-[var(--texto-terciario)] outline-none transicion-rapida focus-visible:border-[var(--acento-primario)] focus-visible:bg-fondo-elevado-3 focus-visible:shadow-sombra-glow-primario disabled:cursor-not-allowed disabled:bg-fondo-elevado-1 disabled:opacity-50',
         className,
       )}
       ref={ref}

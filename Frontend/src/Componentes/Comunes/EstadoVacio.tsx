@@ -26,10 +26,10 @@ export function EstadoVacio({
   hrefAccion,
 }: PropiedadesEstadoVacio) {
   return (
-    <div className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-borde bg-white p-8 text-center">
-      <Inbox className="h-10 w-10 text-slate-400" />
+    <div className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-[var(--borde-default)] bg-fondo-elevado-2 p-8 text-center">
+      <Inbox className="h-10 w-10 text-[var(--texto-terciario)]" strokeWidth={1.5} />
       <div className="space-y-1">
-        <h3 className="text-base font-semibold">{titulo}</h3>
+        <h3 className="font-display text-base font-bold text-[var(--texto-primario)]">{titulo}</h3>
         <p className="texto-muted">{descripcion}</p>
       </div>
       {hrefAccion && etiquetaAccion ? (

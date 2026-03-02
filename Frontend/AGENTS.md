@@ -1,7 +1,7 @@
 # AGENTS.md — EvalPro · Frontend Admin (Next.js 16 + shadcn/ui)
 > Complementa `/AGENTS.md` raíz. Lee primero el raíz, luego este.
 > Aplica a todos los archivos dentro de `Frontend/`.
-
+> Lee también: AGENTS_DISEÑO.md para especificaciones visuales completas.
 ---
 
 ## ESTRUCTURA DE DIRECTORIOS EXACTA

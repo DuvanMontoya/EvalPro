@@ -21,13 +21,13 @@ export const ItemGrupoRadio = React.forwardRef<
   <RadioGroup.Item
     ref={ref}
     className={cn(
-      'aspect-square h-4 w-4 rounded-full border border-borde text-primario focus:outline-none focus:ring-2 focus:ring-primario',
+      'aspect-square h-4 w-4 rounded-full border border-[var(--borde-default)] bg-fondo-elevado-2 text-[var(--acento-primario)] transicion-rapida focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--acento-primario)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--fondo-raiz)] disabled:cursor-not-allowed disabled:opacity-50',
       className,
     )}
     {...props}
   >
     <RadioGroup.Indicator className="flex items-center justify-center">
-      <Circle className="h-2.5 w-2.5 fill-current text-current" />
+      <Circle className="h-2.5 w-2.5 fill-current text-current" strokeWidth={1.5} />
     </RadioGroup.Indicator>
   </RadioGroup.Item>
 ));

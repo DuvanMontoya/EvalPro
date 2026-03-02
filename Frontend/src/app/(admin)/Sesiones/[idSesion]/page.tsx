@@ -34,13 +34,15 @@ export default function PaginaDetalleSesion() {
     <section className="space-y-6">
       <Tarjeta>
         <TarjetaEncabezado>
-          <TarjetaTitulo>Sesión {sesion.codigoAcceso}</TarjetaTitulo>
+          <TarjetaTitulo>
+            Sesión <span className="font-mono">{sesion.codigoAcceso}</span>
+          </TarjetaTitulo>
         </TarjetaEncabezado>
         <TarjetaContenido className="grid gap-4 md:grid-cols-2">
           <PanelCodigoAcceso codigoAcceso={sesion.codigoAcceso} />
-          <div className="rounded-lg border border-borde bg-white p-4">
-            <p className="text-sm text-slate-600">Estado actual</p>
-            <p className="text-lg font-semibold">{sesion.estado}</p>
+          <div className="rounded-lg border border-[var(--borde-sutil)] bg-fondo-elevado-3 p-4">
+            <p className="text-sm text-[var(--texto-secundario)]">Estado actual</p>
+            <p className="text-lg font-semibold text-[var(--texto-primario)]">{sesion.estado}</p>
             <p className="texto-muted mt-2">Examen: {sesion.examen?.titulo ?? 'No disponible'}</p>
           </div>
         </TarjetaContenido>

@@ -49,9 +49,11 @@ export class ErrorLimite extends React.Component<PropiedadesErrorLimite, EstadoE
     }
 
     return (
-      <div className="m-6 rounded-lg border border-borde bg-white p-10 text-center">
-        <AlertTriangle className="mx-auto h-10 w-10 text-peligro" />
-        <h2 className="mt-3 text-lg font-semibold">Ocurrió un error inesperado</h2>
+      <div className="m-6 rounded-lg border border-[var(--borde-default)] bg-fondo-elevado-2 p-10 text-center">
+        <AlertTriangle className="mx-auto h-10 w-10 text-[var(--estado-peligro)]" strokeWidth={1.5} />
+        <h2 className="mt-3 font-display text-lg font-bold text-[var(--texto-primario)]">
+          Ocurrió un error inesperado
+        </h2>
         <p className="mt-1 texto-muted">Recarga la vista para continuar trabajando.</p>
         <Boton className="mt-5" onClick={this.reiniciar}>
           Reintentar

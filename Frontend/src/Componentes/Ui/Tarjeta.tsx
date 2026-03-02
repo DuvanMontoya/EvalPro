@@ -12,7 +12,15 @@ import { cn } from '@/Lib/utils';
  * Contenedor principal de tarjeta.
  */
 export function Tarjeta({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('rounded-lg border border-borde bg-tarjeta shadow-sm', className)} {...props} />;
+  return (
+    <div
+      className={cn(
+        'superficie-elevada rounded-xl border border-[var(--borde-sutil)] bg-fondo-elevado-2 transicion-normal',
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 /**
@@ -26,14 +34,14 @@ export function TarjetaEncabezado({ className, ...props }: React.HTMLAttributes<
  * Título principal de tarjeta.
  */
 export function TarjetaTitulo({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn('text-lg font-semibold', className)} {...props} />;
+  return <h3 className={cn('font-display text-xl font-bold text-[var(--texto-primario)]', className)} {...props} />;
 }
 
 /**
  * Descripción secundaria de tarjeta.
  */
 export function TarjetaDescripcion({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('text-sm text-slate-600', className)} {...props} />;
+  return <p className={cn('text-sm text-[var(--texto-secundario)]', className)} {...props} />;
 }
 
 /**

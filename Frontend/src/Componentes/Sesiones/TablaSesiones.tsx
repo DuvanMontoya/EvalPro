@@ -46,7 +46,11 @@ function renderEstado(estado: EstadoSesion) {
  */
 export function TablaSesiones({ sesiones, onActivar, onFinalizar }: PropiedadesTablaSesiones) {
   const columnas: ColumnDef<SesionExamen>[] = [
-    { accessorKey: 'codigoAcceso', header: 'Código' },
+    {
+      accessorKey: 'codigoAcceso',
+      header: 'Código',
+      cell: ({ row }) => <span className="font-mono">{row.original.codigoAcceso}</span>,
+    },
     {
       accessorKey: 'estado',
       header: 'Estado',

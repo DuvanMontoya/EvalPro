@@ -17,6 +17,7 @@ import {
   MenuDesplegableContenido,
   MenuDesplegableDisparador,
   MenuDesplegableItem,
+  MenuDesplegableSeparador,
 } from '@/Componentes/Ui/MenuDesplegable';
 import { obtenerIniciales } from '@/Lib/utils';
 
@@ -36,19 +37,19 @@ export function MenuUsuario() {
 
   return (
     <MenuDesplegable>
-      <MenuDesplegableDisparador className="rounded-full focus:outline-none focus:ring-2 focus:ring-primario">
+      <MenuDesplegableDisparador className="rounded-full transicion-rapida focus-visible:outline-none focus-visible:shadow-sombra-glow-primario">
         <Avatar>
           <AvatarFallback>{obtenerIniciales(nombreCompleto)}</AvatarFallback>
         </Avatar>
       </MenuDesplegableDisparador>
       <MenuDesplegableContenido align="end">
         <div className="px-2 py-1.5">
-          <p className="text-sm font-medium">{nombreCompleto}</p>
-          <p className="text-xs text-slate-500">{usuario?.correo}</p>
+          <p className="text-sm font-medium text-[var(--texto-primario)]">{nombreCompleto}</p>
+          <p className="text-xs text-[var(--texto-secundario)]">{usuario?.correo}</p>
         </div>
-        <hr className="my-1 border-borde" />
-        <MenuDesplegableItem onClick={manejarCerrarSesion} className="text-peligro">
-          <LogOut className="mr-2 inline-block h-4 w-4" />
+        <MenuDesplegableSeparador />
+        <MenuDesplegableItem onClick={manejarCerrarSesion} className="text-[var(--estado-peligro)]">
+          <LogOut className="mr-2 inline-block h-4 w-4" strokeWidth={1.5} />
           Cerrar sesión
         </MenuDesplegableItem>
       </MenuDesplegableContenido>

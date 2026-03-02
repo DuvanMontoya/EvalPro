@@ -37,7 +37,9 @@ export default function PaginaDetalleExamen() {
         <TarjetaContenido className="space-y-2">
           <InsigniaEstado estado={examen.estado} />
           <p className="texto-muted">Modalidad: {examen.modalidad}</p>
-          <p className="texto-muted">Duración: {examen.duracionMinutos} minutos</p>
+          <p className="texto-muted">
+            Duración: <span className="font-mono">{examen.duracionMinutos}</span> minutos
+          </p>
         </TarjetaContenido>
       </Tarjeta>
       <EditorPreguntas idExamen={idExamen} />

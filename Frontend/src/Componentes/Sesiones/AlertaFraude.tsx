@@ -19,13 +19,13 @@ interface PropiedadesAlertaFraude {
  */
 export function AlertaFraude({ nombreEstudiante, tipoEvento, fecha }: PropiedadesAlertaFraude) {
   return (
-    <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm">
-      <p className="flex items-center gap-2 font-semibold text-red-700">
-        <AlertTriangle className="h-4 w-4" />
+    <div className="rounded-md border border-[var(--estado-peligro-borde)] bg-[var(--estado-peligro-sutil)] p-3 text-sm">
+      <p className="flex items-center gap-2 font-semibold text-[var(--estado-peligro)]">
+        <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
         {nombreEstudiante}
       </p>
-      <p className="mt-1 text-red-800">Evento: {tipoEvento}</p>
-      <p className="text-red-700/80">{formatearFecha(fecha)}</p>
+      <p className="mt-1 text-[var(--texto-primario)]">Evento: {tipoEvento}</p>
+      <p className="text-[var(--texto-secundario)]">{formatearFecha(fecha)}</p>
     </div>
   );
 }

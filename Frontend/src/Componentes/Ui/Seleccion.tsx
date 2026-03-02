@@ -22,14 +22,14 @@ export const SeleccionDisparador = React.forwardRef<
   <Select.Trigger
     ref={ref}
     className={cn(
-      'flex h-10 w-full items-center justify-between rounded-md border border-borde bg-white px-3 py-2 text-sm',
+      'flex h-10 w-full items-center justify-between rounded-md border border-[var(--borde-default)] bg-fondo-elevado-2 px-3 py-2 text-sm text-[var(--texto-primario)] outline-none transicion-rapida focus-visible:border-[var(--acento-primario)] focus-visible:bg-fondo-elevado-3 focus-visible:shadow-sombra-glow-primario disabled:cursor-not-allowed disabled:bg-fondo-elevado-1 disabled:opacity-50',
       className,
     )}
     {...props}
   >
     {children}
     <Select.Icon>
-      <ChevronDown className="h-4 w-4 text-slate-500" />
+      <ChevronDown className="h-4 w-4 text-[var(--texto-secundario)]" strokeWidth={1.5} />
     </Select.Icon>
   </Select.Trigger>
 ));
@@ -42,7 +42,10 @@ export const SeleccionContenido = React.forwardRef<
   <Select.Portal>
     <Select.Content
       ref={ref}
-      className={cn('z-50 overflow-hidden rounded-md border border-borde bg-white shadow-md', className)}
+      className={cn(
+        'z-50 overflow-hidden rounded-lg border border-[var(--borde-default)] bg-fondo-elevado-2 shadow-sombra-md',
+        className,
+      )}
       {...props}
     >
       <Select.Viewport className="p-1">{children}</Select.Viewport>
@@ -57,12 +60,15 @@ export const SeleccionItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <Select.Item
     ref={ref}
-    className={cn('relative flex cursor-pointer items-center rounded px-2 py-1.5 text-sm outline-none hover:bg-slate-100', className)}
+    className={cn(
+      'relative flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm text-[var(--texto-secundario)] outline-none transicion-rapida hover:bg-fondo-elevado-3 hover:text-[var(--texto-primario)] focus:bg-fondo-elevado-3 focus:text-[var(--texto-primario)]',
+      className,
+    )}
     {...props}
   >
     <span className="absolute left-2 inline-flex h-3.5 w-3.5 items-center justify-center">
       <Select.ItemIndicator>
-        <Check className="h-4 w-4" />
+        <Check className="h-4 w-4" strokeWidth={1.5} />
       </Select.ItemIndicator>
     </span>
     <Select.ItemText className="pl-6">{children}</Select.ItemText>

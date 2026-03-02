@@ -20,7 +20,10 @@ export const Etiqueta = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <LabelPrimitivo.Root
     ref={ref}
-    className={cn('text-sm font-medium leading-none', className)}
+    className={cn(
+      'text-[0.78rem] font-medium leading-none tracking-[0.01em] text-[var(--texto-secundario)]',
+      className,
+    )}
     {...props}
   />
 ));

@@ -29,13 +29,20 @@ export function TarjetaPregunta({
   atributos,
 }: PropiedadesTarjetaPregunta) {
   return (
-    <div className="rounded-lg border border-borde bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-[var(--borde-sutil)] bg-fondo-elevado-2 p-4 shadow-sombra-sm transicion-rapida hover:border-[var(--borde-default)] hover:bg-fondo-elevado-3">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <button className="cursor-grab text-slate-500" {...escuchadores} {...atributos}>
-            <GripVertical className="h-4 w-4" />
+          <button
+            type="button"
+            className="cursor-grab text-[var(--texto-terciario)] transicion-rapida hover:text-[var(--texto-primario)] focus-visible:outline-none focus-visible:shadow-sombra-glow-primario"
+            {...escuchadores}
+            {...atributos}
+          >
+            <GripVertical className="h-4 w-4" strokeWidth={1.5} />
           </button>
-          <h4 className="font-medium">{pregunta.orden}. {pregunta.enunciado}</h4>
+          <h4 className="font-medium text-[var(--texto-primario)]">
+            {pregunta.orden}. {pregunta.enunciado}
+          </h4>
         </div>
         <div className="flex items-center gap-2">
           <Insignia variante="primario">{pregunta.tipo}</Insignia>
@@ -46,7 +53,7 @@ export function TarjetaPregunta({
       </div>
 
       {pregunta.opciones.length > 0 ? (
-        <ul className="space-y-1 text-sm text-slate-700">
+        <ul className="space-y-1 text-sm text-[var(--texto-secundario)]">
           {pregunta.opciones.map((opcion) => (
             <li key={opcion.id} className="flex items-center gap-2">
               <span className="font-semibold">{opcion.letra}.</span>

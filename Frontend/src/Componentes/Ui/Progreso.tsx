@@ -25,12 +25,15 @@ export const Progreso = React.forwardRef<
 >(({ className, valor = 0, ...props }, ref) => (
   <Progress.Root
     ref={ref}
-    className={cn('relative h-2 w-full overflow-hidden rounded-full bg-slate-200', className)}
+    className={cn('relative h-2 w-full overflow-hidden rounded-full bg-fondo-elevado-4', className)}
     {...props}
   >
     <Progress.Indicator
-      className="h-full w-full flex-1 bg-primario transition-all"
-      style={{ transform: `translateX(-${100 - Math.min(100, Math.max(0, valor))}%)` }}
+      className="h-full w-full flex-1 transicion-normal"
+      style={{
+        transform: `translateX(-${100 - Math.min(100, Math.max(0, valor))}%)`,
+        background: 'var(--gradiente-primario)',
+      }}
     />
   </Progress.Root>
 ));

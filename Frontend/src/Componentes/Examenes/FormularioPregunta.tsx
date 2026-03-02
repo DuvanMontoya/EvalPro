@@ -102,7 +102,9 @@ export function FormularioPregunta({ onGuardar }: PropiedadesFormularioPregunta)
         <Etiqueta htmlFor="enunciado">Enunciado</Etiqueta>
         <AreaTexto id="enunciado" {...formulario.register('enunciado')} />
         {formulario.formState.errors.enunciado ? (
-          <p className="text-sm text-peligro">{formulario.formState.errors.enunciado.message}</p>
+          <p className="text-sm text-[var(--estado-peligro)]">
+            {formulario.formState.errors.enunciado.message}
+          </p>
         ) : null}
       </div>
 

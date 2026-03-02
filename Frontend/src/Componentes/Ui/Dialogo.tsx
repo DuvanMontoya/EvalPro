@@ -23,7 +23,7 @@ export const DialogoSuperposicion = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <Dialog.Overlay
     ref={ref}
-    className={cn('fixed inset-0 z-50 bg-black/40 backdrop-blur-sm', className)}
+    className={cn('fixed inset-0 z-50 bg-[var(--superposicion-modal)] backdrop-blur-md', className)}
     {...props}
   />
 ));
@@ -38,14 +38,14 @@ export const DialogoContenido = React.forwardRef<
     <Dialog.Content
       ref={ref}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 w-[95vw] max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-lg border border-borde bg-white p-6 shadow-lg',
+        'fixed left-1/2 top-1/2 z-50 w-[95vw] max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--borde-default)] bg-fondo-elevado-2 p-6 shadow-sombra-xl transicion-normal',
         className,
       )}
       {...props}
     >
       {children}
-      <Dialog.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100">
-        <X className="h-4 w-4" />
+      <Dialog.Close className="absolute right-4 top-4 rounded-sm text-[var(--texto-secundario)] opacity-80 transicion-rapida hover:text-[var(--texto-primario)] hover:opacity-100 focus-visible:outline-none focus-visible:shadow-sombra-glow-primario">
+        <X className="h-4 w-4" strokeWidth={1.5} />
       </Dialog.Close>
     </Dialog.Content>
   </DialogoPortal>
@@ -64,5 +64,5 @@ export function DialogoDescripcion({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<typeof Dialog.Description>) {
-  return <Dialog.Description className={cn('text-sm text-slate-600', className)} {...props} />;
+  return <Dialog.Description className={cn('text-sm text-[var(--texto-secundario)]', className)} {...props} />;
 }

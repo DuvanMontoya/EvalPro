@@ -19,13 +19,13 @@ export const CasillaVerificacion = React.forwardRef<
   <Checkbox.Root
     ref={ref}
     className={cn(
-      'peer h-4 w-4 shrink-0 rounded-sm border border-borde ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primario data-[state=checked]:bg-primario data-[state=checked]:text-white',
+      'peer h-4 w-4 shrink-0 rounded-sm border border-[var(--borde-default)] bg-fondo-elevado-2 text-[var(--texto-invertido)] transicion-rapida focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--acento-primario)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--fondo-raiz)] data-[state=checked]:border-[var(--acento-primario)] data-[state=checked]:bg-[var(--acento-primario)] disabled:cursor-not-allowed disabled:opacity-50',
       className,
     )}
     {...props}
   >
     <Checkbox.Indicator className="flex items-center justify-center text-current">
-      <Check className="h-3.5 w-3.5" />
+      <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
     </Checkbox.Indicator>
   </Checkbox.Root>
 ));

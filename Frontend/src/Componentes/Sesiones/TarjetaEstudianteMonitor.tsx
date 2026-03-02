@@ -48,21 +48,23 @@ export function TarjetaEstudianteMonitor({
   const porcentaje = totalPreguntas > 0 ? (preguntasRespondidas / totalPreguntas) * 100 : 0;
 
   return (
-    <article className="rounded-lg border border-borde bg-white p-4 shadow-sm">
+    <article className="rounded-xl border border-[var(--borde-sutil)] bg-fondo-elevado-2 p-4 shadow-sombra-sm transicion-normal">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Avatar>
             <AvatarFallback>{obtenerIniciales(nombreCompleto)}</AvatarFallback>
           </Avatar>
           <div>
-            <h4 className="font-semibold">{nombreCompleto}</h4>
-            <p className="text-sm text-slate-600">{preguntasRespondidas}/{totalPreguntas} respondidas</p>
+            <h4 className="font-semibold text-[var(--texto-primario)]">{nombreCompleto}</h4>
+            <p className="text-sm text-[var(--texto-secundario)]">
+              <span className="font-mono">{preguntasRespondidas}/{totalPreguntas}</span> respondidas
+            </p>
           </div>
         </div>
         {modoKioscoActivo ? (
-          <ShieldCheck className="h-5 w-5 text-exito" />
+          <ShieldCheck className="h-5 w-5 text-[var(--estado-exito)]" strokeWidth={1.5} />
         ) : (
-          <ShieldAlert className="h-5 w-5 text-peligro" />
+          <ShieldAlert className="h-5 w-5 text-[var(--estado-peligro)]" strokeWidth={1.5} />
         )}
       </div>
 

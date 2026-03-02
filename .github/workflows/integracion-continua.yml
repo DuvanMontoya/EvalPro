@@ -1,0 +1,132 @@
+# ------------------------------------------------------------------------------
+# EvalPro - Pipeline de Integración Continua
+# Ejecuta validaciones clave de Backend, Frontend y Movil en cada cambio.
+# ------------------------------------------------------------------------------
+name: IntegracionContinua
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend NestJS
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: evalpro_usuario
+          POSTGRES_PASSWORD: evalpro_contrasena_segura
+          POSTGRES_DB: evalPro_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U evalpro_usuario -d evalPro_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: Backend
+
+    env:
+      DATABASE_URL: postgresql://evalpro_usuario:evalpro_contrasena_segura@localhost:5432/evalPro_db?schema=public
+      JWT_SECRETO_ACCESO: minimo_64_caracteres_completamente_aleatorios_acceso
+      JWT_EXPIRACION_ACCESO: 15m
+      JWT_SECRETO_REFRESH: minimo_64_caracteres_completamente_aleatorios_refresh
+      JWT_EXPIRACION_REFRESH: 7d
+      PUERTO_APP: 3001
+      CORS_ORIGENES_PERMITIDOS: http://localhost:3000
+      ENTORNO: pruebas
+      BCRYPT_RONDAS_HASH: 12
+      ADMIN_CORREO_INICIAL: admin@evalPro.com
+      ADMIN_CONTRASENA_INICIAL: CambiarInmediatamente123!
+      TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA: 3
+      TELEMETRIA_MAX_EVENTOS_SEGUNDO_PLANO: 0
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar cliente Prisma
+        run: npx prisma generate
+
+      - name: Aplicar esquema Prisma
+        run: npx prisma db push
+
+      - name: Cargar semilla inicial
+        run: npx prisma db seed
+
+      - name: Compilar backend
+        run: npm run build
+
+      - name: Ejecutar e2e básico
+        run: npm run pruebas:e2e:ci
+
+  frontend:
+    name: Frontend Next.js
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend
+
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+      NEXT_PUBLIC_WEBSOCKET_URL: http://localhost:3001
+      NEXT_PUBLIC_VERSION_APP: 1.0.0
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar frontend
+        run: npm run build
+
+  movil:
+    name: Movil Flutter
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Movil
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.2
+          channel: stable
+          cache: true
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Analizar codigo
+        run: flutter analyze
+
+      - name: Ejecutar pruebas Flutter
+        run: flutter test

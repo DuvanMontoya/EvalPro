@@ -40,12 +40,19 @@ export function BarraLateral() {
   return (
     <aside
       className={cn(
-        'hidden h-screen border-r border-borde bg-white lg:block',
-        abierta ? 'w-64' : 'w-20',
+        'hidden h-screen border-r border-[var(--borde-sutil)] lg:block transicion-lenta',
+        abierta ? 'w-[240px]' : 'w-[60px]',
       )}
+      style={{ background: 'var(--gradiente-barra-lateral)' }}
     >
-      <div className="flex h-16 items-center border-b border-borde px-4">
-        <span className="text-lg font-bold text-primario">{abierta ? 'EvalPro' : 'EP'}</span>
+      <div className="flex h-16 items-center justify-between border-b border-[var(--borde-sutil)] px-4">
+        <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--acento-primario)]" />
+          <span className="titulo-app text-lg font-extrabold text-[var(--texto-primario)]">
+            {abierta ? 'EvalPro' : 'EP'}
+          </span>
+        </div>
+        {abierta ? <span className="font-mono text-[10px] text-[var(--texto-terciario)]">v1.0</span> : null}
       </div>
       <nav className="space-y-1 p-3">
         {enlaces.map((enlace) => {
@@ -56,12 +63,15 @@ export function BarraLateral() {
             <Link
               href={enlace.href}
               key={enlace.href}
+              aria-label={enlace.etiqueta}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                activo ? 'bg-primario text-primario-frente' : 'text-slate-700 hover:bg-slate-100',
+                'group flex items-center gap-3 rounded-sm border px-3 py-2 text-sm font-medium transicion-rapida focus-visible:outline-none focus-visible:shadow-sombra-glow-primario',
+                activo
+                  ? 'border-[var(--acento-primario-borde)] bg-[var(--acento-primario-sutil)] text-[var(--acento-primario-hover)] shadow-sombra-xs'
+                  : 'border-transparent text-[var(--texto-secundario)] hover:border-[var(--borde-default)] hover:bg-fondo-elevado-3 hover:text-[var(--texto-primario)]',
               )}
             >
-              <Icono className="h-4 w-4" />
+              <Icono className="h-4 w-4 shrink-0" strokeWidth={1.5} />
               {abierta ? enlace.etiqueta : null}
             </Link>
           );

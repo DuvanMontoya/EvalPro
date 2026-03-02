@@ -40,7 +40,11 @@ export function TablaExamenes({ examenes, onPublicar, onArchivar }: PropiedadesT
       header: 'Estado',
       cell: ({ row }) => <InsigniaEstado estado={row.original.estado} />,
     },
-    { accessorKey: 'totalPreguntas', header: 'Preguntas' },
+    {
+      accessorKey: 'totalPreguntas',
+      header: 'Preguntas',
+      cell: ({ row }) => <span className="font-mono">{row.original.totalPreguntas}</span>,
+    },
     {
       id: 'acciones',
       header: 'Acciones',

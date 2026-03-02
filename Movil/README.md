@@ -1,17 +1,45 @@
-# movil
+# EvalPro Movil
 
-A new Flutter project.
+Aplicación Flutter para estudiantes en el ecosistema EvalPro.
 
-## Getting Started
+## Ejecución por entorno con `--dart-define-from-file`
 
-This project is a starting point for a Flutter application.
+Los archivos de entorno están en `Movil/Entornos/`:
 
-A few resources to get you started if this is your first Flutter project:
+- `dev.json`
+- `stage.json`
+- `prod.json`
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### Emulador Android (desarrollo local)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+cd Movil
+flutter run -d emulator-5554 --dart-define-from-file=Entornos/dev.json
+```
+
+### Dispositivo físico (misma red local)
+
+1. Reemplaza en `Entornos/dev.json` la URL por tu IP local si usas teléfono real.
+2. Ejecuta:
+
+```bash
+cd Movil
+flutter run -d <id-dispositivo> --dart-define-from-file=Entornos/dev.json
+```
+
+### Stage / Producción
+
+```bash
+cd Movil
+flutter run --dart-define-from-file=Entornos/stage.json
+flutter run --release --dart-define-from-file=Entornos/prod.json
+```
+
+## Validación rápida
+
+```bash
+cd Movil
+flutter pub get
+flutter analyze
+flutter test
+```

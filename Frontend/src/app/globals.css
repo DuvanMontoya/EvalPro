@@ -1,6 +1,6 @@
 /*
  * @archivo   globals.css
- * @descripcion Define variables de tema, tipografía y utilidades base para todo el frontend.
+ * @descripcion Declara tokens visuales globales, tipografias y utilidades base del panel.
  * @modulo    App
  * @autor     EvalPro
  * @fecha     2026-03-02
@@ -10,31 +10,189 @@
 @tailwind utilities;
 
 :root {
-  --fondo: 38 45% 97%;
-  --frente: 220 17% 12%;
-  --tarjeta: 0 0% 100%;
-  --borde: 32 28% 84%;
-  --primario: 209 89% 36%;
-  --primario-frente: 0 0% 100%;
-  --secundario: 34 78% 55%;
-  --secundario-frente: 220 17% 12%;
-  --peligro: 0 71% 46%;
-  --peligro-frente: 0 0% 100%;
-  --exito: 148 62% 32%;
-  --exito-frente: 0 0% 100%;
-  --radio-lg: 0.75rem;
+  --fondo-raiz: #080c10;
+  --fondo-elevado-1: #0d1117;
+  --fondo-elevado-2: #161b22;
+  --fondo-elevado-3: #1c2230;
+  --fondo-elevado-4: #242b38;
+
+  --borde-sutil: rgba(255, 255, 255, 0.06);
+  --borde-default: rgba(255, 255, 255, 0.1);
+  --borde-fuerte: rgba(255, 255, 255, 0.18);
+  --borde-interactivo: rgba(255, 255, 255, 0.28);
+
+  --texto-primario: #f0f4f8;
+  --texto-secundario: #8b949e;
+  --texto-terciario: #4a5568;
+  --texto-deshabilitado: #2d3748;
+  --texto-invertido: #080c10;
+
+  --acento-primario: #3b82f6;
+  --acento-primario-hover: #60a5fa;
+  --acento-primario-sutil: rgba(59, 130, 246, 0.12);
+  --acento-primario-borde: rgba(59, 130, 246, 0.35);
+  --acento-primario-glow: rgba(59, 130, 246, 0.2);
+
+  --acento-cyan: #22d3ee;
+  --acento-cyan-sutil: rgba(34, 211, 238, 0.1);
+
+  --estado-exito: #10b981;
+  --estado-exito-sutil: rgba(16, 185, 129, 0.12);
+  --estado-exito-borde: rgba(16, 185, 129, 0.3);
+
+  --estado-advertencia: #f59e0b;
+  --estado-advertencia-sutil: rgba(245, 158, 11, 0.12);
+  --estado-advertencia-borde: rgba(245, 158, 11, 0.3);
+
+  --estado-peligro: #ef4444;
+  --estado-peligro-sutil: rgba(239, 68, 68, 0.12);
+  --estado-peligro-borde: rgba(239, 68, 68, 0.3);
+
+  --estado-info: #8b5cf6;
+  --estado-info-sutil: rgba(139, 92, 246, 0.12);
+
+  --estado-neutro: #6b7280;
+  --estado-neutro-sutil: rgba(107, 114, 128, 0.12);
+  --estado-neutro-borde: rgba(107, 114, 128, 0.3);
+
+  --gradiente-primario: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  --gradiente-peligro: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --gradiente-exito: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --gradiente-sutil-fondo: linear-gradient(180deg, rgba(59, 130, 246, 0.04) 0%, transparent 60%);
+  --gradiente-barra-lateral: linear-gradient(180deg, #0d1117 0%, #080c10 100%);
+  --fondo-encabezado: rgba(8, 12, 16, 0.75);
+  --superposicion-modal: rgba(0, 0, 0, 0.75);
+
+  --sombra-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --sombra-md: 0 4px 20px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --sombra-lg: 0 8px 40px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.5);
+  --sombra-xl: 0 20px 60px rgba(0, 0, 0, 0.8);
+  --sombra-azul: 0 0 20px rgba(59, 130, 246, 0.25), 0 4px 12px rgba(0, 0, 0, 0.5);
+  --sombra-glow-primario: 0 0 0 3px rgba(59, 130, 246, 0.2);
+
+  --transicion-rapida: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  --transicion-normal: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transicion-lenta: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  --transicion-rebote: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --radio-xs: 4px;
+  --radio-sm: 6px;
+  --radio-md: 8px;
+  --radio-lg: 12px;
+  --radio-xl: 16px;
+  --radio-2xl: 20px;
+  --radio-full: 9999px;
+
+  --fondo: 217 29% 5%;
+  --frente: 210 29% 95%;
+  --tarjeta: 218 23% 12%;
+  --borde: 215 14% 26%;
+  --primario: 217 91% 60%;
+  --primario-frente: 220 40% 10%;
+  --secundario: 218 25% 20%;
+  --secundario-frente: 210 29% 95%;
+  --peligro: 0 84% 60%;
+  --peligro-frente: 210 40% 98%;
+  --exito: 152 64% 44%;
+  --exito-frente: 220 40% 10%;
 }
 
-* {
-  @apply border-borde;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
 }
 
 body {
-  color: hsl(var(--frente));
-  background: radial-gradient(circle at 20% 0%, #f7efe0 0%, #f6f3ee 45%, #eef3f7 100%);
   min-height: 100vh;
+  font-family: var(--fuente-ui), 'Segoe UI', sans-serif;
+  color: var(--texto-primario);
+  background-color: var(--fondo-raiz);
+  background-image: var(--gradiente-sutil-fondo);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--fuente-display), 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+code,
+pre,
+.texto-datos {
+  font-family: var(--fuente-mono), 'Courier New', monospace;
+}
+
+::selection {
+  color: var(--texto-primario);
+  background: var(--acento-primario-sutil);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--borde-fuerte);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--borde-interactivo);
 }
 
 .texto-muted {
-  @apply text-sm text-slate-600;
+  color: var(--texto-secundario);
+  font-size: 0.875rem;
+}
+
+.titulo-app {
+  font-family: var(--fuente-display), 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.superficie-elevada {
+  box-shadow: var(--sombra-md);
+}
+
+.transicion-rapida {
+  transition: var(--transicion-rapida);
+}
+
+.transicion-normal {
+  transition: var(--transicion-normal);
+}
+
+.transicion-lenta {
+  transition: var(--transicion-lenta);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

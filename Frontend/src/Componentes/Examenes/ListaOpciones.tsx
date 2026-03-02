@@ -50,7 +50,7 @@ export function ListaOpciones({
   };
 
   return (
-    <div className="space-y-3 rounded-md border border-borde p-3">
+    <div className="space-y-3 rounded-md border border-[var(--borde-sutil)] p-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Opciones</h4>
         <Boton type="button" tamano="pequeno" variante="contorno" onClick={onAgregar} disabled={campos.length >= 5}>
@@ -59,7 +59,7 @@ export function ListaOpciones({
       </div>
 
       {campos.map((campo, indice) => (
-        <div key={campo.id} className="grid gap-2 rounded-md border border-borde p-3 md:grid-cols-[70px_1fr_auto_auto]">
+        <div key={campo.id} className="grid gap-2 rounded-md border border-[var(--borde-sutil)] p-3 md:grid-cols-[70px_1fr_auto_auto]">
           <Entrada {...register(`opciones.${indice}.letra`)} placeholder="A" maxLength={1} />
           <Entrada {...register(`opciones.${indice}.contenido`)} placeholder={`Contenido opción ${indice + 1}`} />
           <label className="flex items-center gap-2 text-sm">
@@ -75,7 +75,9 @@ export function ListaOpciones({
         </div>
       ))}
 
-      {errores.opciones ? <p className="text-sm text-peligro">{errores.opciones.message as string}</p> : null}
+      {errores.opciones ? (
+        <p className="text-sm text-[var(--estado-peligro)]">{errores.opciones.message as string}</p>
+      ) : null}
     </div>
   );
 }
