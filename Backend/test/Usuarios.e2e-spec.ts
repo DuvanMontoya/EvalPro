@@ -24,9 +24,8 @@ describe('Usuarios (e2e)', () => {
   });
 
   it('permite al administrador crear docentes y estudiantes por rutas dedicadas', async () => {
-    const correoAdmin = process.env.ADMIN_CORREO_INICIAL ?? 'admin@evalPro.com';
-    const contrasenaAdmin = process.env.ADMIN_CONTRASENA_INICIAL ?? 'CambiarInmediatamente123!';
-    const sesionAdmin = await iniciarSesionE2e(aplicacion, correoAdmin, contrasenaAdmin);
+    const admin = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
+    const sesionAdmin = await iniciarSesionE2e(aplicacion, admin.correo, admin.contrasena);
 
     const sufijo = Date.now();
     const docente = await request(aplicacion.getHttpServer())
@@ -55,9 +54,8 @@ describe('Usuarios (e2e)', () => {
   });
 
   it('bloquea creación de administradores por endpoint público de usuarios', async () => {
-    const correoAdmin = process.env.ADMIN_CORREO_INICIAL ?? 'admin@evalPro.com';
-    const contrasenaAdmin = process.env.ADMIN_CONTRASENA_INICIAL ?? 'CambiarInmediatamente123!';
-    const sesionAdmin = await iniciarSesionE2e(aplicacion, correoAdmin, contrasenaAdmin);
+    const admin = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
+    const sesionAdmin = await iniciarSesionE2e(aplicacion, admin.correo, admin.contrasena);
 
     const respuesta = await request(aplicacion.getHttpServer())
       .post('/api/v1/usuarios')

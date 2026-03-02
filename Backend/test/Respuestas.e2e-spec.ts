@@ -83,16 +83,18 @@ describe('Respuestas (e2e)', () => {
       .post(`/api/v1/sesiones/${idSesion}/activar`)
       .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
     expect(activacion.status).toBe(201);
+    const datosActivacion = activacion.body?.datos ?? activacion.body;
+    const codigoAcceso = datosActivacion?.codigoAcceso;
     const primerIntento = await request(aplicacion.getHttpServer())
       .post('/api/v1/intentos')
       .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
-      .send({ idSesion });
+      .send({ idSesion, codigoAcceso });
     expect(primerIntento.status).toBe(201);
 
     const segundoIntento = await request(aplicacion.getHttpServer())
       .post('/api/v1/intentos')
       .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
-      .send({ idSesion });
+      .send({ idSesion, codigoAcceso });
     expect(segundoIntento.status).toBe(409);
     expect(segundoIntento.body?.codigoError).toBe('INTENTO_DUPLICADO');
   });
@@ -159,10 +161,12 @@ describe('Respuestas (e2e)', () => {
       .post(`/api/v1/sesiones/${idSesion}/activar`)
       .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
     expect(activacion.status).toBe(201);
+    const datosActivacion = activacion.body?.datos ?? activacion.body;
+    const codigoAcceso = datosActivacion?.codigoAcceso;
     const intento = await request(aplicacion.getHttpServer())
       .post('/api/v1/intentos')
       .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
-      .send({ idSesion });
+      .send({ idSesion, codigoAcceso });
     const datosIntento = intento.body?.datos ?? intento.body;
     const idIntento = datosIntento?.id;
     expect(intento.status).toBe(201);

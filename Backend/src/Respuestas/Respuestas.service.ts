@@ -93,6 +93,11 @@ export class RespuestasService {
           },
         });
       }
+
+      await prismaTransaccional.intentoExamen.update({
+        where: { id: dto.idIntento },
+        data: { ultimaSincronizacion: new Date() },
+      });
     });
 
     return { sincronizadas: dto.respuestas.length };

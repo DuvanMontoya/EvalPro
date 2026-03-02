@@ -86,11 +86,13 @@ describe('Telemetria (e2e)', () => {
       .post(`/api/v1/sesiones/${idSesion}/activar`)
       .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
     expect(activacion.status).toBe(201);
+    const datosActivacion = activacion.body?.datos ?? activacion.body;
+    const codigoAcceso = datosActivacion?.codigoAcceso;
 
     const intentoUno = await request(aplicacion.getHttpServer())
       .post('/api/v1/intentos')
       .set('Authorization', `Bearer ${sesionEstudianteUno.tokenAcceso}`)
-      .send({ idSesion });
+      .send({ idSesion, codigoAcceso });
     const datosIntentoUno = intentoUno.body?.datos ?? intentoUno.body;
     const idIntentoUno = datosIntentoUno?.id;
     expect(intentoUno.status).toBe(201);

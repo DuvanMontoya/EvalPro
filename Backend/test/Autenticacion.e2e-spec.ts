@@ -30,12 +30,11 @@ describe('Autenticacion (e2e)', () => {
   });
 
   it('inicia sesión con el administrador inicial', async () => {
-    const correoAdmin = process.env.ADMIN_CORREO_INICIAL ?? 'admin@evalPro.com';
-    const contrasenaAdmin = process.env.ADMIN_CONTRASENA_INICIAL ?? 'CambiarInmediatamente123!';
+    const admin = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
 
     const respuesta = await request(aplicacion.getHttpServer()).post('/api/v1/autenticacion/iniciar-sesion').send({
-      correo: correoAdmin,
-      contrasena: contrasenaAdmin,
+      correo: admin.correo,
+      contrasena: admin.contrasena,
     });
 
     const datos = respuesta.body?.datos ?? respuesta.body;
@@ -50,7 +49,7 @@ describe('Autenticacion (e2e)', () => {
   it('rechaza login con credenciales inválidas usando código estándar', async () => {
     const respuesta = await request(aplicacion.getHttpServer()).post('/api/v1/autenticacion/iniciar-sesion').send({
       correo: 'inexistente@evalpro.test',
-      contrasena: 'incorrecta',
+      contrasena: 'incorrectaSegura123!',
     });
 
     expect(respuesta.status).toBe(401);

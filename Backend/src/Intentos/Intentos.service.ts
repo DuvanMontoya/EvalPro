@@ -55,6 +55,8 @@ export class IntentosService {
       throw new ForbiddenException('Código de acceso inválido para la sesión');
     }
 
+    await this.validarElegibilidadAsignacion(sesion.asignacion, idEstudiante);
+
     const intentoExistente = await this.prisma.intentoExamen.findFirst({
       where: {
         estudianteId: idEstudiante,
@@ -217,5 +219,46 @@ export class IntentosService {
   private generarSemillaDeterminista(idExamen: string, idSesion: string, idEstudiante: string): number {
     const hash = createHash('sha256').update(`${idExamen}:${idSesion}:${idEstudiante}`).digest('hex');
     return Number.parseInt(hash.slice(0, 8), 16);
+  }
+
+  private async validarElegibilidadAsignacion(
+    asignacion:
+      | {
+          id: string;
+          fechaInicio: Date;
+          fechaFin: Date;
+          intentosMaximos: number;
+          idGrupo: string | null;
+          idEstudiante: string | null;
+        }
+      | null,
+    idEstudiante: string,
+  ): Promise<void> {
+    if (!asignacion) {
+      return;
+    }
+
+    const ahora = new Date();
+    if (ahora < asignacion.fechaInicio || ahora > asignacion.fechaFin) {
+      throw new ForbiddenException('La sesión está fuera de la ventana de la asignación');
+    }
+
+    if (asignacion.idEstudiante && asignacion.idEstudiante !== idEstudiante) {
+      throw new ForbiddenException('La asignación es individual y no corresponde al estudiante autenticado');
+    }
+
+    if (asignacion.idGrupo) {
+      const membresia = await this.prisma.grupoEstudiante.findFirst({
+        where: {
+          idGrupo: asignacion.idGrupo,
+          idEstudiante,
+          activo: true,
+        },
+        select: { id: true },
+      });
+      if (!membresia) {
+        throw new ForbiddenException('El estudiante no pertenece activamente al grupo de la asignación');
+      }
+    }
   }
 }

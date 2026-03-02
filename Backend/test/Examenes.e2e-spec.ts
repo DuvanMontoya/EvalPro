@@ -24,10 +24,8 @@ describe('Examenes (e2e)', () => {
   });
 
   it('retorna lista de exámenes para administrador autenticado', async () => {
-    const correoAdmin = process.env.ADMIN_CORREO_INICIAL ?? 'admin@evalPro.com';
-    const contrasenaAdmin = process.env.ADMIN_CONTRASENA_INICIAL ?? 'CambiarInmediatamente123!';
-
-    const autenticacion = await iniciarSesionE2e(aplicacion, correoAdmin, contrasenaAdmin);
+    const admin = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
+    const autenticacion = await iniciarSesionE2e(aplicacion, admin.correo, admin.contrasena);
     const tokenAcceso = autenticacion.tokenAcceso;
     const respuesta = await request(aplicacion.getHttpServer())
       .get('/api/v1/examenes')

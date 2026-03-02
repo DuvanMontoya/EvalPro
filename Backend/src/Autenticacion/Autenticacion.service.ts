@@ -12,6 +12,7 @@ import { EstadoCuenta, EstadoInstitucion, RolUsuario, Usuario } from '@prisma/cl
 import * as bcrypt from 'bcrypt';
 import { randomBytes, randomUUID } from 'crypto';
 import { AuditoriaService } from '../Auditoria/Auditoria.service';
+import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { RegistrarUsuarioDto } from './Dto/RegistrarUsuario.dto';
 import { BlacklistTokensService } from './Servicios/BlacklistTokens.service';
@@ -79,7 +80,7 @@ export class AutenticacionService {
       await this.registrarAuditoriaLogin(null, RolUsuario.ESTUDIANTE, 'LOGIN_FALLIDO', contextoCliente, {
         correo: correoNormalizado,
       });
-      throw new UnauthorizedException('Credenciales inválidas');
+      this.lanzarCredencialesInvalidas();
     }
 
     await this.validarEstadoCuentaAntesDeContrasena(usuario);
@@ -87,7 +88,7 @@ export class AutenticacionService {
     const coincide = await bcrypt.compare(contrasena, usuario.contrasena);
     if (!coincide) {
       await this.procesarIntentoLoginFallido(usuario, contextoCliente);
-      throw new UnauthorizedException('Credenciales inválidas');
+      this.lanzarCredencialesInvalidas();
     }
 
     await this.prisma.usuario.update({
@@ -308,7 +309,7 @@ export class AutenticacionService {
 
     const coincideTemporal = await bcrypt.compare(contrasena, usuario.credencialTemporal);
     if (!coincideTemporal) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      this.lanzarCredencialesInvalidas();
     }
 
     const payloadBase = this.construirPayload(usuario);
@@ -479,5 +480,12 @@ export class AutenticacionService {
   private obtenerRondasHash(): number {
     const valorConfigurado = Number(this.servicioConfiguracion.get<string>('BCRYPT_RONDAS_HASH', '12'));
     return Number.isFinite(valorConfigurado) && valorConfigurado >= 12 ? valorConfigurado : 12;
+  }
+
+  private lanzarCredencialesInvalidas(): never {
+    throw new UnauthorizedException({
+      message: 'Credenciales inválidas',
+      codigoError: CODIGOS_ERROR.CREDENCIALES_INVALIDAS,
+    });
   }
 }

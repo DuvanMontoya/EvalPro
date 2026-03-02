@@ -262,12 +262,43 @@ export class SesionesExamenService {
       throw new BadRequestException('La sesión no está activa');
     }
 
+    if (sesion.asignacion) {
+      const ahora = new Date();
+      if (ahora < sesion.asignacion.fechaInicio || ahora > sesion.asignacion.fechaFin) {
+        throw new ForbiddenException('La sesión no está dentro de la ventana de asignación');
+      }
+
+      if (sesion.asignacion.idEstudiante && sesion.asignacion.idEstudiante !== idEstudiante) {
+        throw new ForbiddenException('La asignación individual no corresponde al estudiante autenticado');
+      }
+
+      if (sesion.asignacion.idGrupo) {
+        const membresia = await this.prisma.grupoEstudiante.findFirst({
+          where: {
+            idGrupo: sesion.asignacion.idGrupo,
+            idEstudiante,
+            activo: true,
+          },
+          select: { id: true },
+        });
+        if (!membresia) {
+          throw new ForbiddenException('El estudiante no pertenece activamente al grupo de la asignación');
+        }
+      }
+    }
+
     const intentosPrevios = await this.prisma.intentoExamen.count({
       where: {
         sesionId: sesion.id,
         estudianteId: idEstudiante,
       },
     });
+
+    if (sesion.asignacion?.intentosMaximos && sesion.asignacion.intentosMaximos > 0) {
+      if (intentosPrevios >= sesion.asignacion.intentosMaximos) {
+        throw new ForbiddenException('Se alcanzó el máximo de intentos permitidos para esta sesión');
+      }
+    }
 
     return {
       id: sesion.id,

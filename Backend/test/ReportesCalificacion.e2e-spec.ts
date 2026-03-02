@@ -74,10 +74,12 @@ describe('Reportes y Calificación (e2e)', () => {
       .post(`/api/v1/sesiones/${idSesion}/activar`)
       .set('Authorization', `Bearer ${sesionPropietario.tokenAcceso}`);
     expect(activacion.status).toBe(201);
+    const datosActivacion = activacion.body?.datos ?? activacion.body;
+    const codigoAcceso = datosActivacion?.codigoAcceso;
     const intento = await request(aplicacion.getHttpServer())
       .post('/api/v1/intentos')
       .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
-      .send({ idSesion });
+      .send({ idSesion, codigoAcceso });
     expect(intento.status).toBe(201);
 
     const reporte = await request(aplicacion.getHttpServer())
@@ -135,11 +137,13 @@ describe('Reportes y Calificación (e2e)', () => {
       .post(`/api/v1/sesiones/${idSesion}/activar`)
       .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
     expect(activacion.status).toBe(201);
+    const datosActivacion = activacion.body?.datos ?? activacion.body;
+    const codigoAcceso = datosActivacion?.codigoAcceso;
 
     const intento = await request(aplicacion.getHttpServer())
       .post('/api/v1/intentos')
       .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
-      .send({ idSesion });
+      .send({ idSesion, codigoAcceso });
     const datosIntento = intento.body?.datos ?? intento.body;
     const idIntento = datosIntento?.id;
     expect(intento.status).toBe(201);
