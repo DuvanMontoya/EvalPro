@@ -1,0 +1,64 @@
+---
+description: Reglas específicas de Flutter, Riverpod 2, Drift y Modo Kiosco para EvalPro Móvil
+globs: ["Movil/**/*.dart", "Movil/android/**/*.kt", "Movil/ios/**/*.swift"]
+alwaysApply: false
+---
+
+# Móvil Flutter — Reglas EvalPro
+
+## Estado — Riverpod 2
+- Todos los providers usan `@riverpod` con generación de código.
+- Ejecutar `flutter pub run build_runner build` después de crear/modificar providers.
+- Estado complejo → clase `NombreEstado` inmutable con `copyWith`.
+- No usar `ChangeNotifier` ni `setState` en pantallas principales. Solo Riverpod.
+
+## Modelos
+- Siempre `fromJson` / `toJson` escritos manualmente. Sin `json_serializable`.
+- Todos los campos requeridos con `required` en el constructor.
+- Campos opcionales con `?` en el tipo y valor default en `fromJson`.
+
+## Base de datos local (Drift)
+- `@DriftDatabase` en `BaseDatosLocal.dart`.
+- Ejecutar `flutter pub run build_runner build` para generar código Drift.
+- `upsert` para sincronización (nunca `insert` que puede duplicar).
+- `esSincronizada` → 0 = pendiente, 1 = sincronizado.
+
+## Tokens
+- Guardar `tokenAcceso` y `tokenRefresh` en `flutter_secure_storage`.
+- Interceptor Dio: agregar `Authorization: Bearer $tokenAcceso` automáticamente.
+- Si 401: intentar refresh → si falla → eliminar tokens → navegar a login.
+
+## Modo Kiosco
+- MethodChannel EXACTO: `'com.evalPro.movil/modoKiosco'`
+- Android: `startLockTask()` + `FLAG_SECURE` en `MainActivity.kt`.
+- iOS: `AEAssessmentSession` en `AppDelegate.swift` con `AutomaticAssessmentConfiguration`.
+- Si el modo kiosco falla al activar: NO bloquear el examen. Registrar telemetría y continuar.
+- Monitorear ciclo de vida con `WidgetsBindingObserver.didChangeAppLifecycleState`.
+- `AppLifecycleState.paused` o `inactive` → evento de fraude → telemetría + WebSocket.
+
+## Aleatorización
+- NUNCA usar `Random()` de Dart para aleatorizar preguntas. No es determinista entre sesiones.
+- Siempre usar `AleatorizadorLocal` con el LCG implementado con semilla personal.
+- Semilla personal: `((semillaGrupo * idEstudiante.hashCode) % 999999).abs() + 1`.
+
+## Copiar/Pegar en campos de texto (Respuesta Abierta)
+```dart
+TextField(
+  contextMenuBuilder: (_, __) => const SizedBox.shrink(),
+  enableInteractiveSelection: false,
+)
+```
+
+## Navegación
+- go_router para toda la navegación.
+- Bloquear retroceso del SO durante el examen con `PopScope(canPop: false)`.
+- Rutas en `Constantes/Rutas.dart`.
+
+## Botones táctiles (accesibilidad)
+- Tamaño mínimo de área táctil: 44x44 px (guías de iOS y Material Design).
+- Especialmente en `BotonRespuestaOMR.dart`.
+
+## Sincronización offline
+- Al recuperar conexión: sincronizar en lote con `POST /respuestas/sincronizar-lote`.
+- Reintentos: inmediato → 30s → 2min → 5min (máximo 10 intentos).
+- Mostrar `IndicadorConexion.dart` siempre visible durante el examen.

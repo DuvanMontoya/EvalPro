@@ -1,0 +1,35 @@
+---
+description: Reglas de nomenclatura en español para todo el proyecto EvalPro
+globs: ["**/*.ts", "**/*.tsx", "**/*.dart", "**/*.kt", "**/*.swift"]
+alwaysApply: true
+---
+
+# Nomenclatura EvalPro — Español Obligatorio
+
+## Regla absolutamente no negociable
+TODO nombre de variable, función, clase, archivo, carpeta y comentario debe estar en **español**.
+
+## Convenciones por tipo
+- Carpetas y archivos: **PascalCase español** → `Autenticacion/`, `ExamenServicio.ts`
+- Variables y funciones: **camelCase español** → `idExamen`, `obtenerPorId()`
+- Clases e interfaces: **PascalCase español** → `SesionExamen`, `CrearExamenDto`
+- Tablas PostgreSQL: **snake_case español** → `sesion_examen`, `intento_examen`
+- Comentarios: **Español completo** → `// Calcula el puntaje total`
+- Mensajes de error: **Español** → `"Examen no encontrado"`
+
+## Encabezado obligatorio en cada archivo
+```
+/**
+ * @archivo   NombreArchivo.ext
+ * @descripcion Qué hace este archivo en una oración.
+ * @modulo    NombreModulo
+ * @autor     EvalPro
+ * @fecha     YYYY-MM-DD
+ */
+```
+
+## Prohibido
+- `any` en TypeScript
+- Magic strings o magic numbers sin constante nombrada
+- Archivos de más de 200 líneas
+- Código duplicado

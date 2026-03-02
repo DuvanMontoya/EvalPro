@@ -1,0 +1,56 @@
+---
+description: Reglas específicas de Next.js 14, shadcn/ui y React Query para EvalPro Frontend
+globs: ["Frontend/**/*.ts", "Frontend/**/*.tsx"]
+alwaysApply: false
+---
+
+# Frontend Next.js — Reglas EvalPro
+
+## Server vs Client Components
+- Páginas (`page.tsx`) → Server Component por defecto. Agregar `'use client'` solo si necesita hooks.
+- Componentes en `Componentes/` con hooks o eventos del DOM → `'use client'` como primera línea.
+- Peticiones HTTP desde Client Components: siempre mediante hooks de React Query + servicios.
+
+## Tokens y autenticación
+- `tokenAcceso` → en memoria (variable de módulo Zustand). NUNCA en localStorage.
+- `tokenRefresh` → en cookie httpOnly mediante endpoint interno `/api/auth/sesion`.
+- Interceptor Axios con refresh automático: si 401, intenta refresh y reintenta la petición.
+
+## React Query — query keys en español
+```typescript
+['examenes']               // lista
+['examenes', idExamen]     // individual
+['sesiones']
+['sesiones', idSesion]
+['reportes', 'sesion', id]
+```
+- `staleTime: 2 * 60 * 1000` para datos que cambian poco.
+- Monitor tiempo real → NO usar React Query. Usar WebSocket directamente.
+
+## Estado — cuándo usar qué
+| Dato | Herramienta |
+|---|---|
+| Usuario autenticado, token | Zustand |
+| UI global (sidebar, tema) | Zustand |
+| Datos del servidor | React Query |
+| Formularios | react-hook-form + zod |
+| Estado local de modal | useState |
+| Tiempo real WebSocket | useState local |
+
+## Formularios
+- Siempre react-hook-form + zod. Esquemas Zod en `src/Lib/validaciones.ts`.
+- Errores inline bajo cada campo, en español.
+- Botón de submit deshabilitado durante la mutación.
+- Éxito → toast verde. Error → toast rojo con mensaje de la API.
+
+## Componentes UI
+- Usar shadcn/ui para todos los elementos estándar (Button, Input, Table, Dialog, etc.).
+- Toast → sonner (integrado en shadcn/ui).
+- Tablas → @tanstack/react-table + Table de shadcn/ui.
+- No hardcodear colores hexadecimales. Usar variables CSS del tema de Tailwind.
+
+## WebSocket (MonitorTiempoReal)
+- Conectar al montar el componente. Desconectar al desmontar (`socket.disconnect()`).
+- Emitir `unirse_sala_sesion` con `{ idSesion, rol: RolUsuario.DOCENTE }`.
+- Fraude detectado → toast rojo prominente + guardar en array local `alertasFraude`.
+- Sesión finalizada → redirigir automáticamente a Resultados.

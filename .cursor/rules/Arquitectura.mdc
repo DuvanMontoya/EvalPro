@@ -1,0 +1,29 @@
+---
+description: Arquitectura y orden de construcción del proyecto EvalPro
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Arquitectura EvalPro
+
+## Stack
+- Backend: NestJS 10 + Prisma 5 + PostgreSQL 15
+- Frontend: Next.js 14 (App Router) + shadcn/ui + Zustand + React Query
+- Móvil: Flutter 3 + Riverpod 2 + Drift (SQLite)
+
+## Orden de construcción obligatorio (no saltar pasos)
+1. `Compartido/` → tipos e interfaces TypeScript
+2. `Backend/prisma/schema.prisma` → esquema completo
+3. `npx prisma migrate dev` → migración
+4. `Backend/` módulos: Configuracion → Comun → Autenticacion → Usuarios → Examenes → Preguntas → SesionesExamen → Respuestas → Telemetria → Reportes
+5. `Frontend/` → auth + layout → Tablero → Examenes → Sesiones → Estudiantes → Reportes
+6. `Movil/` → Modelos → BaseDatosLocal → Servicios → Providers → ModoExamen → Pantallas
+
+## Formato de respuesta API (siempre)
+```json
+{ "exito": true, "datos": {}, "mensaje": "...", "marcaTiempo": "..." }
+{ "exito": false, "datos": null, "mensaje": "...", "codigoError": "...", "marcaTiempo": "..." }
+```
+
+## Sin datos hardcodeados
+Todo valor configurable va en `.env`. Todo texto de UI en constantes. Sin mocks.

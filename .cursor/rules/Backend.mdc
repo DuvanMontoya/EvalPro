@@ -1,0 +1,44 @@
+---
+description: Reglas específicas de NestJS, Prisma y PostgreSQL para EvalPro Backend
+globs: ["Backend/**/*.ts"]
+alwaysApply: false
+---
+
+# Backend NestJS — Reglas EvalPro
+
+## Inyección de dependencias
+- Siempre usar `PrismaService` inyectado. Nunca instanciar `PrismaClient` directamente.
+- `PrismaModule` es `@Global()`. Disponible en todo el backend sin reimportar.
+
+## DTOs
+- Crear → `CrearNombreDto`, Actualizar → `ActualizarNombreDto extends PartialType(CrearNombreDto)`
+- Respuesta → `RespuestaNombreDto` sin `contrasena` ni `tokenRefresh` jamás
+- Siempre `@IsNotEmpty()`, `@IsString()`, `@IsUUID()` según corresponda
+- Siempre `@ApiProperty({ description: '...en español...' })` en cada propiedad
+
+## Guards en controladores
+```typescript
+@UseGuards(JwtAutenticacionGuard, RolesGuard)
+@Roles(RolUsuario.DOCENTE)
+```
+
+## Reglas de seguridad críticas
+- Passwords: siempre bcrypt antes de guardar. NUNCA loguear contraseñas.
+- JWT Access: 15 minutos. Refresh: 7 días. Guardar solo HASH del refresh en DB.
+- Endpoints de docente: verificar que el recurso pertenece al docente autenticado.
+- Al retornar examen al estudiante: NUNCA incluir `esCorrecta` en opciones de respuesta.
+- Rate limiting en endpoints de autenticación: @nestjs/throttler.
+
+## Transacciones Prisma
+Operaciones que afecten múltiples tablas deben ir en `prisma.$transaction([...])`.
+Ejemplo: crear pregunta + actualizar contadores del examen.
+
+## Eventos WebSocket
+- Nombre del namespace: `/sesiones`
+- Sala por sesión: `sesion_${idSesion}`
+- Al detectar fraude: emitir `estudiante:fraude_detectado` inmediatamente.
+
+## Telemetría — Umbral de fraude
+- Leer umbrales desde `process.env`, nunca hardcodear.
+- `TELEMETRIA_MAX_EVENTOS_SEGUNDO_PLANO` → si se supera → `esSospechoso = true`.
+- `TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA` → tiempo mínimo por pregunta para no ser sospechoso.
