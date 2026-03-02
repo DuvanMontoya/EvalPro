@@ -1,5 +1,14 @@
 # Variables sensibles
 .env
+.env.*
+!.env.ejemplo
+!.env.local.ejemplo
+
+# Entornos por modulo
+Backend/.env
+Frontend/.env
+Frontend/.env.local
+Movil/.env
 
 # Dependencias Node
 **/node_modules/
@@ -8,13 +17,22 @@
 **/dist/
 **/.next/
 **/build/
+**/coverage/
+**/*.tsbuildinfo
 
-# Flutter
+# Flutter / Dart
 Movil/.dart_tool/
 Movil/.pub/
 Movil/.packages
 Movil/.flutter-plugins
 Movil/.flutter-plugins-dependencies
+Movil/.metadata
+Movil/build/
+Movil/android/.gradle/
+Movil/android/app/build/
+Movil/ios/Pods/
+Movil/ios/.symlinks/
+Movil/ios/Flutter/ephemeral/
 
 # IDE / SO
 .vscode/
@@ -31,3 +49,4 @@ pnpm-debug.log*
 
 # Docker volumenes locales (si se materializan)
 **/postgres_datos/
+**/postgres_datos_dev/

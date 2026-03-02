@@ -3,25 +3,31 @@ services:
     image: postgres:15-alpine
     container_name: evalpro_postgres
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: ${POSTGRES_USUARIO}
       POSTGRES_PASSWORD: ${POSTGRES_CONTRASENA}
       POSTGRES_DB: ${POSTGRES_BASE_DATOS}
     ports:
-      - '${POSTGRES_PUERTO}:5432'
+      - '${POSTGRES_PUERTO:-5432}:5432'
     volumes:
       - postgres_datos:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USUARIO} -d ${POSTGRES_BASE_DATOS}']
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 15s
 
   backend:
-    image: node:20
+    image: node:20-bookworm
     container_name: evalpro_backend
     restart: unless-stopped
+    init: true
     working_dir: /workspace/Backend
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,8 +45,9 @@ services:
       ADMIN_CONTRASENA_INICIAL: ${ADMIN_CONTRASENA_INICIAL}
       TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA: ${TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA}
       TELEMETRIA_MAX_EVENTOS_SEGUNDO_PLANO: ${TELEMETRIA_MAX_EVENTOS_SEGUNDO_PLANO}
+      NODE_ENV: production
     ports:
-      - '${PUERTO_APP}:3001'
+      - '${PUERTO_APP:-3001}:3001'
     volumes:
       - ./:/workspace
       - backend_node_modules:/workspace/Backend/node_modules
@@ -52,16 +59,24 @@ services:
       npm run build &&
       npm run start:prod"
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:3001/api/v1/salud || exit 1']
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(\"http://127.0.0.1:3001/api/v1/salud\").then((r)=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"',
+        ]
       interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 15
+      start_period: 45s
 
   frontend:
-    image: node:20
+    image: node:20-bookworm
     container_name: evalpro_frontend
     restart: unless-stopped
+    init: true
     working_dir: /workspace/Frontend
+    env_file:
+      - .env
     depends_on:
       backend:
         condition: service_healthy
@@ -69,8 +84,9 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NEXT_PUBLIC_WEBSOCKET_URL: ${NEXT_PUBLIC_WEBSOCKET_URL}
       NEXT_PUBLIC_VERSION_APP: ${NEXT_PUBLIC_VERSION_APP}
+      NODE_ENV: production
     ports:
-      - '${PUERTO_FRONTEND}:3000'
+      - '${PUERTO_FRONTEND:-3000}:3000'
     volumes:
       - ./:/workspace
       - frontend_node_modules:/workspace/Frontend/node_modules
@@ -79,10 +95,15 @@ services:
       npm run build &&
       npm run start -- --hostname 0.0.0.0 --port 3000"
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000 || exit 1']
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(\"http://127.0.0.1:3000\").then((r)=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"',
+        ]
       interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 15
+      start_period: 45s
 
 volumes:
   postgres_datos:
