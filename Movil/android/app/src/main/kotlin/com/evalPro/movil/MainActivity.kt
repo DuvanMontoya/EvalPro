@@ -6,7 +6,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-package com.evalPro.movil
+package com.evalpro.movil
 
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity

@@ -5,6 +5,6 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-package com.evalPro.movil.ModoKiosco
+package com.evalpro.movil.modokiosco
 
 class ModoKioscoPlugin
