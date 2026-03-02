@@ -1,6 +1,6 @@
 /**
  * @archivo   useEstudiantes.ts
- * @descripcion Administra consultas y creación de estudiantes desde módulo de usuarios.
+ * @descripcion Administra consultas y creación de usuarios académicos (docentes y estudiantes).
  * @modulo    Hooks
  * @autor     EvalPro
  * @fecha     2026-03-02
@@ -12,36 +12,38 @@ import { API } from '@/Constantes/Api.constantes';
 import { RespuestaApi, RolUsuario, Usuario } from '@/Tipos';
 import { apiCliente, extraerDatos } from '@/Servicios/ApiCliente';
 
-interface CrearEstudianteDto {
+type RolUsuarioAcademico = RolUsuario.ESTUDIANTE | RolUsuario.DOCENTE;
+
+interface CrearUsuarioAcademicoDto {
   nombre: string;
   apellidos: string;
   correo: string;
   contrasena: string;
-  rol: RolUsuario.ESTUDIANTE;
+  rol: RolUsuarioAcademico;
 }
 
 /**
- * Consulta y muta el catálogo de estudiantes.
+ * Consulta y muta el catálogo de usuarios académicos.
  */
 export function useEstudiantes() {
   const cliente = useQueryClient();
 
-  const consultaEstudiantes = useQuery({
-    queryKey: ['estudiantes'],
+  const consultaUsuariosAcademicos = useQuery({
+    queryKey: ['usuarios', 'academicos'],
     queryFn: async () => {
-      const respuesta = await apiCliente.get<RespuestaApi<Usuario[]>>(API.USUARIOS, {
-        params: { rol: RolUsuario.ESTUDIANTE },
-      });
-      return extraerDatos(respuesta).filter((usuario) => usuario.rol === RolUsuario.ESTUDIANTE);
+      const respuesta = await apiCliente.get<RespuestaApi<Usuario[]>>(API.USUARIOS);
+      return extraerDatos(respuesta).filter(
+        (usuario) => usuario.rol === RolUsuario.ESTUDIANTE || usuario.rol === RolUsuario.DOCENTE,
+      );
     },
   });
 
-  const mutacionCrearEstudiante = useMutation({
-    mutationFn: async (dto: CrearEstudianteDto) => {
+  const mutacionCrearUsuarioAcademico = useMutation({
+    mutationFn: async (dto: CrearUsuarioAcademicoDto) => {
       const respuesta = await apiCliente.post<RespuestaApi<Usuario>>(API.USUARIOS, dto);
       return extraerDatos(respuesta);
     },
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['estudiantes'] }),
+    onSuccess: () => cliente.invalidateQueries({ queryKey: ['usuarios', 'academicos'] }),
   });
 
   const obtenerPorId = async (idEstudiante: string): Promise<Usuario> => {
@@ -50,8 +52,8 @@ export function useEstudiantes() {
   };
 
   return {
-    consultaEstudiantes,
-    mutacionCrearEstudiante,
+    consultaUsuariosAcademicos,
+    mutacionCrearUsuarioAcademico,
     obtenerPorId,
   };
 }

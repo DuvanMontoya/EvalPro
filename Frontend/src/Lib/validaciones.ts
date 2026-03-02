@@ -100,8 +100,17 @@ export const esquemaCrearEstudiante = z.object({
   rol: z.literal(RolUsuario.ESTUDIANTE),
 });
 
+export const esquemaCrearUsuarioAcademico = z.object({
+  nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100),
+  apellidos: z.string().min(2, 'Los apellidos deben tener al menos 2 caracteres').max(100),
+  correo: z.string().email('Ingresa un correo válido'),
+  contrasena: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  rol: z.union([z.literal(RolUsuario.ESTUDIANTE), z.literal(RolUsuario.DOCENTE)]),
+});
+
 export type IniciarSesionFormulario = z.infer<typeof esquemaIniciarSesion>;
 export type CrearExamenFormulario = z.infer<typeof esquemaCrearExamen>;
 export type CrearPreguntaFormulario = z.infer<typeof esquemaCrearPregunta>;
 export type CrearSesionFormulario = z.infer<typeof esquemaCrearSesion>;
 export type CrearEstudianteFormulario = z.infer<typeof esquemaCrearEstudiante>;
+export type CrearUsuarioAcademicoFormulario = z.infer<typeof esquemaCrearUsuarioAcademico>;
