@@ -5,15 +5,16 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Body, Controller, HttpCode, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { Usuario } from '@prisma/client';
 import { Request } from 'express';
 import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
-import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
 import { JwtRefreshGuard } from '../Comun/Guards/JwtRefresh.guard';
+import { JwtTemporalGuard } from '../Comun/Guards/JwtTemporal.guard';
+import { UsuarioAutenticado } from '../Comun/Tipos/UsuarioAutenticado.tipo';
+import { CambiarContrasenaPrimerLoginDto } from './Dto/CambiarContrasenaPrimerLogin.dto';
 import { IniciarSesionDto } from './Dto/IniciarSesion.dto';
 import { AutenticacionService } from './Autenticacion.service';
 
@@ -38,16 +39,11 @@ export class AutenticacionController {
   @HttpCode(200)
   @Throttle({ default: { limit: 10, ttl: 60_000 * 15 } })
   @ApiOperation({ summary: 'Inicia sesión y devuelve tokens' })
-  async iniciarSesion(@Body() dto: IniciarSesionDto): Promise<unknown> {
-    const usuario = await this.autenticacionService.validarCredenciales(dto.correo, dto.contrasena);
-    if (!usuario) {
-      throw new UnauthorizedException({
-        message: 'Credenciales inválidas',
-        codigoError: CODIGOS_ERROR.CREDENCIALES_INVALIDAS,
-      });
-    }
-
-    return this.autenticacionService.iniciarSesion(usuario);
+  async iniciarSesion(@Body() dto: IniciarSesionDto, @Req() request: Request): Promise<unknown> {
+    return this.autenticacionService.iniciarSesionConCredenciales(dto.correo, dto.contrasena, {
+      ip: this.obtenerIp(request),
+      userAgent: request.headers['user-agent'] ?? null,
+    });
   }
 
   /**
@@ -65,7 +61,30 @@ export class AutenticacionController {
     return this.autenticacionService.refrescarTokens(
       solicitud.user.idUsuario,
       solicitud.user.tokenRefreshRecibido,
+      {
+        ip: this.obtenerIp(solicitud),
+        userAgent: solicitud.headers['user-agent'] ?? null,
+      },
     );
+  }
+
+  /**
+   * Completa activación de cuenta en primer login mediante token temporal.
+   */
+  @Post('cambiar-contrasena')
+  @HttpCode(200)
+  @UseGuards(JwtTemporalGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cambia contraseña en primer login con token temporal' })
+  async cambiarContrasenaPrimerLogin(
+    @Body() dto: CambiarContrasenaPrimerLoginDto,
+    @UsuarioActual() usuario: UsuarioAutenticado,
+    @Req() request: Request,
+  ): Promise<unknown> {
+    return this.autenticacionService.cambiarContrasenaPrimerLogin(usuario.id, dto.nuevaContrasena, {
+      ip: this.obtenerIp(request),
+      userAgent: request.headers['user-agent'] ?? null,
+    });
   }
 
   /**
@@ -78,8 +97,21 @@ export class AutenticacionController {
   @UseGuards(JwtAutenticacionGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cierra la sesión actual del usuario' })
-  async cerrarSesion(@UsuarioActual() usuario: Usuario) {
-    await this.autenticacionService.cerrarSesion(usuario.id);
+  async cerrarSesion(@UsuarioActual() usuario: UsuarioAutenticado, @Req() request: Request) {
+    const authorization = request.headers.authorization ?? '';
+    const tokenAcceso = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : null;
+    await this.autenticacionService.cerrarSesion(usuario.id, tokenAcceso, {
+      ip: this.obtenerIp(request),
+      userAgent: request.headers['user-agent'] ?? null,
+    });
     return { cerrado: true };
+  }
+
+  private obtenerIp(request: Request): string | null {
+    const ipEncabezado = request.headers['x-forwarded-for'];
+    if (typeof ipEncabezado === 'string' && ipEncabezado.trim().length > 0) {
+      return ipEncabezado.split(',')[0].trim();
+    }
+    return request.ip ?? null;
   }
 }

@@ -33,7 +33,9 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
     if (idEstudiante == null) {
       throw StateError('No hay estudiante autenticado');
     }
-    final intento = await ref.read(intentoServicioProvider).iniciar(sesion.id);
+    final intento = await ref
+        .read(intentoServicioProvider)
+        .iniciar(sesion.id, sesion.codigoAcceso);
     final examenBase =
         await ref.read(examenServicioProvider).obtenerParaIntento(intento.id);
     final semillaPersonal =

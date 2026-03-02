@@ -65,8 +65,12 @@ class EstadoAutenticacion {
 FlutterSecureStorage almacenamientoSeguro(AlmacenamientoSeguroRef ref) =>
     const FlutterSecureStorage();
 
-@riverpod
-BaseDatosLocal baseDatosLocal(BaseDatosLocalRef ref) => BaseDatosLocal();
+@Riverpod(keepAlive: true)
+BaseDatosLocal baseDatosLocal(BaseDatosLocalRef ref) {
+  final baseDatos = BaseDatosLocal();
+  ref.onDispose(() => baseDatos.close());
+  return baseDatos;
+}
 
 @riverpod
 ExamenDao examenDao(ExamenDaoRef ref) =>

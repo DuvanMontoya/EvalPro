@@ -5,6 +5,7 @@
 /// @fecha     2026-03-02
 
 enum RolUsuario {
+  SUPERADMINISTRADOR,
   ADMINISTRADOR,
   DOCENTE,
   ESTUDIANTE,

@@ -5,7 +5,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { RolUsuario } from '@prisma/client';
+import { EstadoCuenta, RolUsuario } from '@prisma/client';
 import { RespuestaUsuarioDto } from '../Dto/RespuestaUsuario.dto';
 
 interface UsuarioMapeable {
@@ -14,6 +14,9 @@ interface UsuarioMapeable {
   apellidos: string;
   correo: string;
   rol: RolUsuario;
+  idInstitucion: string | null;
+  estadoCuenta: EstadoCuenta;
+  primerLogin: boolean;
   activo: boolean;
   fechaCreacion: Date;
   fechaActualizacion: Date;
@@ -31,6 +34,9 @@ export function mapearUsuarioRespuesta(usuario: UsuarioMapeable): RespuestaUsuar
     apellidos: usuario.apellidos,
     correo: usuario.correo,
     rol: usuario.rol,
+    idInstitucion: usuario.idInstitucion,
+    estadoCuenta: usuario.estadoCuenta,
+    primerLogin: usuario.primerLogin,
     activo: usuario.activo,
     fechaCreacion: usuario.fechaCreacion,
     fechaActualizacion: usuario.fechaActualizacion,

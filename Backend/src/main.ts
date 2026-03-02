@@ -42,7 +42,10 @@ async function iniciarAplicacion(): Promise<void> {
 
   aplicacion.useGlobalFilters(new ExcepcionGlobalFiltro());
   aplicacion.useGlobalPipes(new ValidacionGlobalPipe());
-  aplicacion.useGlobalInterceptors(new TransformRespuestaInterceptor(), new RegistroActividadInterceptor());
+  aplicacion.useGlobalInterceptors(
+    aplicacion.get(TransformRespuestaInterceptor),
+    aplicacion.get(RegistroActividadInterceptor),
+  );
 
   const puerto = servicioConfiguracion.get<number>('PUERTO_APP') ?? 3001;
   await aplicacion.listen(puerto);

@@ -104,7 +104,7 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
           children: <Widget>[
             TextField(
               controller: _controladorCodigo,
-              maxLength: 8,
+              maxLength: 9,
               textCapitalization: TextCapitalization.characters,
               inputFormatters: <TextInputFormatter>[
                 FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9-]')),
@@ -114,7 +114,7 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
               ],
               decoration: const InputDecoration(
                 labelText: Textos.codigoSesion,
-                hintText: 'AB12-CD',
+                hintText: 'MATE-7823',
               ),
             ),
             const SizedBox(height: 10),

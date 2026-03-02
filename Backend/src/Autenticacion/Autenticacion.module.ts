@@ -13,9 +13,13 @@ import { AutenticacionController } from './Autenticacion.controller';
 import { AutenticacionService } from './Autenticacion.service';
 import { JwtAccesoEstrategia } from './Estrategias/JwtAcceso.estrategia';
 import { JwtRefreshEstrategia } from './Estrategias/JwtRefresh.estrategia';
+import { BlacklistTokensService } from './Servicios/BlacklistTokens.service';
+import { AuditoriaModule } from '../Auditoria/Auditoria.module';
+import { JwtTemporalGuard } from '../Comun/Guards/JwtTemporal.guard';
 
 @Module({
   imports: [
+    AuditoriaModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -26,7 +30,7 @@ import { JwtRefreshEstrategia } from './Estrategias/JwtRefresh.estrategia';
     }),
   ],
   controllers: [AutenticacionController],
-  providers: [AutenticacionService, JwtAccesoEstrategia, JwtRefreshEstrategia],
-  exports: [AutenticacionService],
+  providers: [AutenticacionService, JwtAccesoEstrategia, JwtRefreshEstrategia, BlacklistTokensService, JwtTemporalGuard],
+  exports: [AutenticacionService, BlacklistTokensService],
 })
 export class AutenticacionModule {}

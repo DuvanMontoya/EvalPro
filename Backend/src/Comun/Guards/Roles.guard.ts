@@ -7,9 +7,10 @@
  */
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RolUsuario, Usuario } from '@prisma/client';
+import { RolUsuario } from '@prisma/client';
 import { MENSAJES } from '../Constantes/Mensajes.constantes';
 import { CLAVE_ROLES } from '../Constantes/Roles.constantes';
+import { UsuarioAutenticado } from '../Tipos/UsuarioAutenticado.tipo';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -30,7 +31,7 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const solicitud = contexto.switchToHttp().getRequest<{ user?: Usuario }>();
+    const solicitud = contexto.switchToHttp().getRequest<{ user?: UsuarioAutenticado }>();
     const usuario = solicitud.user;
 
     if (!usuario || !rolesRequeridos.includes(usuario.rol)) {

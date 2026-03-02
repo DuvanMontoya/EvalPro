@@ -7,9 +7,10 @@
  */
 import { Controller, ForbiddenException, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RolUsuario, Usuario } from '@prisma/client';
+import { RolUsuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
 import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
+import { UsuarioAutenticado } from '../Comun/Tipos/UsuarioAutenticado.tipo';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
 import { RolesGuard } from '../Comun/Guards/Roles.guard';
 import { ReportesService } from './Reportes.service';
@@ -25,26 +26,26 @@ export class ReportesController {
    * Obtiene reporte estadístico de una sesión específica.
    */
   @Get('sesion/:idSesion')
-  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Obtiene reporte de sesión' })
-  async obtenerReporteSesion(@Param('idSesion', ParseUUIDPipe) idSesion: string, @UsuarioActual() usuario: Usuario) {
-    return this.reportesService.obtenerReporteSesion(idSesion, usuario.rol, usuario.id);
+  async obtenerReporteSesion(@Param('idSesion', ParseUUIDPipe) idSesion: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.reportesService.obtenerReporteSesion(idSesion, usuario.rol, usuario.id, usuario.idInstitucion);
   }
 
   /**
    * Obtiene reporte histórico para un estudiante específico.
    */
   @Get('estudiante/:idEstudiante')
-  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Obtiene reporte por estudiante' })
   async obtenerReporteEstudiante(
     @Param('idEstudiante', ParseUUIDPipe) idEstudiante: string,
-    @UsuarioActual() usuario: Usuario,
+    @UsuarioActual() usuario: UsuarioAutenticado,
   ) {
     if (usuario.rol === RolUsuario.ESTUDIANTE && usuario.id !== idEstudiante) {
       throw new ForbiddenException('No tiene permisos para consultar este estudiante');
     }
 
-    return this.reportesService.obtenerReporteEstudiante(idEstudiante, usuario.rol, usuario.id);
+    return this.reportesService.obtenerReporteEstudiante(idEstudiante, usuario.rol, usuario.id, usuario.idInstitucion);
   }
 }

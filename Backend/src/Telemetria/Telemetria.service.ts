@@ -7,7 +7,7 @@
  */
 import { ForbiddenException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, RolUsuario, TipoEventoTelemetria } from '@prisma/client';
+import { Prisma, RolUsuario, SeveridadEvento, TipoEventoTelemetria } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { esEventoFraudeCritico, tiempoSospechoso } from '../Comun/Utilidades/ValidadorTelemetria.util';
 import { RegistrarEventoDto } from './Dto/RegistrarEvento.dto';
@@ -27,10 +27,13 @@ export class TelemetriaService {
    * @param dto - Datos del evento a persistir.
    * @param idEstudiante - UUID del estudiante autenticado.
    */
-  async registrar(dto: RegistrarEventoDto, idEstudiante: string) {
+  async registrar(dto: RegistrarEventoDto, idEstudiante: string, idInstitucion: string | null) {
     const intento = await this.prisma.intentoExamen.findUnique({ where: { id: dto.idIntento } });
     if (!intento) {
       throw new NotFoundException('Intento no encontrado');
+    }
+    if (intento.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede registrar telemetría fuera de su institución');
     }
     if (intento.estudianteId !== idEstudiante) {
       throw new ForbiddenException('No tiene permisos sobre este intento');
@@ -44,6 +47,7 @@ export class TelemetriaService {
         metadatos: dto.metadatos as Prisma.InputJsonValue | undefined,
         numeroPregunta: dto.numeroPregunta,
         tiempoTranscurrido: dto.tiempoTranscurrido,
+        severidad: esEventoFraudeCritico(dto.tipo) ? SeveridadEvento.CRITICO : SeveridadEvento.INFO,
       },
     });
 
@@ -58,6 +62,8 @@ export class TelemetriaService {
         where: { id: dto.idIntento },
         data: {
           esSospechoso: true,
+          indiceRiesgoFraude: { increment: 15 },
+          requiereRevision: true,
           razonSospecha: `${razonBase}${dto.descripcion ?? dto.tipo}`,
         },
       });
@@ -110,6 +116,8 @@ export class TelemetriaService {
         where: { id: idIntento },
         data: {
           esSospechoso: true,
+          indiceRiesgoFraude: { increment: 20 },
+          requiereRevision: true,
           razonSospecha: `${razonActual}${razones.join('; ')}`,
         },
       });
@@ -122,7 +130,7 @@ export class TelemetriaService {
    * @param rol - Rol del usuario solicitante.
    * @param idUsuario - UUID del usuario solicitante.
    */
-  async listarPorIntento(idIntento: string, rol: RolUsuario, idUsuario: string) {
+  async listarPorIntento(idIntento: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
     const intento = await this.prisma.intentoExamen.findUnique({
       where: { id: idIntento },
       include: { sesion: true },
@@ -130,6 +138,10 @@ export class TelemetriaService {
 
     if (!intento) {
       throw new NotFoundException('Intento no encontrado');
+    }
+
+    if (rol !== RolUsuario.SUPERADMINISTRADOR && intento.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede consultar telemetría fuera de su institución');
     }
 
     if (rol === RolUsuario.DOCENTE && intento.sesion.creadaPorId !== idUsuario) {

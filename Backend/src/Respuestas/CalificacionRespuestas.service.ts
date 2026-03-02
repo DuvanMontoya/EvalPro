@@ -6,7 +6,7 @@
  * @fecha     2026-03-02
  */
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoIntento, RolUsuario, TipoPregunta } from '@prisma/client';
+import { EstadoIntento, EstadoResultado, RolUsuario, TipoPregunta } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { calcularPorcentaje, compararConjuntosLetras } from '../Comun/Utilidades/CalculadorPuntaje.util';
 import { CalificarRespuestaManualDto } from './Dto/CalificarRespuestaManual.dto';
@@ -43,18 +43,26 @@ export class CalificacionRespuestasService {
     }
 
     let puntajeObtenido = 0;
+    let pendienteCalificacionManual = false;
     await this.prisma.$transaction(async (prismaTransaccional) => {
       for (const pregunta of intento.sesion.examen.preguntas) {
         const respuesta = intento.respuestas.find((item) => item.preguntaId === pregunta.id);
         if (!respuesta) {
+          if (pregunta.tipo === TipoPregunta.RESPUESTA_ABIERTA || pregunta.tipo === TipoPregunta.ABIERTA) {
+            pendienteCalificacionManual = true;
+          }
           continue;
         }
 
         const letrasCorrectas = pregunta.opciones.filter((opcion) => opcion.esCorrecta).map((opcion) => opcion.letra);
         const resultado = this.evaluarRespuesta(pregunta.tipo, pregunta.puntaje, letrasCorrectas, respuesta.opcionesSeleccionadas);
         let puntajeRespuesta = resultado.puntajeObtenido;
-        if (pregunta.tipo === TipoPregunta.RESPUESTA_ABIERTA) {
+        const esPreguntaManual = pregunta.tipo === TipoPregunta.RESPUESTA_ABIERTA || pregunta.tipo === TipoPregunta.ABIERTA;
+        if (esPreguntaManual) {
           puntajeRespuesta = typeof respuesta.puntajeObtenido === 'number' ? respuesta.puntajeObtenido : null;
+          if (puntajeRespuesta === null) {
+            pendienteCalificacionManual = true;
+          }
         }
 
         if (typeof puntajeRespuesta === 'number') {
@@ -62,14 +70,41 @@ export class CalificacionRespuestasService {
         }
         await prismaTransaccional.respuesta.update({
           where: { intentoId_preguntaId: { intentoId: intento.id, preguntaId: pregunta.id } },
-          data: { esCorrecta: resultado.esCorrecta, puntajeObtenido: puntajeRespuesta },
+          data: {
+            esCorrecta: resultado.esCorrecta,
+            puntajeObtenido: puntajeRespuesta,
+            calificadaAutomaticamente: !esPreguntaManual,
+            calificadaManualmente: esPreguntaManual && puntajeRespuesta !== null,
+          },
         });
       }
 
-      const porcentaje = calcularPorcentaje(puntajeObtenido, intento.sesion.examen.puntajeMaximo);
+      const puntajeMaximo = intento.sesion.examen.puntajeMaximo;
+      const porcentaje = calcularPorcentaje(puntajeObtenido, puntajeMaximo);
       await prismaTransaccional.intentoExamen.update({
         where: { id: intento.id },
         data: { estado: EstadoIntento.ENVIADO, fechaEnvio: new Date(), puntajeObtenido, porcentaje },
+      });
+
+      await prismaTransaccional.resultadoIntento.upsert({
+        where: { intentoId: intento.id },
+        create: {
+          intentoId: intento.id,
+          puntajeTotal: puntajeObtenido,
+          puntajeMaximoPosible: puntajeMaximo,
+          porcentaje,
+          pendienteCalificacionManual,
+          estado: pendienteCalificacionManual ? EstadoResultado.PRELIMINAR : EstadoResultado.OFICIAL,
+        },
+        update: {
+          puntajeTotal: puntajeObtenido,
+          puntajeMaximoPosible: puntajeMaximo,
+          porcentaje,
+          pendienteCalificacionManual,
+          estado: pendienteCalificacionManual ? EstadoResultado.PRELIMINAR : EstadoResultado.OFICIAL,
+          version: { increment: 1 },
+          calculadoEn: new Date(),
+        },
       });
     });
 
@@ -84,7 +119,13 @@ export class CalificacionRespuestasService {
    * @param rol - Rol del usuario autenticado.
    * @param idUsuario - UUID del usuario autenticado.
    */
-  async calificarManual(idRespuesta: string, dto: CalificarRespuestaManualDto, rol: RolUsuario, idUsuario: string) {
+  async calificarManual(
+    idRespuesta: string,
+    dto: CalificarRespuestaManualDto,
+    rol: RolUsuario,
+    idUsuario: string,
+    idInstitucion: string | null,
+  ) {
     const respuesta = await this.prisma.respuesta.findUnique({
       where: { id: idRespuesta },
       include: {
@@ -95,8 +136,11 @@ export class CalificacionRespuestasService {
     if (!respuesta) {
       throw new NotFoundException('Respuesta no encontrada');
     }
-    if (respuesta.pregunta.tipo !== TipoPregunta.RESPUESTA_ABIERTA) {
+    if (respuesta.pregunta.tipo !== TipoPregunta.RESPUESTA_ABIERTA && respuesta.pregunta.tipo !== TipoPregunta.ABIERTA) {
       throw new BadRequestException('Solo se puede calificar manualmente preguntas abiertas');
+    }
+    if (rol !== RolUsuario.SUPERADMINISTRADOR && respuesta.intento.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede calificar respuestas de otra institución');
     }
     if (rol === RolUsuario.DOCENTE && respuesta.intento.sesion.creadaPorId !== idUsuario) {
       throw new ForbiddenException('No tiene permisos para calificar esta respuesta');
@@ -148,6 +192,30 @@ export class CalificacionRespuestasService {
     );
     const porcentaje = calcularPorcentaje(puntajeObtenido, intento.sesion.examen.puntajeMaximo);
     await this.prisma.intentoExamen.update({ where: { id: idIntento }, data: { puntajeObtenido, porcentaje } });
+
+    const pendientes = intento.respuestas.some(
+      (respuesta) => respuesta.calificadaAutomaticamente === false && typeof respuesta.puntajeObtenido !== 'number',
+    );
+    await this.prisma.resultadoIntento.upsert({
+      where: { intentoId: idIntento },
+      create: {
+        intentoId: idIntento,
+        puntajeTotal: puntajeObtenido,
+        puntajeMaximoPosible: intento.sesion.examen.puntajeMaximo,
+        porcentaje,
+        pendienteCalificacionManual: pendientes,
+        estado: pendientes ? EstadoResultado.PRELIMINAR : EstadoResultado.OFICIAL,
+      },
+      update: {
+        puntajeTotal: puntajeObtenido,
+        puntajeMaximoPosible: intento.sesion.examen.puntajeMaximo,
+        porcentaje,
+        pendienteCalificacionManual: pendientes,
+        estado: pendientes ? EstadoResultado.PRELIMINAR : EstadoResultado.OFICIAL,
+        version: { increment: 1 },
+        calculadoEn: new Date(),
+      },
+    });
     return { puntajeObtenido, porcentaje };
   }
 
@@ -157,12 +225,33 @@ export class CalificacionRespuestasService {
     letrasCorrectas: string[],
     opcionesSeleccionadas: string[],
   ): { esCorrecta: boolean | null; puntajeObtenido: number | null } {
-    if (tipo === TipoPregunta.RESPUESTA_ABIERTA) {
+    if (tipo === TipoPregunta.RESPUESTA_ABIERTA || tipo === TipoPregunta.ABIERTA) {
       return { esCorrecta: null, puntajeObtenido: null };
+    }
+    if (tipo === TipoPregunta.EMPAREJAMIENTO) {
+      const totalReferencias = letrasCorrectas.length;
+      if (totalReferencias === 0) {
+        return { esCorrecta: true, puntajeObtenido: puntajePregunta };
+      }
+      const aciertos = opcionesSeleccionadas.filter((opcion) => letrasCorrectas.includes(opcion)).length;
+      const proporcion = Math.max(0, Math.min(1, aciertos / totalReferencias));
+      const puntajeObtenido = Number((proporcion * puntajePregunta).toFixed(2));
+      return { esCorrecta: aciertos === totalReferencias, puntajeObtenido };
     }
     if (tipo === TipoPregunta.SELECCION_MULTIPLE) {
       const esCorrecta = compararConjuntosLetras(opcionesSeleccionadas, letrasCorrectas);
-      return { esCorrecta, puntajeObtenido: esCorrecta ? puntajePregunta : 0 };
+      if (esCorrecta) {
+        return { esCorrecta: true, puntajeObtenido: puntajePregunta };
+      }
+
+      const correctas = new Set(letrasCorrectas);
+      const seleccionadas = new Set(opcionesSeleccionadas);
+      const aciertos = [...seleccionadas].filter((letra) => correctas.has(letra)).length;
+      const errores = [...seleccionadas].filter((letra) => !correctas.has(letra)).length;
+      const proporcionAciertos = correctas.size > 0 ? aciertos / correctas.size : 0;
+      const proporcionErrores = Math.max(0, errores / Math.max(1, seleccionadas.size));
+      const puntajeObtenido = Math.max(0, (proporcionAciertos - proporcionErrores) * puntajePregunta);
+      return { esCorrecta: false, puntajeObtenido: Number(puntajeObtenido.toFixed(2)) };
     }
 
     const esCorrecta = opcionesSeleccionadas[0] === letrasCorrectas[0];

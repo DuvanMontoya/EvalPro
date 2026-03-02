@@ -24,15 +24,16 @@ Future<String?> refrescarTokenAcceso({
       await almacenSeguro.read(key: ClavesAlmacen.usuarioActual);
   if (tokenRefresh == null || usuarioJson == null) return null;
 
-  final usuario = jsonDecode(usuarioJson) as Map<String, dynamic>;
-  final idUsuario = usuario['id'] as String?;
-  if (idUsuario == null || idUsuario.isEmpty) return null;
-
   try {
     final respuesta = await clienteRefresco.post<dynamic>(
       ApiEndpoints.autenticacionRefrescar,
+      options: Options(
+        headers: <String, dynamic>{
+          'Authorization': 'Bearer $tokenRefresh',
+          'Content-Type': 'application/json',
+        },
+      ),
       data: <String, dynamic>{
-        'idUsuario': idUsuario,
         'tokenRefresh': tokenRefresh,
       },
     );

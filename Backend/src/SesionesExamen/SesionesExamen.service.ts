@@ -1,6 +1,6 @@
 /**
  * @archivo   SesionesExamen.service.ts
- * @descripcion Implementa ciclo de vida de sesiones con eventos WebSocket y cierre de puntajes.
+ * @descripcion Implementa ciclo de vida de sesiones con validaciones de estado, tenant y eventos WebSocket.
  * @modulo    SesionesExamen
  * @autor     EvalPro
  * @fecha     2026-03-02
@@ -14,7 +14,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { EstadoExamen, EstadoSesion, RolUsuario } from '@prisma/client';
+import { EstadoExamen, EstadoIntento, EstadoSesion, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { generarCodigoSesion } from '../Comun/Utilidades/GeneradorCodigo.util';
 import { RespuestasService } from '../Respuestas/Respuestas.service';
@@ -34,14 +34,44 @@ export class SesionesExamenService {
   ) {}
 
   /**
-   * Crea una sesión en estado pendiente con código único y semilla grupal.
-   * @param dto - Datos de creación de sesión.
-   * @param idDocente - UUID del docente autenticado.
+   * Crea una sesión en estado pendiente sin código de acceso (se genera al activar).
    */
-  async crear(dto: CrearSesionDto, idDocente: string) {
-    const examen = await this.prisma.examen.findUnique({ where: { id: dto.idExamen } });
+  async crear(dto: CrearSesionDto, idDocente: string, idInstitucion: string | null) {
+    let idExamen = dto.idExamen ?? null;
+    let idAsignacion = dto.idAsignacion ?? null;
+
+    if (!idExamen && !idAsignacion) {
+      throw new BadRequestException('Debe enviar idAsignacion o idExamen');
+    }
+
+    if (idAsignacion) {
+      const asignacion = await this.prisma.asignacionExamen.findUnique({
+        where: { id: idAsignacion },
+        include: { examen: true },
+      });
+      if (!asignacion) {
+        throw new NotFoundException('Asignación no encontrada');
+      }
+      if (asignacion.idInstitucion !== idInstitucion) {
+        throw new ForbiddenException('No puede crear sesiones para otra institución');
+      }
+      if (asignacion.examen.creadoPorId !== idDocente) {
+        throw new ForbiddenException('Solo el docente dueño puede crear sesión para esta asignación');
+      }
+      idExamen = asignacion.idExamen;
+    }
+
+    if (!idExamen) {
+      throw new BadRequestException('No se pudo resolver examen para la sesión');
+    }
+
+    const examen = await this.prisma.examen.findUnique({ where: { id: idExamen } });
     if (!examen) {
       throw new NotFoundException('Examen no encontrado');
+    }
+
+    if (examen.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede crear sesiones fuera de su institución');
     }
 
     if (examen.creadoPorId !== idDocente) {
@@ -52,36 +82,47 @@ export class SesionesExamenService {
       throw new BadRequestException('El examen debe estar publicado para crear sesiones');
     }
 
-    const codigoAcceso = await this.generarCodigoUnico();
     const semillaGrupo = Math.floor(Math.random() * LIMITE_SEMILLA_GRUPO) + 1;
 
     return this.prisma.sesionExamen.create({
       data: {
-        codigoAcceso,
+        codigoAcceso: null,
         estado: EstadoSesion.PENDIENTE,
         descripcion: dto.descripcion,
         semillaGrupo,
-        examenId: dto.idExamen,
+        examenId: idExamen,
+        idAsignacion,
         creadaPorId: idDocente,
+        idInstitucion: idInstitucion ?? null,
       },
     });
   }
 
   /**
-   * Lista sesiones según rol del usuario autenticado.
+   * Lista sesiones según rol, propiedad y tenant.
    */
-  async listar(rol: RolUsuario, idUsuario: string) {
-    const where = rol === RolUsuario.ADMINISTRADOR ? {} : { creadaPorId: idUsuario };
+  async listar(rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    const where: Record<string, unknown> = {};
+    if (rol !== RolUsuario.SUPERADMINISTRADOR) {
+      where.idInstitucion = idInstitucion;
+    }
+    if (rol === RolUsuario.DOCENTE) {
+      where.creadaPorId = idUsuario;
+    }
     return this.prisma.sesionExamen.findMany({ where, orderBy: { fechaCreacion: 'desc' } });
   }
 
   /**
-   * Obtiene una sesión verificando permisos para docentes.
+   * Obtiene una sesión validando alcance de rol/tenant.
    */
-  async obtenerPorId(idSesion: string, rol: RolUsuario, idUsuario: string) {
+  async obtenerPorId(idSesion: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
     const sesion = await this.prisma.sesionExamen.findUnique({ where: { id: idSesion }, include: { examen: true } });
     if (!sesion) {
       throw new NotFoundException('Sesión no encontrada');
+    }
+
+    if (rol !== RolUsuario.SUPERADMINISTRADOR && sesion.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede consultar sesiones de otra institución');
     }
 
     if (rol === RolUsuario.DOCENTE && sesion.creadaPorId !== idUsuario) {
@@ -92,19 +133,36 @@ export class SesionesExamenService {
   }
 
   /**
-   * Activa una sesión pendiente y notifica por WebSocket.
-   * @param idSesion - UUID de sesión.
-   * @param idDocente - UUID del docente propietario.
+   * Activa sesión pendiente y genera código de acceso único.
    */
-  async activar(idSesion: string, idDocente: string) {
-    const sesion = await this.obtenerSesionPropia(idSesion, idDocente);
+  async activar(idSesion: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    const sesion = await this.obtenerSesionGestionable(idSesion, rol, idUsuario, idInstitucion);
     if (sesion.estado !== EstadoSesion.PENDIENTE) {
       throw new BadRequestException('La sesión no está en estado pendiente');
     }
 
+    const conflictoSesionActiva = await this.prisma.sesionExamen.findFirst({
+      where: sesion.idAsignacion
+        ? {
+            idAsignacion: sesion.idAsignacion,
+            estado: EstadoSesion.ACTIVA,
+            id: { not: idSesion },
+          }
+        : {
+            examenId: sesion.examenId,
+            estado: EstadoSesion.ACTIVA,
+            id: { not: idSesion },
+          },
+      select: { id: true },
+    });
+    if (conflictoSesionActiva) {
+      throw new ConflictException('Ya existe una sesión activa para este examen');
+    }
+
+    const codigoAcceso = await this.generarCodigoUnico();
     const actualizada = await this.prisma.sesionExamen.update({
       where: { id: idSesion },
-      data: { estado: EstadoSesion.ACTIVA, fechaInicio: new Date() },
+      data: { estado: EstadoSesion.ACTIVA, fechaInicio: new Date(), codigoAcceso },
     });
 
     this.gateway.emitirSesionActivada(idSesion);
@@ -112,12 +170,10 @@ export class SesionesExamenService {
   }
 
   /**
-   * Finaliza sesión activa, notifica WebSocket y calcula puntajes de todos los intentos.
-   * @param idSesion - UUID de sesión.
-   * @param idDocente - UUID del docente propietario.
+   * Finaliza sesión activa y envía intentos pendientes.
    */
-  async finalizar(idSesion: string, idDocente: string) {
-    const sesion = await this.obtenerSesionPropia(idSesion, idDocente);
+  async finalizar(idSesion: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    const sesion = await this.obtenerSesionGestionable(idSesion, rol, idUsuario, idInstitucion);
     if (sesion.estado !== EstadoSesion.ACTIVA) {
       throw new BadRequestException('La sesión no está activa');
     }
@@ -128,47 +184,114 @@ export class SesionesExamenService {
       data: { estado: EstadoSesion.FINALIZADA, fechaFin },
     });
 
+    await this.prisma.intentoExamen.updateMany({
+      where: {
+        sesionId: idSesion,
+        estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE] },
+      },
+      data: {
+        estado: EstadoIntento.ENVIADO,
+        fechaEnvio: fechaFin,
+      },
+    });
+
     this.gateway.emitirSesionFinalizada(idSesion);
     await this.respuestasService.calcularPuntajesTodosIntentos(idSesion);
     return actualizada;
   }
+
   /**
-   * Cancela una sesión pendiente o activa por decisión del docente propietario.
-   * @param idSesion - UUID de sesión.
-   * @param idDocente - UUID del docente propietario.
+   * Cancela sesión pendiente o activa y anula intentos en progreso.
    */
-  async cancelar(idSesion: string, idDocente: string) {
-    const sesion = await this.obtenerSesionPropia(idSesion, idDocente);
+  async cancelar(idSesion: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    const sesion = await this.obtenerSesionGestionable(idSesion, rol, idUsuario, idInstitucion);
     if (sesion.estado !== EstadoSesion.PENDIENTE && sesion.estado !== EstadoSesion.ACTIVA) {
       throw new BadRequestException('La sesión no se puede cancelar desde su estado actual');
     }
 
     const fechaFin = sesion.estado === EstadoSesion.ACTIVA ? new Date() : null;
+    await this.prisma.intentoExamen.updateMany({
+      where: {
+        sesionId: idSesion,
+        estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE] },
+      },
+      data: {
+        estado: EstadoIntento.ANULADO,
+        anuladoEn: new Date(),
+        razonAnulacion: 'SESION_CANCELADA',
+        anuladoPorId: idUsuario,
+      },
+    });
+
     return this.prisma.sesionExamen.update({
       where: { id: idSesion },
-      data: { estado: EstadoSesion.CANCELADA, fechaFin },
+      data: { estado: EstadoSesion.CANCELADA, fechaFin, codigoAcceso: null },
     });
   }
 
   /**
-   * Busca sesión por código de acceso para flujo estudiantil.
-   * @param codigo - Código corto de sesión.
+   * Busca sesión activa por código y devuelve examen sanitizado para estudiante.
    */
-  async buscarPorCodigo(codigo: string) {
-    const sesion = await this.prisma.sesionExamen.findUnique({ where: { codigoAcceso: codigo }, include: { examen: true } });
+  async buscarPorCodigo(codigo: string, idEstudiante: string, idInstitucion: string | null) {
+    const codigoNormalizado = codigo.trim().toUpperCase();
+    const sesion = await this.prisma.sesionExamen.findFirst({
+      where: {
+        codigoAcceso: { equals: codigoNormalizado, mode: 'insensitive' },
+      },
+      include: {
+        asignacion: true,
+        examen: {
+          include: {
+            preguntas: {
+              include: { opciones: true },
+              orderBy: { orden: 'asc' },
+            },
+          },
+        },
+      },
+    });
     if (!sesion) {
       throw new NotFoundException('Sesión no encontrada');
     }
+
+    if (sesion.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede consultar sesiones de otra institución');
+    }
+
+    if (sesion.estado !== EstadoSesion.ACTIVA) {
+      throw new BadRequestException('La sesión no está activa');
+    }
+
+    const intentosPrevios = await this.prisma.intentoExamen.count({
+      where: {
+        sesionId: sesion.id,
+        estudianteId: idEstudiante,
+      },
+    });
 
     return {
       id: sesion.id,
       codigoAcceso: sesion.codigoAcceso,
       estado: sesion.estado,
+      fechaActivacion: sesion.fechaInicio,
       examen: {
         id: sesion.examen.id,
         titulo: sesion.examen.titulo,
+        instrucciones: sesion.examen.instrucciones,
         modalidad: sesion.examen.modalidad,
+        duracionMinutos: sesion.examen.duracionMinutos,
+        preguntas: sesion.examen.preguntas.map((pregunta) => ({
+          id: pregunta.id,
+          enunciado: pregunta.enunciado,
+          tipo: pregunta.tipo,
+          puntaje: pregunta.puntaje,
+          orden: pregunta.orden,
+          opciones: pregunta.opciones.map(({ esCorrecta: _esCorrecta, ...opcion }) => opcion),
+        })),
       },
+      intentosPrevios,
+      intentosMaximos: sesion.asignacion?.intentosMaximos ?? 1,
+      configuracionAntifraude: sesion.configuracionAntifraude ?? null,
     };
   }
 
@@ -187,14 +310,25 @@ export class SesionesExamenService {
     throw new ConflictException('No fue posible generar un código de sesión único');
   }
 
-  private async obtenerSesionPropia(idSesion: string, idDocente: string) {
+  private async obtenerSesionGestionable(
+    idSesion: string,
+    rol: RolUsuario,
+    idUsuario: string,
+    idInstitucion: string | null,
+  ) {
     const sesion = await this.prisma.sesionExamen.findUnique({ where: { id: idSesion } });
     if (!sesion) {
       throw new NotFoundException('Sesión no encontrada');
     }
-    if (sesion.creadaPorId !== idDocente) {
+
+    if (rol !== RolUsuario.SUPERADMINISTRADOR && sesion.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede operar sobre sesiones fuera de su institución');
+    }
+
+    if (rol === RolUsuario.DOCENTE && sesion.creadaPorId !== idUsuario) {
       throw new ForbiddenException('No tiene permisos sobre esta sesión');
     }
+
     return sesion;
   }
 }

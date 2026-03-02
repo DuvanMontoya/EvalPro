@@ -6,14 +6,14 @@
  * @fecha     2026-03-02
  */
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Usuario } from '@prisma/client';
+import { UsuarioAutenticado } from '../Tipos/UsuarioAutenticado.tipo';
 
 /**
  * Obtiene el usuario autenticado desde el request de NestJS.
  */
 export const UsuarioActual = createParamDecorator(
-  (propiedad: keyof Usuario | undefined, contexto: ExecutionContext) => {
-    const solicitud = contexto.switchToHttp().getRequest<{ user?: Usuario }>();
+  (propiedad: keyof UsuarioAutenticado | undefined, contexto: ExecutionContext) => {
+    const solicitud = contexto.switchToHttp().getRequest<{ user?: UsuarioAutenticado }>();
     if (!solicitud.user) {
       return null;
     }

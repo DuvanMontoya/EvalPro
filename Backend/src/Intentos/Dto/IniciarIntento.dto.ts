@@ -14,6 +14,12 @@ export class IniciarIntentoDto {
   @IsNotEmpty()
   idSesion!: string;
 
+  @ApiProperty({ description: 'Código de acceso vigente de la sesión' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(9)
+  codigoAcceso!: string;
+
   @ApiPropertyOptional({ description: 'Dirección IP del dispositivo' })
   @IsOptional()
   @IsString()

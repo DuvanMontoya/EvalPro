@@ -19,7 +19,7 @@ export class ReportesService {
    * @param rol - Rol del solicitante.
    * @param idUsuario - UUID del solicitante.
    */
-  async obtenerReporteSesion(idSesion: string, rol: RolUsuario, idUsuario: string) {
+  async obtenerReporteSesion(idSesion: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
     const sesion = await this.prisma.sesionExamen.findUnique({
       where: { id: idSesion },
       include: {
@@ -35,6 +35,10 @@ export class ReportesService {
 
     if (!sesion) {
       throw new NotFoundException('Sesión no encontrada');
+    }
+
+    if (rol !== RolUsuario.SUPERADMINISTRADOR && sesion.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No tiene permisos sobre esta sesión');
     }
 
     if (rol === RolUsuario.DOCENTE && sesion.creadaPorId !== idUsuario) {
@@ -90,7 +94,7 @@ export class ReportesService {
    * @param rol - Rol del solicitante.
    * @param idUsuario - UUID del solicitante.
    */
-  async obtenerReporteEstudiante(idEstudiante: string, rol: RolUsuario, idUsuario: string) {
+  async obtenerReporteEstudiante(idEstudiante: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
     if (rol === RolUsuario.ESTUDIANTE && idEstudiante !== idUsuario) {
       throw new ForbiddenException('No tiene permisos para consultar este reporte');
     }
@@ -107,6 +111,10 @@ export class ReportesService {
 
     if (!estudiante) {
       throw new NotFoundException('Estudiante no encontrado');
+    }
+
+    if (rol !== RolUsuario.SUPERADMINISTRADOR && estudiante.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No tiene permisos para consultar este estudiante');
     }
 
     const intentosFiltrados =

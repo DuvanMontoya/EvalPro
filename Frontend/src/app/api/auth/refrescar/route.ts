@@ -10,25 +10,6 @@ import { NextResponse } from 'next/server';
 import { API } from '@/Constantes/Api.constantes';
 import { RespuestaApi, SesionAutenticada, Usuario } from '@/Tipos';
 
-interface PayloadRefresh {
-  sub: string;
-}
-
-function extraerIdUsuario(token: string): string | null {
-  try {
-    const partes = token.split('.');
-    if (partes.length < 2) {
-      return null;
-    }
-
-    const json = Buffer.from(partes[1]!, 'base64url').toString('utf8');
-    const payload = JSON.parse(json) as PayloadRefresh;
-    return payload.sub ?? null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Refresca la sesión usando el refresh token guardado como cookie httpOnly.
  */
@@ -40,19 +21,15 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ mensaje: 'Sesión expirada' }, { status: 401 });
   }
 
-  const idUsuario = extraerIdUsuario(tokenRefresh);
-  if (!idUsuario) {
-    return NextResponse.json({ mensaje: 'Token refresh inválido' }, { status: 401 });
-  }
-
   let sesion: SesionAutenticada;
   try {
     const respuestaBackend = await fetch(`${API.BASE_INTERNA}${API.AUTENTICACION.REFRESCAR_TOKENS}`, {
       method: 'POST',
       headers: {
+        Authorization: `Bearer ${tokenRefresh}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ idUsuario, tokenRefresh }),
+      body: JSON.stringify({ tokenRefresh }),
     });
 
     const cuerpoBackend = (await respuestaBackend.json()) as RespuestaApi<SesionAutenticada>;

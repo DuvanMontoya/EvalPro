@@ -5,10 +5,11 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { PrismaClient, RolUsuario } from '@prisma/client';
+import { EstadoCuenta, EstadoInstitucion, PrismaClient, RolUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
+const NOMBRE_INSTITUCION_INICIAL = 'EvalPro Institución Inicial';
 
 /**
  * Inserta un administrador inicial basado en variables de entorno solo si no existe uno previo.
@@ -31,7 +32,17 @@ async function ejecutarSemilla(): Promise<void> {
     throw new Error('Faltan ADMIN_CORREO_INICIAL o ADMIN_CONTRASENA_INICIAL en el entorno.');
   }
 
-  const contrasena = await bcrypt.hash(contrasenaPlano, rondasHash);
+  const institucion = await prisma.institucion.upsert({
+    where: { nombre: NOMBRE_INSTITUCION_INICIAL },
+    update: {},
+    create: {
+      nombre: NOMBRE_INSTITUCION_INICIAL,
+      dominio: process.env.ADMIN_DOMINIO_INICIAL ?? 'evalpro.local',
+      estado: EstadoInstitucion.ACTIVA,
+    },
+  });
+
+  const contrasena = await bcrypt.hash(contrasenaPlano, Math.max(12, rondasHash));
   const administrador = await prisma.usuario.create({
     data: {
       nombre: 'Administrador',
@@ -39,6 +50,9 @@ async function ejecutarSemilla(): Promise<void> {
       correo,
       contrasena,
       rol: RolUsuario.ADMINISTRADOR,
+      idInstitucion: institucion.id,
+      estadoCuenta: EstadoCuenta.ACTIVO,
+      primerLogin: false,
     },
   });
 

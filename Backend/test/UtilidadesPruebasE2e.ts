@@ -7,7 +7,7 @@
  */
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { PrismaClient, RolUsuario } from '@prisma/client';
+import { EstadoCuenta, EstadoInstitucion, PrismaClient, RolUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import request from 'supertest';
 import { AppModule } from '../src/App.module';
@@ -38,7 +38,10 @@ export async function crearAplicacionE2e(): Promise<INestApplication> {
   aplicacion.setGlobalPrefix('api/v1');
   aplicacion.useGlobalFilters(new ExcepcionGlobalFiltro());
   aplicacion.useGlobalPipes(new ValidacionGlobalPipe());
-  aplicacion.useGlobalInterceptors(new TransformRespuestaInterceptor(), new RegistroActividadInterceptor());
+  aplicacion.useGlobalInterceptors(
+    aplicacion.get(TransformRespuestaInterceptor),
+    aplicacion.get(RegistroActividadInterceptor),
+  );
   await aplicacion.init();
   return aplicacion;
 }
@@ -50,6 +53,7 @@ export async function crearAplicacionE2e(): Promise<INestApplication> {
  * @returns Datos base del usuario creado.
  */
 export async function crearUsuarioPrueba(rol: RolUsuario, activo = true): Promise<UsuarioPrueba> {
+  const idInstitucion = rol === RolUsuario.SUPERADMINISTRADOR ? null : await obtenerOCrearInstitucionPruebas();
   const sufijo = `${Date.now()}_${Math.floor(Math.random() * 100000)}`;
   const correo = `${rol.toLowerCase()}_${sufijo}@evalpro.test`;
   const contrasena = 'EvalProPrueba123!';
@@ -61,6 +65,9 @@ export async function crearUsuarioPrueba(rol: RolUsuario, activo = true): Promis
       correo,
       contrasena: hash,
       rol,
+      idInstitucion,
+      estadoCuenta: activo ? EstadoCuenta.ACTIVO : EstadoCuenta.SUSPENDIDO,
+      primerLogin: false,
       activo,
     },
   });
@@ -95,4 +102,22 @@ export async function iniciarSesionE2e(aplicacion: INestApplication, correo: str
  */
 export function obtenerPrismaPruebas(): PrismaClient {
   return prisma;
+}
+
+async function obtenerOCrearInstitucionPruebas(): Promise<string> {
+  const nombre = 'Institucion Pruebas E2E';
+  const existente = await prisma.institucion.findFirst({ where: { nombre }, select: { id: true } });
+  if (existente) {
+    return existente.id;
+  }
+
+  const creada = await prisma.institucion.create({
+    data: {
+      nombre,
+      dominio: `pruebas-${Date.now()}.evalpro.test`,
+      estado: EstadoInstitucion.ACTIVA,
+    },
+    select: { id: true },
+  });
+  return creada.id;
 }

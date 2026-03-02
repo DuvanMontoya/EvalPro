@@ -12,7 +12,7 @@ import { EstadoExamen, EstadoSesion, RolUsuario } from '@/Tipos';
  * @param rol - Rol del usuario autenticado.
  */
 export function rolPuedeAccederPanel(rol: RolUsuario | null | undefined): boolean {
-  return rol === RolUsuario.ADMINISTRADOR || rol === RolUsuario.DOCENTE;
+  return rol === RolUsuario.SUPERADMINISTRADOR || rol === RolUsuario.ADMINISTRADOR || rol === RolUsuario.DOCENTE;
 }
 
 /**
@@ -20,7 +20,7 @@ export function rolPuedeAccederPanel(rol: RolUsuario | null | undefined): boolea
  * @param rol - Rol autenticado.
  */
 export function rolPuedeGestionarExamenes(rol: RolUsuario | null | undefined): boolean {
-  return rol === RolUsuario.DOCENTE;
+  return rol === RolUsuario.SUPERADMINISTRADOR || rol === RolUsuario.DOCENTE;
 }
 
 /**
@@ -28,7 +28,7 @@ export function rolPuedeGestionarExamenes(rol: RolUsuario | null | undefined): b
  * @param rol - Rol autenticado.
  */
 export function rolPuedeGestionarSesiones(rol: RolUsuario | null | undefined): boolean {
-  return rol === RolUsuario.DOCENTE;
+  return rol === RolUsuario.SUPERADMINISTRADOR || rol === RolUsuario.DOCENTE;
 }
 
 /**
@@ -36,7 +36,7 @@ export function rolPuedeGestionarSesiones(rol: RolUsuario | null | undefined): b
  * @param rol - Rol autenticado.
  */
 export function rolPuedeCrearEstudiantes(rol: RolUsuario | null | undefined): boolean {
-  return rol === RolUsuario.ADMINISTRADOR;
+  return rol === RolUsuario.SUPERADMINISTRADOR || rol === RolUsuario.ADMINISTRADOR;
 }
 
 /**

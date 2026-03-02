@@ -35,7 +35,7 @@ export class RespuestasService {
    * @param dto - Lote de respuestas por intento.
    * @param idEstudiante - UUID del estudiante autenticado.
    */
-  async sincronizarLote(dto: SincronizarRespuestasDto, idEstudiante: string) {
+  async sincronizarLote(dto: SincronizarRespuestasDto, idEstudiante: string, idInstitucion: string | null) {
     const intento = await this.prisma.intentoExamen.findUnique({
       where: { id: dto.idIntento },
       include: {
@@ -50,6 +50,9 @@ export class RespuestasService {
     });
     if (!intento) {
       throw new NotFoundException('Intento no encontrado');
+    }
+    if (intento.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede sincronizar intentos fuera de su institución');
     }
     if (intento.estudianteId !== idEstudiante) {
       throw new ForbiddenException('No tiene permisos sobre este intento');
@@ -100,7 +103,7 @@ export class RespuestasService {
    * @param idIntento - UUID del intento.
    * @param idEstudiante - UUID del estudiante autenticado.
    */
-  async finalizar(idIntento: string, idEstudiante: string): Promise<ResultadoFinalDto> {
+  async finalizar(idIntento: string, idEstudiante: string, idInstitucion: string | null): Promise<ResultadoFinalDto> {
     const intento = await this.prisma.intentoExamen.findUnique({
       where: { id: idIntento },
       include: {
@@ -121,6 +124,9 @@ export class RespuestasService {
 
     if (!intento) {
       throw new NotFoundException('Intento no encontrado');
+    }
+    if (intento.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede finalizar intentos fuera de su institución');
     }
     if (intento.estudianteId !== idEstudiante) {
       throw new ForbiddenException('No tiene permisos sobre este intento');
@@ -145,7 +151,10 @@ export class RespuestasService {
    */
   async calcularPuntajesTodosIntentos(idSesion: string): Promise<void> {
     const intentos = await this.prisma.intentoExamen.findMany({
-      where: { sesionId: idSesion, estado: EstadoIntento.EN_PROGRESO },
+      where: {
+        sesionId: idSesion,
+        estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE, EstadoIntento.ENVIADO] },
+      },
       select: { id: true },
     });
     for (const intento of intentos) {
@@ -161,8 +170,14 @@ export class RespuestasService {
    * @param rol - Rol del usuario autenticado.
    * @param idUsuario - UUID del usuario autenticado.
    */
-  async calificarManual(idRespuesta: string, dto: CalificarRespuestaManualDto, rol: RolUsuario, idUsuario: string) {
-    return this.calificacionRespuestasService.calificarManual(idRespuesta, dto, rol, idUsuario);
+  async calificarManual(
+    idRespuesta: string,
+    dto: CalificarRespuestaManualDto,
+    rol: RolUsuario,
+    idUsuario: string,
+    idInstitucion: string | null,
+  ) {
+    return this.calificacionRespuestasService.calificarManual(idRespuesta, dto, rol, idUsuario, idInstitucion);
   }
 
   private normalizarOpcionesSeleccionadas(opcionesSeleccionadas: string[]): string[] {

@@ -12,7 +12,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { EstadoExamen, RolUsuario } from '@prisma/client';
+import { EstadoExamen, RolUsuario, TipoPregunta } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { CrearExamenDto } from './Dto/CrearExamen.dto';
@@ -30,12 +30,13 @@ export class ExamenesService {
    * @param idDocente - UUID del docente creador.
    * @returns Examen creado en base de datos.
    */
-  async crear(dto: CrearExamenDto, idDocente: string) {
+  async crear(dto: CrearExamenDto, idDocente: string, idInstitucion: string | null) {
     const semillaAleatorizacion = Math.floor(Math.random() * LIMITE_SEMILLA_ALEATORIZACION) + 1;
     return this.prisma.examen.create({
       data: {
         ...dto,
         creadoPorId: idDocente,
+        idInstitucion,
         semillaAleatorizacion,
       },
     });
@@ -47,8 +48,14 @@ export class ExamenesService {
    * @param idUsuario - UUID del usuario autenticado.
    * @returns Exámenes visibles para el rol.
    */
-  async listar(rol: RolUsuario, idUsuario: string) {
-    const where = rol === RolUsuario.ADMINISTRADOR ? {} : { creadoPorId: idUsuario };
+  async listar(rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    const where: Record<string, unknown> = {};
+    if (rol !== RolUsuario.SUPERADMINISTRADOR) {
+      where.idInstitucion = idInstitucion;
+    }
+    if (rol === RolUsuario.DOCENTE) {
+      where.creadoPorId = idUsuario;
+    }
     return this.prisma.examen.findMany({ where, orderBy: { fechaCreacion: 'desc' } });
   }
 
@@ -58,10 +65,14 @@ export class ExamenesService {
    * @param rol - Rol del usuario autenticado.
    * @param idUsuario - UUID del usuario autenticado.
    */
-  async obtenerPorId(idExamen: string, rol: RolUsuario, idUsuario: string) {
+  async obtenerPorId(idExamen: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
     const examen = await this.prisma.examen.findUnique({ where: { id: idExamen }, include: { preguntas: true } });
     if (!examen) {
       throw new NotFoundException('Examen no encontrado');
+    }
+
+    if (rol !== RolUsuario.SUPERADMINISTRADOR && examen.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede consultar recursos de otra institución');
     }
 
     if (rol === RolUsuario.DOCENTE && examen.creadoPorId !== idUsuario) {
@@ -77,10 +88,14 @@ export class ExamenesService {
    * @param dto - Datos parciales de actualización.
    * @param idDocente - UUID del docente.
    */
-  async actualizar(idExamen: string, dto: ActualizarExamenDto, idDocente: string) {
+  async actualizar(idExamen: string, dto: ActualizarExamenDto, idDocente: string, idInstitucion: string | null) {
     const examen = await this.prisma.examen.findUnique({ where: { id: idExamen } });
     if (!examen) {
       throw new NotFoundException('Examen no encontrado');
+    }
+
+    if (examen.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede actualizar exámenes fuera de su institución');
     }
 
     if (examen.creadoPorId !== idDocente) {
@@ -99,8 +114,8 @@ export class ExamenesService {
    * @param idExamen - UUID del examen.
    * @param idDocente - UUID del docente.
    */
-  async archivar(idExamen: string, idDocente: string) {
-    await this.obtenerPorId(idExamen, RolUsuario.DOCENTE, idDocente);
+  async archivar(idExamen: string, idDocente: string, idInstitucion: string | null) {
+    await this.obtenerPorId(idExamen, RolUsuario.DOCENTE, idDocente, idInstitucion);
     return this.prisma.examen.update({ where: { id: idExamen }, data: { estado: EstadoExamen.ARCHIVADO } });
   }
 
@@ -109,10 +124,17 @@ export class ExamenesService {
    * @param idExamen - UUID del examen.
    * @param idDocente - UUID del docente.
    */
-  async publicar(idExamen: string, idDocente: string) {
-    const examen = await this.prisma.examen.findUnique({ where: { id: idExamen } });
+  async publicar(idExamen: string, idDocente: string, idInstitucion: string | null) {
+    const examen = await this.prisma.examen.findUnique({
+      where: { id: idExamen },
+      include: { preguntas: { include: { opciones: true }, orderBy: { orden: 'asc' } } },
+    });
     if (!examen) {
       throw new NotFoundException('Examen no encontrado');
+    }
+
+    if (examen.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede publicar exámenes fuera de su institución');
     }
 
     if (examen.creadoPorId !== idDocente) {
@@ -123,14 +145,55 @@ export class ExamenesService {
       throw new BadRequestException('El examen no está en estado borrador');
     }
 
-    if (examen.totalPreguntas === 0) {
+    const preguntasActivas = examen.preguntas.filter((pregunta) => pregunta.activo);
+    if (preguntasActivas.length === 0) {
       throw new UnprocessableEntityException({
         mensaje: 'No se puede publicar un examen sin preguntas',
         codigoError: CODIGOS_ERROR.EXAMEN_SIN_PREGUNTAS,
       });
     }
 
-    return this.prisma.examen.update({ where: { id: idExamen }, data: { estado: EstadoExamen.PUBLICADO } });
+    for (const pregunta of preguntasActivas) {
+      const tipo = pregunta.tipo;
+      const opciones = pregunta.opciones;
+      const cantidadCorrectas = opciones.filter((opcion) => opcion.esCorrecta).length;
+
+      if (tipo === TipoPregunta.ABIERTA || tipo === TipoPregunta.RESPUESTA_ABIERTA) {
+        if (opciones.length > 0) {
+          throw new UnprocessableEntityException('Las preguntas abiertas no pueden contener opciones de respuesta');
+        }
+        continue;
+      }
+
+      if (opciones.length < 2) {
+        throw new UnprocessableEntityException('Cada pregunta cerrada debe tener al menos dos opciones');
+      }
+
+      if (tipo === TipoPregunta.OPCION_MULTIPLE && cantidadCorrectas !== 1) {
+        throw new UnprocessableEntityException('La pregunta de opción múltiple debe tener exactamente una opción correcta');
+      }
+
+      if (tipo === TipoPregunta.VERDADERO_FALSO && (opciones.length !== 2 || cantidadCorrectas !== 1)) {
+        throw new UnprocessableEntityException(
+          'La pregunta verdadero/falso debe tener exactamente dos opciones y una correcta',
+        );
+      }
+
+      if (tipo === TipoPregunta.SELECCION_MULTIPLE && cantidadCorrectas < 1) {
+        throw new UnprocessableEntityException('La pregunta de selección múltiple debe tener al menos una opción correcta');
+      }
+    }
+
+    const puntajeMaximo = preguntasActivas.reduce((suma, pregunta) => suma + pregunta.puntaje, 0);
+    return this.prisma.examen.update({
+      where: { id: idExamen },
+      data: {
+        estado: EstadoExamen.PUBLICADO,
+        puntajeMaximo,
+        puntajeMaximoDefinido: puntajeMaximo,
+        totalPreguntas: preguntasActivas.length,
+      },
+    });
   }
 
   /**

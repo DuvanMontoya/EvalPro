@@ -7,9 +7,10 @@
  */
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RolUsuario, Usuario } from '@prisma/client';
+import { RolUsuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
 import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
+import { UsuarioAutenticado } from '../Comun/Tipos/UsuarioAutenticado.tipo';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
 import { RolesGuard } from '../Comun/Guards/Roles.guard';
 import { CrearExamenDto } from './Dto/CrearExamen.dto';
@@ -29,8 +30,8 @@ export class ExamenesController {
   @Get()
   @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Lista exámenes por rol' })
-  async listar(@UsuarioActual() usuario: Usuario) {
-    return this.examenesService.listar(usuario.rol, usuario.id);
+  async listar(@UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.examenesService.listar(usuario.rol, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -39,8 +40,8 @@ export class ExamenesController {
   @Post()
   @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Crea un examen en estado borrador' })
-  async crear(@Body() dto: CrearExamenDto, @UsuarioActual() usuario: Usuario) {
-    return this.examenesService.crear(dto, usuario.id);
+  async crear(@Body() dto: CrearExamenDto, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.examenesService.crear(dto, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -49,8 +50,8 @@ export class ExamenesController {
   @Get(':id')
   @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Obtiene examen por id' })
-  async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
-    return this.examenesService.obtenerPorId(id, usuario.rol, usuario.id);
+  async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.examenesService.obtenerPorId(id, usuario.rol, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -62,9 +63,9 @@ export class ExamenesController {
   async actualizar(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ActualizarExamenDto,
-    @UsuarioActual() usuario: Usuario,
+    @UsuarioActual() usuario: UsuarioAutenticado,
   ) {
-    return this.examenesService.actualizar(id, dto, usuario.id);
+    return this.examenesService.actualizar(id, dto, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -73,8 +74,8 @@ export class ExamenesController {
   @Delete(':id')
   @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Archiva un examen' })
-  async eliminar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
-    return this.examenesService.archivar(id, usuario.id);
+  async eliminar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.examenesService.archivar(id, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -83,7 +84,7 @@ export class ExamenesController {
   @Post(':id/publicar')
   @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Publica un examen en borrador' })
-  async publicar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
-    return this.examenesService.publicar(id, usuario.id);
+  async publicar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.examenesService.publicar(id, usuario.id, usuario.idInstitucion);
   }
 }

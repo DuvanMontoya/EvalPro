@@ -15,12 +15,13 @@ class IntentoServicio {
   IntentoServicio(this._apiServicio);
 
   /// Crea un intento en backend para la sesion indicada.
-  Future<IntentoExamen> iniciar(String idSesion) {
+  Future<IntentoExamen> iniciar(String idSesion, String codigoAcceso) {
     return _apiServicio.publicar<IntentoExamen>(
       ApiEndpoints.intentos,
       (valor) => IntentoExamen.fromJson(valor as Map<String, dynamic>),
       cuerpo: <String, dynamic>{
         'idSesion': idSesion,
+        'codigoAcceso': codigoAcceso,
         'versionApp': Entorno.versionApp,
       },
     );

@@ -7,9 +7,10 @@
  */
 import { Body, Controller, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RolUsuario, Usuario } from '@prisma/client';
+import { RolUsuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
 import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
+import { UsuarioAutenticado } from '../Comun/Tipos/UsuarioAutenticado.tipo';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
 import { RolesGuard } from '../Comun/Guards/Roles.guard';
 import { CalificarRespuestaManualDto } from './Dto/CalificarRespuestaManual.dto';
@@ -29,8 +30,8 @@ export class RespuestasController {
    */
   @Post('respuestas/sincronizar-lote')
   @ApiOperation({ summary: 'Sincroniza respuestas en lote' })
-  async sincronizarLote(@Body() dto: SincronizarRespuestasDto, @UsuarioActual() usuario: Usuario) {
-    return this.respuestasService.sincronizarLote(dto, usuario.id);
+  async sincronizarLote(@Body() dto: SincronizarRespuestasDto, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.respuestasService.sincronizarLote(dto, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -38,8 +39,8 @@ export class RespuestasController {
    */
   @Post('intentos/:idIntento/finalizar')
   @ApiOperation({ summary: 'Finaliza intento y calcula puntaje' })
-  async finalizar(@Param('idIntento', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: Usuario) {
-    return this.respuestasService.finalizar(idIntento, usuario.id);
+  async finalizar(@Param('idIntento', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.respuestasService.finalizar(idIntento, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -51,8 +52,8 @@ export class RespuestasController {
   async calificarManual(
     @Param('id', ParseUUIDPipe) idRespuesta: string,
     @Body() dto: CalificarRespuestaManualDto,
-    @UsuarioActual() usuario: Usuario,
+    @UsuarioActual() usuario: UsuarioAutenticado,
   ) {
-    return this.respuestasService.calificarManual(idRespuesta, dto, usuario.rol, usuario.id);
+    return this.respuestasService.calificarManual(idRespuesta, dto, usuario.rol, usuario.id, usuario.idInstitucion);
   }
 }

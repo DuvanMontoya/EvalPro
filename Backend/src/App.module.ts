@@ -19,6 +19,13 @@ import { IntentosModule } from './Intentos/Intentos.module';
 import { RespuestasModule } from './Respuestas/Respuestas.module';
 import { TelemetriaModule } from './Telemetria/Telemetria.module';
 import { ReportesModule } from './Reportes/Reportes.module';
+import { AuditoriaModule } from './Auditoria/Auditoria.module';
+import { TransformRespuestaInterceptor } from './Comun/Interceptores/TransformRespuesta.interceptor';
+import { RegistroActividadInterceptor } from './Comun/Interceptores/RegistroActividad.interceptor';
+import { InstitucionesModule } from './Instituciones/Instituciones.module';
+import { GruposModule } from './Grupos/Grupos.module';
+import { AsignacionesModule } from './Asignaciones/Asignaciones.module';
+import { ReclamosModule } from './Reclamos/Reclamos.module';
 
 @Module({
   imports: [
@@ -40,7 +47,13 @@ import { ReportesModule } from './Reportes/Reportes.module';
     RespuestasModule,
     TelemetriaModule,
     ReportesModule,
+    AuditoriaModule,
+    InstitucionesModule,
+    GruposModule,
+    AsignacionesModule,
+    ReclamosModule,
   ],
   controllers: [AppController],
+  providers: [TransformRespuestaInterceptor, RegistroActividadInterceptor],
 })
 export class AppModule {}

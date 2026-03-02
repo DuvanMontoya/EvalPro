@@ -7,7 +7,7 @@
  */
 import { ApiProperty } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
-import { IsEmail, IsEnum, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class RegistrarUsuarioDto {
   @ApiProperty({ description: 'Nombres del usuario', example: 'Laura' })
@@ -34,4 +34,12 @@ export class RegistrarUsuarioDto {
   @ApiProperty({ description: 'Rol asignado al usuario', enum: RolUsuario, example: RolUsuario.ESTUDIANTE })
   @IsEnum(RolUsuario)
   rol!: RolUsuario;
+
+  @ApiProperty({
+    description: 'ID de institución del usuario (obligatorio para roles distintos de SUPERADMINISTRADOR)',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  idInstitucion?: string;
 }

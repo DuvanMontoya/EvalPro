@@ -5,14 +5,19 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CrearSesionDto {
-  @ApiProperty({ description: 'ID del examen publicado para la sesión' })
+  @ApiPropertyOptional({ description: 'ID del examen publicado para la sesión (legacy)' })
+  @IsOptional()
   @IsUUID()
-  @IsNotEmpty()
-  idExamen!: string;
+  idExamen?: string;
+
+  @ApiPropertyOptional({ description: 'ID de asignación de examen (canónico)' })
+  @IsOptional()
+  @IsUUID()
+  idAsignacion?: string;
 
   @ApiPropertyOptional({ description: 'Descripción breve de la sesión' })
   @IsOptional()

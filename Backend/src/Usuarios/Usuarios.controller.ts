@@ -9,7 +9,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Param,
   ParseUUIDPipe,
@@ -18,9 +17,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RolUsuario, Usuario } from '@prisma/client';
+import { RolUsuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
 import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
+import { UsuarioAutenticado } from '../Comun/Tipos/UsuarioAutenticado.tipo';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
 import { RolesGuard } from '../Comun/Guards/Roles.guard';
 import { CrearUsuarioDto } from './Dto/CrearUsuario.dto';
@@ -42,8 +42,8 @@ export class UsuariosController {
   @Get()
   @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Lista usuarios visibles para el solicitante' })
-  async listar(@UsuarioActual() usuario: Usuario) {
-    return this.usuariosService.listar(usuario.rol, usuario.id);
+  async listar(@UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.usuariosService.listar(usuario.rol, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -53,8 +53,8 @@ export class UsuariosController {
   @Post()
   @Roles(RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Crea un usuario nuevo' })
-  async crear(@Body() dto: CrearUsuarioDto) {
-    return this.usuariosService.crear(dto);
+  async crear(@Body() dto: CrearUsuarioDto, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.usuariosService.crear(dto, usuario.idInstitucion);
   }
 
   /**
@@ -64,8 +64,8 @@ export class UsuariosController {
   @Post('docentes')
   @Roles(RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Crea un docente' })
-  async crearDocente(@Body() dto: CrearUsuarioRolDto) {
-    return this.usuariosService.crearDocente(dto);
+  async crearDocente(@Body() dto: CrearUsuarioRolDto, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.usuariosService.crearDocente(dto, usuario.idInstitucion);
   }
 
   /**
@@ -75,8 +75,8 @@ export class UsuariosController {
   @Post('estudiantes')
   @Roles(RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Crea un estudiante' })
-  async crearEstudiante(@Body() dto: CrearUsuarioRolDto) {
-    return this.usuariosService.crearEstudiante(dto);
+  async crearEstudiante(@Body() dto: CrearUsuarioRolDto, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.usuariosService.crearEstudiante(dto, usuario.idInstitucion);
   }
 
   /**
@@ -87,9 +87,8 @@ export class UsuariosController {
   @Get(':id')
   @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Obtiene detalles de usuario por id' })
-  async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: Usuario) {
-    this.validarPropiedad(id, usuario);
-    return this.usuariosService.obtenerPorId(id);
+  async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.usuariosService.obtenerPorId(id, usuario.rol, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -104,10 +103,9 @@ export class UsuariosController {
   async actualizar(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ActualizarUsuarioDto,
-    @UsuarioActual() usuario: Usuario,
+    @UsuarioActual() usuario: UsuarioAutenticado,
   ) {
-    this.validarPropiedad(id, usuario);
-    return this.usuariosService.actualizar(id, dto, usuario.rol, usuario.id);
+    return this.usuariosService.actualizar(id, dto, usuario.rol, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -117,19 +115,7 @@ export class UsuariosController {
   @Delete(':id')
   @Roles(RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Desactiva un usuario' })
-  async desactivar(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usuariosService.desactivar(id);
-  }
-
-  /**
-   * Verifica que el usuario pueda operar sobre el recurso indicado.
-   * @param idObjetivo - ID del usuario objetivo.
-   * @param usuario - Usuario autenticado.
-   */
-  private validarPropiedad(idObjetivo: string, usuario: Usuario): void {
-    const puede = usuario.rol === RolUsuario.ADMINISTRADOR || usuario.id === idObjetivo;
-    if (!puede) {
-      throw new ForbiddenException('No tiene permisos para operar sobre este usuario');
-    }
+  async desactivar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.usuariosService.desactivar(id, usuario.rol, usuario.idInstitucion);
   }
 }

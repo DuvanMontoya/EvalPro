@@ -10,6 +10,7 @@ import { RolUsuario } from '@prisma/client';
 export const CLAVE_ROLES = 'roles_permitidos';
 
 export const ROLES_ADMINISTRATIVOS: RolUsuario[] = [
+  RolUsuario.SUPERADMINISTRADOR,
   RolUsuario.ADMINISTRADOR,
   RolUsuario.DOCENTE,
 ];

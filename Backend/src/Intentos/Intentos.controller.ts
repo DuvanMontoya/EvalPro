@@ -7,9 +7,10 @@
  */
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RolUsuario, Usuario } from '@prisma/client';
+import { RolUsuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
 import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
+import { UsuarioAutenticado } from '../Comun/Tipos/UsuarioAutenticado.tipo';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
 import { RolesGuard } from '../Comun/Guards/Roles.guard';
 import { IniciarIntentoDto } from './Dto/IniciarIntento.dto';
@@ -28,8 +29,8 @@ export class IntentosController {
    */
   @Post()
   @ApiOperation({ summary: 'Inicia un intento de examen' })
-  async iniciar(@Body() dto: IniciarIntentoDto, @UsuarioActual() usuario: Usuario) {
-    return this.intentosService.iniciar(dto, usuario.id);
+  async iniciar(@Body() dto: IniciarIntentoDto, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.intentosService.iniciar(dto, usuario.id, usuario.idInstitucion);
   }
 
   /**
@@ -37,17 +38,17 @@ export class IntentosController {
    */
   @Get(':id/examen')
   @ApiOperation({ summary: 'Obtiene examen para un intento' })
-  async obtenerExamen(@Param('id', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: Usuario) {
-    return this.intentosService.obtenerExamen(idIntento, usuario.id);
+  async obtenerExamen(@Param('id', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.intentosService.obtenerExamen(idIntento, usuario.id, usuario.idInstitucion);
   }
 
   /**
    * Anula un intento por decisión del docente propietario de la sesión o administrador.
    */
   @Post(':id/anular')
-  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Anula un intento por fraude o contingencia' })
-  async anular(@Param('id', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: Usuario) {
-    return this.intentosService.anular(idIntento, usuario.rol, usuario.id);
+  async anular(@Param('id', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.intentosService.anular(idIntento, usuario.rol, usuario.id, usuario.idInstitucion);
   }
 }

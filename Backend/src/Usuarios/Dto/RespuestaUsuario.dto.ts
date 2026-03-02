@@ -6,7 +6,7 @@
  * @fecha     2026-03-02
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { RolUsuario } from '@prisma/client';
+import { EstadoCuenta, RolUsuario } from '@prisma/client';
 
 export class RespuestaUsuarioDto {
   @ApiProperty({ description: 'Identificador único del usuario' })
@@ -24,6 +24,15 @@ export class RespuestaUsuarioDto {
   @ApiProperty({ description: 'Rol asignado', enum: RolUsuario })
   rol!: RolUsuario;
 
+  @ApiProperty({ description: 'Identificador de la institución del usuario', nullable: true })
+  idInstitucion!: string | null;
+
+  @ApiProperty({ description: 'Estado operativo de la cuenta', enum: EstadoCuenta })
+  estadoCuenta!: EstadoCuenta;
+
+  @ApiProperty({ description: 'Indica si aún está en primer login' })
+  primerLogin!: boolean;
+
   @ApiProperty({ description: 'Indica si el usuario está activo' })
   activo!: boolean;
 
@@ -32,4 +41,11 @@ export class RespuestaUsuarioDto {
 
   @ApiProperty({ description: 'Fecha de última actualización del usuario' })
   fechaActualizacion!: Date;
+
+  @ApiProperty({
+    description: 'Credencial temporal en texto plano. Solo se entrega al crear usuario.',
+    required: false,
+    nullable: true,
+  })
+  credencialTemporalPlano?: string | null;
 }

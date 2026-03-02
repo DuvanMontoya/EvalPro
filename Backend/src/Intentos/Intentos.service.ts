@@ -7,6 +7,7 @@
  */
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoIntento, EstadoSesion, RolUsuario } from '@prisma/client';
+import { createHash } from 'crypto';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { aleatorizarConSemilla } from '../Comun/Utilidades/AleatorizadorPreguntas.util';
 import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
@@ -23,18 +24,44 @@ export class IntentosService {
    * @param dto - Datos de inicio de intento.
    * @param idEstudiante - UUID del estudiante.
    */
-  async iniciar(dto: IniciarIntentoDto, idEstudiante: string) {
-    const sesion = await this.prisma.sesionExamen.findUnique({ where: { id: dto.idSesion } });
+  async iniciar(dto: IniciarIntentoDto, idEstudiante: string, idInstitucion: string | null) {
+    const sesion = await this.prisma.sesionExamen.findUnique({
+      where: { id: dto.idSesion },
+      include: {
+        examen: {
+          include: {
+            preguntas: {
+              include: { opciones: true },
+              orderBy: { orden: 'asc' },
+            },
+          },
+        },
+        asignacion: true,
+      },
+    });
     if (!sesion) {
       throw new NotFoundException('Sesión no encontrada');
+    }
+
+    if (sesion.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede iniciar intentos fuera de su institución');
     }
 
     if (sesion.estado !== EstadoSesion.ACTIVA) {
       throw new BadRequestException('La sesión no está activa');
     }
 
-    const intentoExistente = await this.prisma.intentoExamen.findUnique({
-      where: { estudianteId_sesionId: { estudianteId: idEstudiante, sesionId: dto.idSesion } },
+    if (!sesion.codigoAcceso || sesion.codigoAcceso.trim().toUpperCase() !== dto.codigoAcceso.trim().toUpperCase()) {
+      throw new ForbiddenException('Código de acceso inválido para la sesión');
+    }
+
+    const intentoExistente = await this.prisma.intentoExamen.findFirst({
+      where: {
+        estudianteId: idEstudiante,
+        sesionId: dto.idSesion,
+        estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE] },
+      },
+      select: { id: true },
     });
 
     if (intentoExistente) {
@@ -44,13 +71,42 @@ export class IntentosService {
       });
     }
 
+    if (sesion.asignacion && sesion.asignacion.intentosMaximos > 0) {
+      const intentosPrevios = await this.prisma.intentoExamen.count({
+        where: {
+          sesionId: dto.idSesion,
+          estudianteId: idEstudiante,
+          estado: { in: [EstadoIntento.ENVIADO, EstadoIntento.ANULADO] },
+        },
+      });
+      if (intentosPrevios >= sesion.asignacion.intentosMaximos) {
+        throw new ForbiddenException('Se alcanzó el número máximo de intentos permitidos');
+      }
+    }
+
     const semillaPersonal = Math.floor(Math.random() * LIMITE_SEMILLA_PERSONAL) + 1;
+    const semillaDeterminista = this.generarSemillaDeterminista(sesion.examen.id, dto.idSesion, idEstudiante);
+    const preguntasAleatorias = aleatorizarConSemilla(sesion.examen.preguntas, semillaDeterminista).map((pregunta) => ({
+      idPregunta: pregunta.id,
+      orden: pregunta.orden,
+      opciones: aleatorizarConSemilla(pregunta.opciones, semillaDeterminista + pregunta.orden).map((opcion) => ({
+        id: opcion.id,
+        orden: opcion.orden,
+      })),
+    }));
+
     return this.prisma.intentoExamen.create({
       data: {
+        idInstitucion: idInstitucion ?? null,
         semillaPersonal,
         estado: EstadoIntento.EN_PROGRESO,
         estudianteId: idEstudiante,
         sesionId: dto.idSesion,
+        ordenPreguntasAplicado: {
+          semilla: semillaDeterminista,
+          preguntas: preguntasAleatorias,
+        },
+        ultimaSincronizacion: new Date(),
         ipDispositivo: dto.ipDispositivo,
         modeloDispositivo: dto.modeloDispositivo,
         sistemaOperativo: dto.sistemaOperativo,
@@ -64,7 +120,7 @@ export class IntentosService {
    * @param idIntento - UUID del intento.
    * @param idEstudiante - UUID del estudiante autenticado.
    */
-  async obtenerExamen(idIntento: string, idEstudiante: string) {
+  async obtenerExamen(idIntento: string, idEstudiante: string, idInstitucion: string | null) {
     const intento = await this.prisma.intentoExamen.findUnique({
       where: { id: idIntento },
       include: {
@@ -85,6 +141,10 @@ export class IntentosService {
 
     if (!intento) {
       throw new NotFoundException('Intento no encontrado');
+    }
+
+    if (intento.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede consultar intentos fuera de su institución');
     }
 
     if (intento.estudianteId !== idEstudiante) {
@@ -126,13 +186,16 @@ export class IntentosService {
    * @param rol - Rol del usuario autenticado.
    * @param idUsuario - UUID del usuario autenticado.
    */
-  async anular(idIntento: string, rol: RolUsuario, idUsuario: string) {
+  async anular(idIntento: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
     const intento = await this.prisma.intentoExamen.findUnique({
       where: { id: idIntento },
       include: { sesion: true },
     });
     if (!intento) {
       throw new NotFoundException('Intento no encontrado');
+    }
+    if (rol !== RolUsuario.SUPERADMINISTRADOR && intento.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede anular intentos fuera de su institución');
     }
     if (rol === RolUsuario.DOCENTE && intento.sesion.creadaPorId !== idUsuario) {
       throw new ForbiddenException('No tiene permisos sobre este intento');
@@ -142,7 +205,17 @@ export class IntentosService {
     }
     return this.prisma.intentoExamen.update({
       where: { id: idIntento },
-      data: { estado: EstadoIntento.ANULADO },
+      data: {
+        estado: EstadoIntento.ANULADO,
+        razonAnulacion: 'ANULACION_ADMINISTRATIVA',
+        anuladoPorId: idUsuario,
+        anuladoEn: new Date(),
+      },
     });
+  }
+
+  private generarSemillaDeterminista(idExamen: string, idSesion: string, idEstudiante: string): number {
+    const hash = createHash('sha256').update(`${idExamen}:${idSesion}:${idEstudiante}`).digest('hex');
+    return Number.parseInt(hash.slice(0, 8), 16);
   }
 }
