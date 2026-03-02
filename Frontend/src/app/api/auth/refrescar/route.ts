@@ -45,23 +45,30 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ mensaje: 'Token refresh inválido' }, { status: 401 });
   }
 
-  const respuestaBackend = await fetch(`${API.BASE_PUBLICA}${API.AUTENTICACION.REFRESCAR_TOKENS}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ idUsuario, tokenRefresh }),
-  });
+  let sesion: SesionAutenticada;
+  try {
+    const respuestaBackend = await fetch(`${API.BASE_INTERNA}${API.AUTENTICACION.REFRESCAR_TOKENS}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ idUsuario, tokenRefresh }),
+    });
 
-  const cuerpoBackend = (await respuestaBackend.json()) as RespuestaApi<SesionAutenticada>;
+    const cuerpoBackend = (await respuestaBackend.json()) as RespuestaApi<SesionAutenticada>;
 
-  if (!respuestaBackend.ok || !cuerpoBackend.exito || !cuerpoBackend.datos) {
+    if (!respuestaBackend.ok || !cuerpoBackend.exito || !cuerpoBackend.datos) {
+      const respuestaError = NextResponse.json({ mensaje: 'No fue posible renovar la sesión' }, { status: 401 });
+      respuestaError.cookies.delete(API.COOKIE_REFRESH);
+      return respuestaError;
+    }
+
+    sesion = cuerpoBackend.datos;
+  } catch {
     const respuestaError = NextResponse.json({ mensaje: 'No fue posible renovar la sesión' }, { status: 401 });
     respuestaError.cookies.delete(API.COOKIE_REFRESH);
     return respuestaError;
   }
-
-  const sesion = cuerpoBackend.datos;
   const respuesta = NextResponse.json({
     tokenAcceso: sesion.tokenAcceso,
     usuario: sesion.usuario as Usuario,

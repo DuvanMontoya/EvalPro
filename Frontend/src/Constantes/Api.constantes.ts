@@ -7,6 +7,7 @@
  */
 export const API = {
   BASE_PUBLICA: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1',
+  BASE_INTERNA: process.env.API_BASE_INTERNA ?? 'http://backend:3001/api/v1',
   WEBSOCKET: process.env.NEXT_PUBLIC_WEBSOCKET_URL ?? 'http://localhost:3001',
   VERSION: process.env.NEXT_PUBLIC_VERSION_APP ?? '1.0.0',
   COOKIE_REFRESH: 'token_refresh_evalpro',

@@ -42,6 +42,13 @@ export default function PaginaEstudiantes() {
   const { consultaUsuariosAcademicos } = useEstudiantes();
   const { usuario } = useAutenticacion();
   const puedeCrear = rolPuedeCrearEstudiantes(usuario?.rol);
+  const usuariosAcademicos = consultaUsuariosAcademicos.data ?? [];
+  const usuariosFiltrados = useMemo(() => {
+    if (filtroRol === 'TODOS') {
+      return usuariosAcademicos;
+    }
+    return usuariosAcademicos.filter((usuarioAcademico) => usuarioAcademico.rol === filtroRol);
+  }, [filtroRol, usuariosAcademicos]);
 
   if (consultaUsuariosAcademicos.isLoading) {
     return <Cargando mensaje="Cargando usuarios académicos..." />;
@@ -55,14 +62,6 @@ export default function PaginaEstudiantes() {
       />
     );
   }
-
-  const usuariosAcademicos = consultaUsuariosAcademicos.data ?? [];
-  const usuariosFiltrados = useMemo(() => {
-    if (filtroRol === 'TODOS') {
-      return usuariosAcademicos;
-    }
-    return usuariosAcademicos.filter((usuarioAcademico) => usuarioAcademico.rol === filtroRol);
-  }, [filtroRol, usuariosAcademicos]);
 
   if (usuariosFiltrados.length === 0) {
     return (
