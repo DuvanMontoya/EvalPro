@@ -1,4 +1,4 @@
-# AGENTS.md — EvalPro · App Móvil (Flutter 3.x + Riverpod + Drift)
+# AGENTS.md — EvalPro · App Móvil (Flutter 3.41 + Riverpod + Drift)
 > Complementa `/AGENTS.md` raíz. Lee primero el raíz, luego este.
 > Aplica a todos los archivos dentro de `Movil/`.
 

@@ -1,5 +1,5 @@
 ---
-description: Reglas específicas de Next.js 14, shadcn/ui y React Query para EvalPro Frontend
+description: Reglas específicas de Next.js 16, shadcn/ui y React Query para EvalPro Frontend
 globs: ["Frontend/**/*.ts", "Frontend/**/*.tsx"]
 alwaysApply: false
 ---

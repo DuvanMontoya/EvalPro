@@ -9,7 +9,7 @@
 
 **Nombre del sistema:** EvalPro — Ecosistema de Evaluación Académica Automatizado
 **Descripción:** Monorepo con tres capas: API REST + WebSocket (NestJS), Panel Administrativo
-Web (Next.js 14), y App Móvil (Flutter). Permite a docentes crear evaluaciones digitales que
+Web (Next.js 16), y App Móvil (Flutter). Permite a docentes crear evaluaciones digitales que
 estudiantes responden desde sus propios teléfonos con mecanismos de anti-trampa (Modo Kiosco).
 **Dos modalidades de examen:**
 - `DIGITAL_COMPLETO` → preguntas y respuestas completamente en la app móvil.
@@ -111,9 +111,9 @@ EvalPro/
 ├── AGENTS.md                    ← Este archivo
 ├── Backend/                     ← NestJS + Prisma + PostgreSQL (Puerto 3001)
 │   └── AGENTS.md
-├── Frontend/                    ← Next.js 14 App Router (Puerto 3000)
+├── Frontend/                    ← Next.js 16 App Router (Puerto 3000)
 │   └── AGENTS.md
-├── Movil/                       ← Flutter 3.x — iOS + Android (BYOD)
+├── Movil/                       ← Flutter 3.41 — iOS + Android (BYOD)
 │   └── AGENTS.md
 ├── Compartido/                  ← Tipos TypeScript compartidos BE↔FE
 │   └── src/
@@ -140,7 +140,7 @@ EvalPro/
 | Hash passwords | bcrypt | última |
 | Tiempo real | @nestjs/websockets + socket.io | última |
 | Docs API | @nestjs/swagger | última |
-| Frontend | Next.js | 14.x (App Router) |
+| Frontend | Next.js | 16.x (App Router) |
 | UI | shadcn/ui + Tailwind CSS | última |
 | Estado FE | Zustand | última |
 | HTTP FE | axios + TanStack React Query | última |

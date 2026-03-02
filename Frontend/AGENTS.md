@@ -1,4 +1,4 @@
-# AGENTS.md — EvalPro · Frontend Admin (Next.js 14 + shadcn/ui)
+# AGENTS.md — EvalPro · Frontend Admin (Next.js 16 + shadcn/ui)
 > Complementa `/AGENTS.md` raíz. Lee primero el raíz, luego este.
 > Aplica a todos los archivos dentro de `Frontend/`.
 
@@ -115,7 +115,7 @@ Frontend/
 
 ---
 
-## CONVENCIONES ESPECÍFICAS DE NEXT.JS 14 APP ROUTER
+## CONVENCIONES ESPECÍFICAS DE NEXT.JS 16 APP ROUTER
 
 ### Páginas vs Componentes
 
