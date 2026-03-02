@@ -16,6 +16,7 @@ import { esquemaCrearUsuarioAcademico, CrearUsuarioAcademicoFormulario } from '@
 import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useEstudiantes } from '@/Hooks/useEstudiantes';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
 import { Etiqueta } from '@/Componentes/Ui/Etiqueta';
@@ -52,12 +53,15 @@ export default function PaginaNuevoEstudiante() {
 
   const enviar = async (datos: CrearUsuarioAcademicoFormulario) => {
     try {
-      await mutacionCrearUsuarioAcademico.mutateAsync(datos);
+      const usuarioCreado = await mutacionCrearUsuarioAcademico.mutateAsync(datos);
       toast.success(
         datos.rol === RolUsuario.DOCENTE
           ? 'Docente creado correctamente.'
           : 'Estudiante creado correctamente.',
       );
+      if (usuarioCreado.credencialTemporalPlano) {
+        toast.info(`Credencial temporal: ${usuarioCreado.credencialTemporalPlano}`);
+      }
       router.push(RUTAS.ESTUDIANTES);
     } catch (error) {
       toast.error(obtenerMensajeError(error, 'No se pudo crear el usuario.'));
@@ -76,12 +80,18 @@ export default function PaginaNuevoEstudiante() {
   }
 
   return (
-    <Tarjeta>
-      <TarjetaEncabezado>
-        <TarjetaTitulo>Nuevo usuario académico</TarjetaTitulo>
-      </TarjetaEncabezado>
-      <TarjetaContenido>
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={formulario.handleSubmit(enviar)}>
+    <section className="space-y-4">
+      <EncabezadoPagina
+        etiqueta="Alta de usuarios"
+        titulo="Nuevo usuario académico"
+        descripcion="Registra docentes o estudiantes con credencial temporal de acceso inicial."
+      />
+      <Tarjeta>
+        <TarjetaEncabezado>
+          <TarjetaTitulo>Información base</TarjetaTitulo>
+        </TarjetaEncabezado>
+        <TarjetaContenido>
+          <form className="grid gap-4 md:grid-cols-2" onSubmit={formulario.handleSubmit(enviar)}>
           <div className="space-y-2">
             <Etiqueta>Nombre</Etiqueta>
             <Entrada {...formulario.register('nombre')} />
@@ -132,8 +142,9 @@ export default function PaginaNuevoEstudiante() {
                 : 'Crear usuario'}
             </Boton>
           </div>
-        </form>
-      </TarjetaContenido>
-    </Tarjeta>
+          </form>
+        </TarjetaContenido>
+      </Tarjeta>
+    </section>
   );
 }

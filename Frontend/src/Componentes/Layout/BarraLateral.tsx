@@ -14,15 +14,21 @@ import {
   BookOpen,
   Cog,
   FileText,
+  Building2,
+  Layers3,
   Home,
   Users,
 } from 'lucide-react';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { cn } from '@/Lib/utils';
 import { useUiAlmacen } from '@/Almacen/UiAlmacen';
+import { useAutenticacion } from '@/Hooks/useAutenticacion';
+import { rolPuedeGestionarGrupos, rolPuedeGestionarInstituciones } from '@/Lib/Permisos';
 
-const enlaces = [
+const enlacesBase = [
   { etiqueta: 'Tablero', href: RUTAS.TABLERO, icono: Home },
+  { etiqueta: 'Instituciones', href: RUTAS.INSTITUCIONES, icono: Building2, visible: rolPuedeGestionarInstituciones },
+  { etiqueta: 'Grupos', href: RUTAS.GRUPOS, icono: Layers3, visible: rolPuedeGestionarGrupos },
   { etiqueta: 'Exámenes', href: RUTAS.EXAMENES, icono: BookOpen },
   { etiqueta: 'Sesiones', href: RUTAS.SESIONES, icono: FileText },
   { etiqueta: 'Estudiantes', href: RUTAS.ESTUDIANTES, icono: Users },
@@ -36,6 +42,13 @@ const enlaces = [
 export function BarraLateral() {
   const rutaActual = usePathname();
   const abierta = useUiAlmacen((estado) => estado.barraLateralAbierta);
+  const { usuario } = useAutenticacion();
+  const enlaces = enlacesBase.filter((enlace) => {
+    if ('visible' in enlace && typeof enlace.visible === 'function') {
+      return enlace.visible(usuario?.rol);
+    }
+    return true;
+  });
 
   return (
     <aside
@@ -52,7 +65,7 @@ export function BarraLateral() {
             {abierta ? 'EvalPro' : 'EP'}
           </span>
         </div>
-        {abierta ? <span className="font-mono text-[10px] text-[var(--texto-terciario)]">v1.0</span> : null}
+        {abierta ? <span className="font-mono text-[10px] text-[var(--texto-terciario)]">ops</span> : null}
       </div>
       <nav className="space-y-1 p-3">
         {enlaces.map((enlace) => {
@@ -65,7 +78,7 @@ export function BarraLateral() {
               key={enlace.href}
               aria-label={enlace.etiqueta}
               className={cn(
-                'group flex items-center gap-3 rounded-sm border px-3 py-2 text-sm font-medium transicion-rapida focus-visible:outline-none focus-visible:shadow-sombra-glow-primario',
+                'group flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm font-medium transicion-rapida focus-visible:outline-none focus-visible:shadow-sombra-glow-primario',
                 activo
                   ? 'border-[var(--acento-primario-borde)] bg-[var(--acento-primario-sutil)] text-[var(--acento-primario-hover)] shadow-sombra-xs'
                   : 'border-transparent text-[var(--texto-secundario)] hover:border-[var(--borde-default)] hover:bg-fondo-elevado-3 hover:text-[var(--texto-primario)]',
@@ -77,6 +90,18 @@ export function BarraLateral() {
           );
         })}
       </nav>
+      {abierta ? (
+        <div className="px-3 pb-3 pt-2">
+          <div className="rounded-xl border border-[var(--borde-default)] bg-[rgba(8,12,16,0.45)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--texto-terciario)]">
+              Seguridad
+            </p>
+            <p className="mt-1 text-xs text-[var(--texto-secundario)]">
+              Sesión auditada y protegida por JWT rotativo.
+            </p>
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }

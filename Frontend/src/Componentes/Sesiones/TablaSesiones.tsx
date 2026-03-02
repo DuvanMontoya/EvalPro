@@ -13,7 +13,7 @@ import { EstadoSesion, RolUsuario, SesionExamen } from '@/Tipos';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { Boton } from '@/Componentes/Ui/Boton';
 import { Insignia } from '@/Componentes/Ui/Insignia';
-import { puedeActivarSesion, puedeFinalizarSesion } from '@/Lib/Permisos';
+import { puedeActivarSesion, puedeCancelarSesion, puedeFinalizarSesion } from '@/Lib/Permisos';
 import {
   Tabla,
   TablaCabeza,
@@ -28,6 +28,7 @@ interface PropiedadesTablaSesiones {
   rolUsuario: RolUsuario | null | undefined;
   onActivar: (idSesion: string) => void;
   onFinalizar: (idSesion: string) => void;
+  onCancelar: (idSesion: string) => void;
 }
 
 function renderEstado(estado: EstadoSesion) {
@@ -51,6 +52,7 @@ export function TablaSesiones({
   rolUsuario,
   onActivar,
   onFinalizar,
+  onCancelar,
 }: PropiedadesTablaSesiones) {
   const columnas: ColumnDef<SesionExamen>[] = [
     {
@@ -63,7 +65,11 @@ export function TablaSesiones({
       header: 'Estado',
       cell: ({ row }) => renderEstado(row.original.estado),
     },
-    { accessorKey: 'fechaCreacion', header: 'Creada' },
+    {
+      accessorKey: 'fechaCreacion',
+      header: 'Creada',
+      cell: ({ row }) => new Date(row.original.fechaCreacion).toLocaleString('es-CO'),
+    },
     {
       id: 'acciones',
       header: 'Acciones',
@@ -71,6 +77,7 @@ export function TablaSesiones({
         const sesion = row.original;
         const activarHabilitado = puedeActivarSesion(rolUsuario, sesion.estado);
         const finalizarHabilitado = puedeFinalizarSesion(rolUsuario, sesion.estado);
+        const cancelarHabilitado = puedeCancelarSesion(rolUsuario, sesion.estado);
         return (
           <div className="flex flex-wrap gap-2">
             <Boton comoHijo tamano="pequeno" variante="contorno">
@@ -84,6 +91,11 @@ export function TablaSesiones({
             {finalizarHabilitado ? (
               <Boton tamano="pequeno" variante="peligro" onClick={() => onFinalizar(sesion.id)}>
                 Finalizar
+              </Boton>
+            ) : null}
+            {cancelarHabilitado ? (
+              <Boton tamano="pequeno" variante="contorno" onClick={() => onCancelar(sesion.id)}>
+                Cancelar
               </Boton>
             ) : null}
           </div>

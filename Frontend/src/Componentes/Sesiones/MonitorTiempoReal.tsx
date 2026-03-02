@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { EstadoIntento } from '@/Tipos';
+import { EstadoIntento, EstadoSesion } from '@/Tipos';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useMonitorTiempoReal } from '@/Hooks/useMonitorTiempoReal';
@@ -21,7 +21,7 @@ import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { TarjetaEstudianteMonitor } from '@/Componentes/Sesiones/TarjetaEstudianteMonitor';
 import { AlertaFraude } from '@/Componentes/Sesiones/AlertaFraude';
 import { obtenerMensajeError } from '@/Lib/ErroresApi';
-import { rolPuedeGestionarSesiones } from '@/Lib/Permisos';
+import { puedeFinalizarSesion } from '@/Lib/Permisos';
 
 interface PropiedadesMonitorTiempoReal {
   idSesion: string;
@@ -43,7 +43,7 @@ export function MonitorTiempoReal({ idSesion, totalPreguntas }: PropiedadesMonit
   const { mutacionFinalizarSesion } = useSesiones();
   const { usuario } = useAutenticacion();
   const { listaEstudiantes, alertasFraude, sesionFinalizada, conexionActiva } = useMonitorTiempoReal(idSesion);
-  const puedeFinalizar = rolPuedeGestionarSesiones(usuario?.rol);
+  const puedeFinalizar = puedeFinalizarSesion(usuario?.rol, EstadoSesion.ACTIVA);
 
   useEffect(() => {
     if (sesionFinalizada) {

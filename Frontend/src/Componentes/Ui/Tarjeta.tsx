@@ -15,7 +15,7 @@ export function Tarjeta({ className, ...props }: React.HTMLAttributes<HTMLDivEle
   return (
     <div
       className={cn(
-        'superficie-elevada rounded-xl border border-[var(--borde-sutil)] bg-fondo-elevado-2 transicion-normal',
+        'superficie-elevada rounded-2xl border border-[var(--borde-sutil)] bg-[linear-gradient(180deg,rgba(22,27,34,0.95),rgba(18,24,32,0.95))] transicion-normal',
         className,
       )}
       {...props}

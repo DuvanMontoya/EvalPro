@@ -92,6 +92,15 @@ export function EditorPreguntas({
     return <Cargando mensaje="Cargando preguntas..." />;
   }
 
+  if (consultaPreguntas.isError) {
+    return (
+      <EstadoVacio
+        titulo="No fue posible cargar preguntas"
+        descripcion={obtenerMensajeError(consultaPreguntas.error, 'Intenta nuevamente en unos segundos.')}
+      />
+    );
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">

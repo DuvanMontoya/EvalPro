@@ -12,7 +12,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { EstadoExamen, RolUsuario, TipoPregunta } from '@prisma/client';
+import { EstadoExamen, EstadoSesion, RolUsuario, TipoPregunta } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { CrearExamenDto } from './Dto/CrearExamen.dto';
@@ -114,9 +114,39 @@ export class ExamenesService {
    * @param idExamen - UUID del examen.
    * @param idDocente - UUID del docente.
    */
-  async archivar(idExamen: string, idDocente: string, idInstitucion: string | null) {
-    await this.obtenerPorId(idExamen, RolUsuario.DOCENTE, idDocente, idInstitucion);
-    return this.prisma.examen.update({ where: { id: idExamen }, data: { estado: EstadoExamen.ARCHIVADO } });
+  async archivar(idExamen: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    const examen = await this.prisma.examen.findUnique({ where: { id: idExamen } });
+    if (!examen) {
+      throw new NotFoundException('Examen no encontrado');
+    }
+
+    if (rol !== RolUsuario.SUPERADMINISTRADOR && examen.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede archivar exámenes fuera de su institución');
+    }
+
+    if (rol === RolUsuario.DOCENTE && examen.creadoPorId !== idUsuario) {
+      throw new ForbiddenException('No tiene permisos sobre este examen');
+    }
+
+    const sesionActiva = await this.prisma.sesionExamen.findFirst({
+      where: {
+        examenId: idExamen,
+        estado: EstadoSesion.ACTIVA,
+      },
+      select: { id: true },
+    });
+    if (sesionActiva) {
+      throw new BadRequestException('No se puede archivar el examen porque tiene sesiones activas');
+    }
+
+    if (examen.estado === EstadoExamen.ARCHIVADO) {
+      return examen;
+    }
+
+    return this.prisma.examen.update({
+      where: { id: idExamen },
+      data: { estado: EstadoExamen.ARCHIVADO },
+    });
   }
 
   /**

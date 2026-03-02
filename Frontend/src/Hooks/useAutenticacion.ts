@@ -16,7 +16,9 @@ export function useAutenticacion() {
   const usuario = useAutenticacionAlmacen((estado) => estado.usuario);
   const estaAutenticado = useAutenticacionAlmacen((estado) => estado.estaAutenticado);
   const cargando = useAutenticacionAlmacen((estado) => estado.cargando);
+  const requiereCambioContrasena = useAutenticacionAlmacen((estado) => estado.requiereCambioContrasena);
   const iniciarSesion = useAutenticacionAlmacen((estado) => estado.iniciarSesion);
+  const completarPrimerLogin = useAutenticacionAlmacen((estado) => estado.completarPrimerLogin);
   const verificarSesion = useAutenticacionAlmacen((estado) => estado.verificarSesion);
   const cerrarSesion = useAutenticacionAlmacen((estado) => estado.cerrarSesion);
 
@@ -24,7 +26,9 @@ export function useAutenticacion() {
     usuario,
     estaAutenticado,
     cargando,
+    requiereCambioContrasena,
     iniciarSesion,
+    completarPrimerLogin,
     verificarSesion,
     cerrarSesion,
   };

@@ -9,12 +9,9 @@
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { EstadoSesion, RolUsuario, SesionExamen, Usuario } from '@/Tipos';
+import { EstadoIntento, EstadoSesion, SesionExamen } from '@/Tipos';
 import { obtenerReporteEstudiante, obtenerReporteSesion } from '@/Servicios/Reportes.servicio';
 import { listarSesiones } from '@/Servicios/Sesiones.servicio';
-import { apiCliente, extraerDatos } from '@/Servicios/ApiCliente';
-import { API } from '@/Constantes/Api.constantes';
-import { RespuestaApi } from '@/Tipos';
 
 interface SerieActividadDia {
   dia: string;
@@ -66,16 +63,46 @@ export function useTableroReportes() {
     refetchInterval: 30000,
   });
 
+  const idsSesionesActivas = useMemo(
+    () =>
+      (consultaSesionesTablero.data ?? [])
+        .filter((sesion) => sesion.estado === EstadoSesion.ACTIVA)
+        .map((sesion) => sesion.id),
+    [consultaSesionesTablero.data],
+  );
+
   const estudiantesConectados = useQuery({
-    queryKey: ['usuarios', 'estudiantes', 'conectados'],
+    queryKey: ['tablero', 'estudiantes-conectados', idsSesionesActivas],
     queryFn: async () => {
-      const respuesta = await apiCliente.get<RespuestaApi<Usuario[]>>(API.USUARIOS, {
-        params: { rol: RolUsuario.ESTUDIANTE, conectadosAhora: true },
-      });
-      return extraerDatos(respuesta).filter((usuario) => usuario.rol === RolUsuario.ESTUDIANTE).length;
+      if (idsSesionesActivas.length === 0) {
+        return 0;
+      }
+
+      const reportes = await Promise.all(
+        idsSesionesActivas.map(async (idSesion) => {
+          try {
+            return await obtenerReporteSesion(idSesion);
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      return reportes.reduce((total, reporte) => {
+        if (!reporte) {
+          return total;
+        }
+        const conectadosSesion = reporte.listaEstudiantes.filter(
+          (estudiante) =>
+            estudiante.estado === EstadoIntento.EN_PROGRESO ||
+            estudiante.estado === EstadoIntento.SINCRONIZACION_PENDIENTE,
+        ).length;
+        return total + conectadosSesion;
+      }, 0);
     },
     staleTime: 1000 * 30,
     refetchInterval: 30000,
+    enabled: !consultaSesionesTablero.isLoading,
   });
 
   const sesionesActivasHoy = useMemo(() => {

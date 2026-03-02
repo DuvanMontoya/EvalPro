@@ -40,7 +40,7 @@ export class UsuariosController {
    * @param usuario - Usuario autenticado.
    */
   @Get()
-  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Lista usuarios visibles para el solicitante' })
   async listar(@UsuarioActual() usuario: UsuarioAutenticado) {
     return this.usuariosService.listar(usuario.rol, usuario.id, usuario.idInstitucion);
@@ -85,7 +85,7 @@ export class UsuariosController {
    * @param usuario - Usuario autenticado.
    */
   @Get(':id')
-  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Obtiene detalles de usuario por id' })
   async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
     return this.usuariosService.obtenerPorId(id, usuario.rol, usuario.id, usuario.idInstitucion);

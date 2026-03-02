@@ -9,8 +9,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { RolUsuario, TipoEventoTelemetria } from '@/Tipos';
+import { TipoEventoTelemetria } from '@/Tipos';
 import { API } from '@/Constantes/Api.constantes';
+import { obtenerTokenAcceso } from '@/Servicios/ApiCliente';
 
 interface ProgresoEstudiante {
   idIntento: string;
@@ -67,20 +68,33 @@ export function useMonitorTiempoReal(idSesion: string) {
       return;
     }
 
+    const tokenAcceso = obtenerTokenAcceso();
+    if (!tokenAcceso) {
+      setConexionActiva(false);
+      return;
+    }
+
     const socketSesion = io(`${API.WEBSOCKET}${API.EVENTOS_SOCKET.ESPACIO_SESIONES}`, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 8,
       reconnectionDelay: 1000,
       timeout: 10000,
+      auth: (callback) => {
+        callback({ token: obtenerTokenAcceso() ?? tokenAcceso });
+      },
     });
 
     socketSesion.on('connect', () => {
       setConexionActiva(true);
-      socketSesion.emit(API.EVENTOS_SOCKET.UNIRSE_SALA, { idSesion, rol: RolUsuario.DOCENTE });
+      socketSesion.emit(API.EVENTOS_SOCKET.UNIRSE_SALA, { idSesion });
     });
 
     socketSesion.on('disconnect', () => {
+      setConexionActiva(false);
+    });
+
+    socketSesion.on('connect_error', () => {
       setConexionActiva(false);
     });
 

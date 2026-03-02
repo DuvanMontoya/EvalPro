@@ -14,6 +14,8 @@ import * as ApiCliente from '@/Servicios/ApiCliente';
 vi.mock('@/Servicios/Autenticacion.servicio', async () => {
   return {
     iniciarSesion: vi.fn(),
+    esRespuestaPrimerLogin: vi.fn((respuesta: unknown) => Boolean((respuesta as { requiereCambioContrasena?: boolean })?.requiereCambioContrasena)),
+    cambiarContrasenaPrimerLogin: vi.fn(),
     guardarRefreshEnCookie: vi.fn(),
     refrescarDesdeCookie: vi.fn(),
     cerrarSesion: vi.fn(),
@@ -66,16 +68,35 @@ describe('AutenticacionAlmacen', () => {
       usuario: usuarioDocente,
     });
 
-    await useAutenticacionAlmacen.getState().iniciarSesion({
+    const resultado = await useAutenticacionAlmacen.getState().iniciarSesion({
       correo: 'ana@evalpro.com',
       contrasena: 'ContrasenaSegura123!',
     });
 
     const estado = useAutenticacionAlmacen.getState();
+    expect(resultado).toBe('SESION');
     expect(estado.estaAutenticado).toBe(true);
     expect(estado.usuario?.rol).toBe(RolUsuario.DOCENTE);
     expect(vi.mocked(AutenticacionServicio.guardarRefreshEnCookie)).toHaveBeenCalledWith('token-refresh');
     expect(vi.mocked(ApiCliente.establecerTokenAcceso)).toHaveBeenCalledWith('token-acceso');
+  });
+
+  it('activa flujo de primer login cuando backend responde token temporal', async () => {
+    vi.mocked(AutenticacionServicio.iniciarSesion).mockResolvedValue({
+      requiereCambioContrasena: true,
+      tokenTemporal: 'token-temporal',
+    });
+
+    const resultado = await useAutenticacionAlmacen.getState().iniciarSesion({
+      correo: 'ana@evalpro.com',
+      contrasena: 'Temporal123!',
+    });
+
+    const estado = useAutenticacionAlmacen.getState();
+    expect(resultado).toBe('PRIMER_LOGIN');
+    expect(estado.estaAutenticado).toBe(false);
+    expect(estado.requiereCambioContrasena).toBe(true);
+    expect(estado.tokenTemporalPrimerLogin).toBe('token-temporal');
   });
 
   it('bloquea sesión de estudiante para el panel web', async () => {

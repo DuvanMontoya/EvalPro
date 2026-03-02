@@ -10,6 +10,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   activarSesion,
+  cancelarSesion,
   crearSesion,
   CrearSesionDto,
   finalizarSesion,
@@ -51,11 +52,17 @@ export function useSesiones() {
     onSuccess: (sesion) => invalidarDominioSesiones(sesion.id),
   });
 
+  const mutacionCancelarSesion = useMutation({
+    mutationFn: (idSesion: string) => cancelarSesion(idSesion),
+    onSuccess: (sesion) => invalidarDominioSesiones(sesion.id),
+  });
+
   return {
     consultaSesiones,
     mutacionCrearSesion,
     mutacionActivarSesion,
     mutacionFinalizarSesion,
+    mutacionCancelarSesion,
   };
 }
 

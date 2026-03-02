@@ -66,3 +66,12 @@ export async function finalizarSesion(idSesion: string): Promise<SesionExamen> {
   const respuesta = await apiCliente.post<RespuestaApi<SesionExamen>>(`${API.SESIONES}/${idSesion}/finalizar`);
   return extraerDatos(respuesta);
 }
+
+/**
+ * Cancela una sesión pendiente o activa.
+ * @param idSesion - UUID de la sesión.
+ */
+export async function cancelarSesion(idSesion: string): Promise<SesionExamen> {
+  const respuesta = await apiCliente.post<RespuestaApi<SesionExamen>>(`${API.SESIONES}/${idSesion}/cancelar`);
+  return extraerDatos(respuesta);
+}

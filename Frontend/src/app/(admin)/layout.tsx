@@ -66,12 +66,14 @@ export default function LayoutAdmin({ children }: PropiedadesLayoutAdmin) {
   return (
     <ProveedorConsulta>
       <ErrorLimite>
-        <div className="flex min-h-screen bg-fondo-raiz text-[var(--texto-primario)]">
+        <div className="relative flex min-h-screen overflow-hidden bg-fondo-raiz text-[var(--texto-primario)]">
+          <div className="pointer-events-none absolute -top-24 left-1/3 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.16),transparent_70%)]" />
+          <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.1),transparent_72%)]" />
           <BarraLateral />
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="relative z-10 flex min-w-0 flex-1 flex-col">
             <EncabezadoAdmin />
             <main className="flex-1 p-4 md:p-8">
-              <div className="mx-auto w-full max-w-7xl">{children}</div>
+              <div className="mx-auto w-full max-w-7xl space-y-6">{children}</div>
             </main>
           </div>
         </div>

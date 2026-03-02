@@ -26,6 +26,7 @@ import { InstitucionesModule } from './Instituciones/Instituciones.module';
 import { GruposModule } from './Grupos/Grupos.module';
 import { AsignacionesModule } from './Asignaciones/Asignaciones.module';
 import { ReclamosModule } from './Reclamos/Reclamos.module';
+import { PeriodosAcademicosModule } from './PeriodosAcademicos/PeriodosAcademicos.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ReclamosModule } from './Reclamos/Reclamos.module';
     AuditoriaModule,
     InstitucionesModule,
     GruposModule,
+    PeriodosAcademicosModule,
     AsignacionesModule,
     ReclamosModule,
   ],

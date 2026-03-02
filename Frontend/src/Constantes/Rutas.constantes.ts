@@ -8,6 +8,8 @@
 export const RUTAS = {
   INICIO_SESION: '/IniciarSesion',
   TABLERO: '/Tablero',
+  INSTITUCIONES: '/Instituciones',
+  GRUPOS: '/Grupos',
   EXAMENES: '/Examenes',
   EXAMEN_NUEVO: '/Examenes/Nuevo',
   EXAMEN_DETALLE: (id: string) => `/Examenes/${id}`,
@@ -18,6 +20,7 @@ export const RUTAS = {
   SESION_RESULTADOS: (id: string) => `/Sesiones/${id}/Resultados`,
   ESTUDIANTES: '/Estudiantes',
   ESTUDIANTE_NUEVO: '/Estudiantes/Nuevo',
+  ESTUDIANTE_DETALLE: (id: string) => `/Estudiantes/${id}`,
   REPORTES: '/Reportes',
   CONFIGURACION: '/Configuracion',
 } as const;

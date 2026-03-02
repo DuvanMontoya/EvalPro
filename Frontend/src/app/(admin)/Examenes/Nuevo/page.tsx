@@ -13,6 +13,7 @@ import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useExamenes } from '@/Hooks/useExamenes';
 import { CrearExamenFormulario } from '@/Lib/validaciones';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { FormularioExamen } from '@/Componentes/Examenes/FormularioExamen';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
@@ -49,13 +50,20 @@ export default function PaginaNuevoExamen() {
   }
 
   return (
-    <Tarjeta>
-      <TarjetaEncabezado>
-        <TarjetaTitulo>Nuevo examen</TarjetaTitulo>
-      </TarjetaEncabezado>
-      <TarjetaContenido>
-        <FormularioExamen onEnviar={manejarCrear} etiquetaBoton="Crear examen" />
-      </TarjetaContenido>
-    </Tarjeta>
+    <section className="space-y-4">
+      <EncabezadoPagina
+        etiqueta="Creación"
+        titulo="Nuevo examen"
+        descripcion="Define metadatos base y luego agrega preguntas en el editor detallado."
+      />
+      <Tarjeta>
+        <TarjetaEncabezado>
+          <TarjetaTitulo>Datos principales</TarjetaTitulo>
+        </TarjetaEncabezado>
+        <TarjetaContenido>
+          <FormularioExamen onEnviar={manejarCrear} etiquetaBoton="Crear examen" />
+        </TarjetaContenido>
+      </Tarjeta>
+    </section>
   );
 }

@@ -20,7 +20,7 @@ export function rolPuedeAccederPanel(rol: RolUsuario | null | undefined): boolea
  * @param rol - Rol autenticado.
  */
 export function rolPuedeGestionarExamenes(rol: RolUsuario | null | undefined): boolean {
-  return rol === RolUsuario.SUPERADMINISTRADOR || rol === RolUsuario.DOCENTE;
+  return rol === RolUsuario.DOCENTE;
 }
 
 /**
@@ -28,7 +28,7 @@ export function rolPuedeGestionarExamenes(rol: RolUsuario | null | undefined): b
  * @param rol - Rol autenticado.
  */
 export function rolPuedeGestionarSesiones(rol: RolUsuario | null | undefined): boolean {
-  return rol === RolUsuario.SUPERADMINISTRADOR || rol === RolUsuario.DOCENTE;
+  return rol === RolUsuario.DOCENTE;
 }
 
 /**
@@ -36,7 +36,23 @@ export function rolPuedeGestionarSesiones(rol: RolUsuario | null | undefined): b
  * @param rol - Rol autenticado.
  */
 export function rolPuedeCrearEstudiantes(rol: RolUsuario | null | undefined): boolean {
-  return rol === RolUsuario.SUPERADMINISTRADOR || rol === RolUsuario.ADMINISTRADOR;
+  return rol === RolUsuario.ADMINISTRADOR || rol === RolUsuario.SUPERADMINISTRADOR;
+}
+
+/**
+ * Define si el rol puede gestionar instituciones.
+ * @param rol - Rol autenticado.
+ */
+export function rolPuedeGestionarInstituciones(rol: RolUsuario | null | undefined): boolean {
+  return rol === RolUsuario.SUPERADMINISTRADOR;
+}
+
+/**
+ * Define si el rol puede gestionar grupos académicos.
+ * @param rol - Rol autenticado.
+ */
+export function rolPuedeGestionarGrupos(rol: RolUsuario | null | undefined): boolean {
+  return rol === RolUsuario.ADMINISTRADOR || rol === RolUsuario.SUPERADMINISTRADOR;
 }
 
 /**
@@ -72,7 +88,10 @@ export function puedeArchivarExamen(
   rol: RolUsuario | null | undefined,
   estado: EstadoExamen | undefined,
 ): boolean {
-  return rolPuedeGestionarExamenes(rol) && estado !== EstadoExamen.ARCHIVADO;
+  return (
+    (rol === RolUsuario.DOCENTE || rol === RolUsuario.ADMINISTRADOR || rol === RolUsuario.SUPERADMINISTRADOR) &&
+    estado !== EstadoExamen.ARCHIVADO
+  );
 }
 
 /**
@@ -84,7 +103,7 @@ export function puedeActivarSesion(
   rol: RolUsuario | null | undefined,
   estado: EstadoSesion | undefined,
 ): boolean {
-  return rolPuedeGestionarSesiones(rol) && estado === EstadoSesion.PENDIENTE;
+  return rol === RolUsuario.DOCENTE && estado === EstadoSesion.PENDIENTE;
 }
 
 /**
@@ -96,5 +115,23 @@ export function puedeFinalizarSesion(
   rol: RolUsuario | null | undefined,
   estado: EstadoSesion | undefined,
 ): boolean {
-  return rolPuedeGestionarSesiones(rol) && estado === EstadoSesion.ACTIVA;
+  return (
+    (rol === RolUsuario.DOCENTE || rol === RolUsuario.ADMINISTRADOR || rol === RolUsuario.SUPERADMINISTRADOR) &&
+    estado === EstadoSesion.ACTIVA
+  );
+}
+
+/**
+ * Evalúa si la sesión puede cancelarse.
+ * @param rol - Rol autenticado.
+ * @param estado - Estado actual de la sesión.
+ */
+export function puedeCancelarSesion(
+  rol: RolUsuario | null | undefined,
+  estado: EstadoSesion | undefined,
+): boolean {
+  return (
+    (rol === RolUsuario.DOCENTE || rol === RolUsuario.ADMINISTRADOR || rol === RolUsuario.SUPERADMINISTRADOR) &&
+    (estado === EstadoSesion.PENDIENTE || estado === EstadoSesion.ACTIVA)
+  );
 }

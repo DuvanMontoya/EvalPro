@@ -9,7 +9,7 @@ import { EstadoSesion } from '../Enums/EstadoSesion';
 
 export interface SesionExamen {
   id: string;
-  codigoAcceso: string;
+  codigoAcceso: string | null;
   estado: EstadoSesion;
   fechaInicio: string | null;
   fechaFin: string | null;

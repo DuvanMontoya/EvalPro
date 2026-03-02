@@ -2,12 +2,33 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { EstadoInstitucion, RolUsuario } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
+import { UsuarioAutenticado } from '../Comun/Tipos/UsuarioAutenticado.tipo';
 import { CambiarEstadoInstitucionDto } from './Dto/CambiarEstadoInstitucion.dto';
 import { CrearInstitucionDto } from './Dto/CrearInstitucion.dto';
 
 @Injectable()
 export class InstitucionesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listar(actor: UsuarioAutenticado) {
+    if (actor.rol === RolUsuario.SUPERADMINISTRADOR) {
+      return this.prisma.institucion.findMany({ orderBy: { fechaCreacion: 'desc' } });
+    }
+
+    if (!actor.idInstitucion) {
+      throw new ForbiddenException('El actor no tiene institución asociada');
+    }
+
+    const institucion = await this.prisma.institucion.findUnique({
+      where: { id: actor.idInstitucion },
+    });
+
+    if (!institucion) {
+      throw new NotFoundException('Institución no encontrada');
+    }
+
+    return [institucion];
+  }
 
   async crear(dto: CrearInstitucionDto, rolActor: RolUsuario) {
     this.validarSuperadministrador(rolActor);

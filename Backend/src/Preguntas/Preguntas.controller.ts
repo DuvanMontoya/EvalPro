@@ -22,7 +22,6 @@ import { PreguntasService } from './Preguntas.service';
 @ApiBearerAuth()
 @Controller('examenes/:idExamen/preguntas')
 @UseGuards(JwtAutenticacionGuard, RolesGuard)
-@Roles(RolUsuario.DOCENTE)
 export class PreguntasController {
   constructor(private readonly preguntasService: PreguntasService) {}
 
@@ -30,15 +29,17 @@ export class PreguntasController {
    * Lista preguntas de un examen.
    */
   @Get()
+  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Lista preguntas por examen' })
   async listar(@Param('idExamen', ParseUUIDPipe) idExamen: string, @UsuarioActual() usuario: UsuarioAutenticado) {
-    return this.preguntasService.listar(idExamen, usuario.id, usuario.idInstitucion);
+    return this.preguntasService.listar(idExamen, usuario.rol, usuario.id, usuario.idInstitucion);
   }
 
   /**
    * Crea una pregunta en el examen indicado.
    */
   @Post()
+  @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Crea una pregunta dentro del examen' })
   async crear(
     @Param('idExamen', ParseUUIDPipe) idExamen: string,
@@ -52,6 +53,7 @@ export class PreguntasController {
    * Actualiza una pregunta existente.
    */
   @Put(':id')
+  @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Actualiza una pregunta existente' })
   async actualizar(
     @Param('idExamen', ParseUUIDPipe) idExamen: string,
@@ -66,6 +68,7 @@ export class PreguntasController {
    * Elimina una pregunta.
    */
   @Delete(':id')
+  @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Elimina una pregunta del examen' })
   async eliminar(
     @Param('idExamen', ParseUUIDPipe) idExamen: string,
@@ -79,6 +82,7 @@ export class PreguntasController {
    * Reordena preguntas del examen.
    */
   @Patch('reordenar')
+  @Roles(RolUsuario.DOCENTE)
   @ApiOperation({ summary: 'Reordena preguntas dentro del examen' })
   async reordenar(
     @Param('idExamen', ParseUUIDPipe) idExamen: string,

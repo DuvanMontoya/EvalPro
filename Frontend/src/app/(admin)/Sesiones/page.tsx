@@ -13,6 +13,7 @@ import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useSesiones } from '@/Hooks/useSesiones';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { Boton } from '@/Componentes/Ui/Boton';
 import { TablaSesiones } from '@/Componentes/Sesiones/TablaSesiones';
@@ -23,7 +24,12 @@ import { rolPuedeGestionarSesiones } from '@/Lib/Permisos';
  * Renderiza catálogo de sesiones del docente.
  */
 export default function PaginaSesiones() {
-  const { consultaSesiones, mutacionActivarSesion, mutacionFinalizarSesion } = useSesiones();
+  const {
+    consultaSesiones,
+    mutacionActivarSesion,
+    mutacionFinalizarSesion,
+    mutacionCancelarSesion,
+  } = useSesiones();
   const { usuario } = useAutenticacion();
   const puedeGestionar = rolPuedeGestionarSesiones(usuario?.rol);
 
@@ -54,13 +60,16 @@ export default function PaginaSesiones() {
 
   return (
     <section className="space-y-4">
-      {puedeGestionar ? (
-        <div className="flex justify-end">
+      <EncabezadoPagina
+        etiqueta="Operación en vivo"
+        titulo="Sesiones de examen"
+        descripcion="Administra activación, monitoreo, finalización y cancelación de sesiones."
+        acciones={puedeGestionar ? (
           <Boton comoHijo>
             <Link href={RUTAS.SESION_NUEVA}>Nueva sesión</Link>
           </Boton>
-        </div>
-      ) : null}
+        ) : undefined}
+      />
       <TablaSesiones
         sesiones={sesiones}
         rolUsuario={usuario?.rol}
@@ -78,6 +87,14 @@ export default function PaginaSesiones() {
             toast.success('Sesión finalizada correctamente.');
           } catch (error) {
             toast.error(obtenerMensajeError(error, 'No se pudo finalizar la sesión.'));
+          }
+        }}
+        onCancelar={async (idSesion) => {
+          try {
+            await mutacionCancelarSesion.mutateAsync(idSesion);
+            toast.success('Sesión cancelada correctamente.');
+          } catch (error) {
+            toast.error(obtenerMensajeError(error, 'No se pudo cancelar la sesión.'));
           }
         }}
       />

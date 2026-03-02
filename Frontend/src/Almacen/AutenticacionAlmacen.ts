@@ -12,8 +12,10 @@ import { immer } from 'zustand/middleware/immer';
 import { RolUsuario, Usuario } from '@/Tipos';
 import { establecerTokenAcceso, obtenerTokenAcceso } from '@/Servicios/ApiCliente';
 import {
+  cambiarContrasenaPrimerLogin,
   cerrarSesion,
   eliminarRefreshDeCookie,
+  esRespuestaPrimerLogin,
   guardarRefreshEnCookie,
   iniciarSesion,
   IniciarSesionDto,
@@ -21,11 +23,16 @@ import {
 } from '@/Servicios/Autenticacion.servicio';
 import { crearErrorApiNormalizado } from '@/Lib/ErroresApi';
 
+export type ResultadoInicioSesion = 'SESION' | 'PRIMER_LOGIN';
+
 interface EstadoAutenticacion {
   usuario: Usuario | null;
   estaAutenticado: boolean;
   cargando: boolean;
-  iniciarSesion: (credenciales: IniciarSesionDto) => Promise<void>;
+  requiereCambioContrasena: boolean;
+  tokenTemporalPrimerLogin: string | null;
+  iniciarSesion: (credenciales: IniciarSesionDto) => Promise<ResultadoInicioSesion>;
+  completarPrimerLogin: (nuevaContrasena: string) => Promise<void>;
   cerrarSesion: () => Promise<void>;
   verificarSesion: () => Promise<void>;
 }
@@ -38,13 +45,70 @@ export const useAutenticacionAlmacen = create<EstadoAutenticacion>()(
     usuario: null,
     estaAutenticado: false,
     cargando: false,
+    requiereCambioContrasena: false,
+    tokenTemporalPrimerLogin: null,
     async iniciarSesion(credenciales) {
+      set((estado) => {
+        estado.cargando = true;
+        estado.requiereCambioContrasena = false;
+        estado.tokenTemporalPrimerLogin = null;
+      });
+
+      try {
+        const respuestaInicio = await iniciarSesion(credenciales);
+
+        if (esRespuestaPrimerLogin(respuestaInicio)) {
+          set((estado) => {
+            estado.usuario = null;
+            estado.estaAutenticado = false;
+            estado.requiereCambioContrasena = true;
+            estado.tokenTemporalPrimerLogin = respuestaInicio.tokenTemporal;
+          });
+          return 'PRIMER_LOGIN';
+        }
+
+        if (respuestaInicio.usuario.rol === RolUsuario.ESTUDIANTE) {
+          throw crearErrorApiNormalizado(
+            'El rol estudiante no puede acceder al panel administrativo.',
+            403,
+            'SIN_PERMISOS',
+          );
+        }
+
+        await guardarRefreshEnCookie(respuestaInicio.tokenRefresh);
+        establecerTokenAcceso(respuestaInicio.tokenAcceso);
+
+        set((estado) => {
+          estado.usuario = respuestaInicio.usuario;
+          estado.estaAutenticado = true;
+          estado.requiereCambioContrasena = false;
+          estado.tokenTemporalPrimerLogin = null;
+        });
+
+        return 'SESION';
+      } finally {
+        set((estado) => {
+          estado.cargando = false;
+        });
+      }
+    },
+    async completarPrimerLogin(nuevaContrasena) {
+      const tokenTemporal = get().tokenTemporalPrimerLogin;
+      if (!tokenTemporal) {
+        throw crearErrorApiNormalizado(
+          'No existe un token temporal activo. Inicia sesión nuevamente.',
+          401,
+          'TOKEN_TEMPORAL_INEXISTENTE',
+        );
+      }
+
       set((estado) => {
         estado.cargando = true;
       });
 
       try {
-        const sesion = await iniciarSesion(credenciales);
+        const sesion = await cambiarContrasenaPrimerLogin(tokenTemporal, nuevaContrasena);
+
         if (sesion.usuario.rol === RolUsuario.ESTUDIANTE) {
           throw crearErrorApiNormalizado(
             'El rol estudiante no puede acceder al panel administrativo.',
@@ -59,6 +123,8 @@ export const useAutenticacionAlmacen = create<EstadoAutenticacion>()(
         set((estado) => {
           estado.usuario = sesion.usuario;
           estado.estaAutenticado = true;
+          estado.requiereCambioContrasena = false;
+          estado.tokenTemporalPrimerLogin = null;
         });
       } finally {
         set((estado) => {
@@ -95,6 +161,8 @@ export const useAutenticacionAlmacen = create<EstadoAutenticacion>()(
         set((estado) => {
           estado.usuario = refrescada.usuario;
           estado.estaAutenticado = true;
+          estado.requiereCambioContrasena = false;
+          estado.tokenTemporalPrimerLogin = null;
         });
       } catch {
         await eliminarRefreshDeCookie().catch(() => undefined);
@@ -102,6 +170,8 @@ export const useAutenticacionAlmacen = create<EstadoAutenticacion>()(
         set((estado) => {
           estado.usuario = null;
           estado.estaAutenticado = false;
+          estado.requiereCambioContrasena = false;
+          estado.tokenTemporalPrimerLogin = null;
         });
         throw new Error('Sesión no válida');
       } finally {
@@ -125,6 +195,8 @@ export const useAutenticacionAlmacen = create<EstadoAutenticacion>()(
         set((estado) => {
           estado.usuario = null;
           estado.estaAutenticado = false;
+          estado.requiereCambioContrasena = false;
+          estado.tokenTemporalPrimerLogin = null;
           estado.cargando = false;
         });
       }

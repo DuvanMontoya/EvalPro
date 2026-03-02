@@ -9,7 +9,6 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { ConfigService } from '@nestjs/config';
 import { EstadoCuenta, RolUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { CrearUsuarioDto } from './Dto/CrearUsuario.dto';
@@ -35,7 +34,7 @@ export class UsuariosService {
     if (rolSolicitante !== RolUsuario.SUPERADMINISTRADOR) {
       where.idInstitucion = idInstitucionSolicitante;
     }
-    if (rolSolicitante === RolUsuario.DOCENTE || rolSolicitante === RolUsuario.ESTUDIANTE) {
+    if (rolSolicitante === RolUsuario.ESTUDIANTE) {
       where.id = idSolicitante;
     }
 
@@ -98,7 +97,7 @@ export class UsuariosService {
     await this.validarCorreoUnico(correoNormalizado);
 
     const rondasHash = this.obtenerRondasHash();
-    const credencialTemporalPlano = this.generarCredencialTemporal();
+    const credencialTemporalPlano = dto.contrasena;
     const hashTemporal = await bcrypt.hash(credencialTemporalPlano, rondasHash);
 
     const usuario = await this.prisma.usuario.create({
@@ -259,10 +258,6 @@ export class UsuariosService {
     if (idObjetivo !== idSolicitante) {
       throw new ForbiddenException('No puede operar sobre otro usuario');
     }
-  }
-
-  private generarCredencialTemporal(): string {
-    return randomBytes(9).toString('base64url').slice(0, 12).toUpperCase();
   }
 
   private calcularVencimientoCredencialTemporal(): Date {

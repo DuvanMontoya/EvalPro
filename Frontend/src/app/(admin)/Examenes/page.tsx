@@ -13,6 +13,7 @@ import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useExamenes } from '@/Hooks/useExamenes';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { Boton } from '@/Componentes/Ui/Boton';
 import { TablaExamenes } from '@/Componentes/Examenes/TablaExamenes';
@@ -55,13 +56,16 @@ export default function PaginaExamenes() {
 
   return (
     <section className="space-y-4">
-      {puedeGestionar ? (
-        <div className="flex justify-end">
+      <EncabezadoPagina
+        etiqueta="Dominio académico"
+        titulo="Exámenes"
+        descripcion="Crea, publica y mantiene evaluaciones con control de estado y trazabilidad."
+        acciones={puedeGestionar ? (
           <Boton comoHijo>
             <Link href={RUTAS.EXAMEN_NUEVO}>Nuevo examen</Link>
           </Boton>
-        </div>
-      ) : null}
+        ) : undefined}
+      />
       <TablaExamenes
         examenes={examenes}
         rolUsuario={usuario?.rol}

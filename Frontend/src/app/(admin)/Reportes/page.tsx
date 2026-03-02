@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { useSesiones } from '@/Hooks/useSesiones';
 import { useReporteSesion } from '@/Hooks/useReportes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import {
   Seleccion,
@@ -60,6 +61,11 @@ export default function PaginaReportes() {
 
   return (
     <section className="space-y-6">
+      <EncabezadoPagina
+        etiqueta="Analítica"
+        titulo="Reportes de desempeño"
+        descripcion="Explora distribución de puntajes, dificultad por pregunta y resultados por estudiante."
+      />
       <div className="max-w-sm">
         <Seleccion value={idSesionSeleccionada} onValueChange={setIdSesionSeleccionada}>
           <SeleccionDisparador>

@@ -10,6 +10,7 @@ import { EstadoExamen, EstadoSesion, RolUsuario } from '@/Tipos';
 import {
   puedeActivarSesion,
   puedeArchivarExamen,
+  puedeCancelarSesion,
   puedeEditarContenidoExamen,
   puedeFinalizarSesion,
   puedePublicarExamen,
@@ -33,8 +34,9 @@ describe('Permisos de panel', () => {
     expect(rolPuedeGestionarSesiones(RolUsuario.ADMINISTRADOR)).toBe(false);
   });
 
-  it('permite crear estudiantes solo a administrador', () => {
+  it('permite crear estudiantes a administradores de alto nivel', () => {
     expect(rolPuedeCrearEstudiantes(RolUsuario.ADMINISTRADOR)).toBe(true);
+    expect(rolPuedeCrearEstudiantes(RolUsuario.SUPERADMINISTRADOR)).toBe(true);
     expect(rolPuedeCrearEstudiantes(RolUsuario.DOCENTE)).toBe(false);
   });
 
@@ -44,13 +46,21 @@ describe('Permisos de panel', () => {
     expect(puedePublicarExamen(RolUsuario.DOCENTE, EstadoExamen.BORRADOR)).toBe(true);
     expect(puedePublicarExamen(RolUsuario.DOCENTE, EstadoExamen.ARCHIVADO)).toBe(false);
     expect(puedeArchivarExamen(RolUsuario.DOCENTE, EstadoExamen.PUBLICADO)).toBe(true);
+    expect(puedeArchivarExamen(RolUsuario.ADMINISTRADOR, EstadoExamen.PUBLICADO)).toBe(true);
+    expect(puedeArchivarExamen(RolUsuario.SUPERADMINISTRADOR, EstadoExamen.PUBLICADO)).toBe(true);
     expect(puedeArchivarExamen(RolUsuario.DOCENTE, EstadoExamen.ARCHIVADO)).toBe(false);
   });
 
-  it('activa/finaliza sesiones solo en estados válidos', () => {
+  it('activa/finaliza/cancela sesiones solo en estados válidos', () => {
     expect(puedeActivarSesion(RolUsuario.DOCENTE, EstadoSesion.PENDIENTE)).toBe(true);
+    expect(puedeActivarSesion(RolUsuario.ADMINISTRADOR, EstadoSesion.PENDIENTE)).toBe(false);
     expect(puedeActivarSesion(RolUsuario.DOCENTE, EstadoSesion.ACTIVA)).toBe(false);
     expect(puedeFinalizarSesion(RolUsuario.DOCENTE, EstadoSesion.ACTIVA)).toBe(true);
+    expect(puedeFinalizarSesion(RolUsuario.ADMINISTRADOR, EstadoSesion.ACTIVA)).toBe(true);
+    expect(puedeFinalizarSesion(RolUsuario.SUPERADMINISTRADOR, EstadoSesion.ACTIVA)).toBe(true);
     expect(puedeFinalizarSesion(RolUsuario.DOCENTE, EstadoSesion.FINALIZADA)).toBe(false);
+    expect(puedeCancelarSesion(RolUsuario.ADMINISTRADOR, EstadoSesion.PENDIENTE)).toBe(true);
+    expect(puedeCancelarSesion(RolUsuario.DOCENTE, EstadoSesion.ACTIVA)).toBe(true);
+    expect(puedeCancelarSesion(RolUsuario.DOCENTE, EstadoSesion.FINALIZADA)).toBe(false);
   });
 });

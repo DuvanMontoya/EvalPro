@@ -9,6 +9,7 @@
 
 import { useParams } from 'next/navigation';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { EditorPreguntas } from '@/Componentes/Examenes/EditorPreguntas';
 import { InsigniaEstado } from '@/Componentes/Examenes/InsigniaEstado';
@@ -54,9 +55,14 @@ export default function PaginaDetalleExamen() {
 
   return (
     <section className="space-y-6">
+      <EncabezadoPagina
+        etiqueta="Detalle"
+        titulo={examen.titulo}
+        descripcion="Gestiona contenido del examen y administra sus preguntas según estado y permisos."
+      />
       <Tarjeta>
         <TarjetaEncabezado>
-          <TarjetaTitulo>{examen.titulo}</TarjetaTitulo>
+          <TarjetaTitulo>Resumen del examen</TarjetaTitulo>
         </TarjetaEncabezado>
         <TarjetaContenido className="space-y-2">
           <InsigniaEstado estado={examen.estado} />

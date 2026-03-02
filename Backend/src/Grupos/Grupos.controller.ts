@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -16,17 +16,32 @@ import { GruposService } from './Grupos.service';
 @ApiBearerAuth()
 @Controller('grupos')
 @UseGuards(JwtAutenticacionGuard, RolesGuard)
-@Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
 export class GruposController {
   constructor(private readonly gruposService: GruposService) {}
 
+  @Get()
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE)
+  @ApiOperation({ summary: 'Lista grupos visibles para el actor autenticado' })
+  async listar(@UsuarioActual() actor: UsuarioAutenticado, @Query('idInstitucion') idInstitucion?: string) {
+    return this.gruposService.listar(actor, idInstitucion);
+  }
+
+  @Get(':id')
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE)
+  @ApiOperation({ summary: 'Obtiene detalle de un grupo académico' })
+  async obtenerPorId(@Param('id', ParseUUIDPipe) idGrupo: string, @UsuarioActual() actor: UsuarioAutenticado) {
+    return this.gruposService.obtenerPorId(idGrupo, actor);
+  }
+
   @Post()
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Crea grupo académico en estado BORRADOR' })
   async crear(@Body() dto: CrearGrupoDto, @UsuarioActual() actor: UsuarioAutenticado) {
     return this.gruposService.crear(dto, actor);
   }
 
   @Post(':id/docentes')
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Asigna docente a grupo' })
   async asignarDocente(
     @Param('id', ParseUUIDPipe) idGrupo: string,
@@ -37,6 +52,7 @@ export class GruposController {
   }
 
   @Post(':id/estudiantes')
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Inscribe estudiante en grupo' })
   async inscribirEstudiante(
     @Param('id', ParseUUIDPipe) idGrupo: string,
@@ -47,6 +63,7 @@ export class GruposController {
   }
 
   @Patch(':id/estado')
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Cambia estado de grupo académico' })
   async cambiarEstado(
     @Param('id', ParseUUIDPipe) idGrupo: string,

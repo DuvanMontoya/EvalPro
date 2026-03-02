@@ -6,7 +6,7 @@
  * @fecha     2026-03-02
  */
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoExamen, Prisma, TipoPregunta } from '@prisma/client';
+import { EstadoExamen, Prisma, RolUsuario, TipoPregunta } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { CrearPreguntaDto } from './Dto/CrearPregunta.dto';
 import { ActualizarPreguntaDto } from './Dto/ActualizarPregunta.dto';
@@ -18,10 +18,11 @@ export class PreguntasService {
   /**
    * Lista preguntas de un examen ordenadas de forma ascendente.
    * @param idExamen - UUID del examen.
-   * @param idDocente - UUID del docente autenticado.
+   * @param rol - Rol del actor autenticado.
+   * @param idUsuario - UUID del actor autenticado.
    */
-  async listar(idExamen: string, idDocente: string, idInstitucion: string | null) {
-    await this.validarPropiedadExamen(idExamen, idDocente, idInstitucion);
+  async listar(idExamen: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    await this.validarAccesoLecturaExamen(idExamen, rol, idUsuario, idInstitucion);
     return this.prisma.pregunta.findMany({
       where: { examenId: idExamen },
       include: { opciones: { orderBy: { orden: 'asc' } } },
@@ -154,7 +155,7 @@ export class PreguntasService {
         });
       }
     });
-    return this.listar(idExamen, idDocente, idInstitucion);
+    return this.listar(idExamen, RolUsuario.DOCENTE, idDocente, idInstitucion);
   }
   private validarOpcionesSegunTipo(tipo: TipoPregunta, opciones: { esCorrecta: boolean }[]): void {
     if (tipo === TipoPregunta.RESPUESTA_ABIERTA || tipo === TipoPregunta.ABIERTA) {
@@ -201,5 +202,35 @@ export class PreguntasService {
       throw new ForbiddenException('No tiene permisos sobre exámenes de otra institución');
     }
     return examen;
+  }
+
+  private async validarAccesoLecturaExamen(
+    idExamen: string,
+    rol: RolUsuario,
+    idUsuario: string,
+    idInstitucion: string | null,
+  ): Promise<void> {
+    const examen = await this.prisma.examen.findUnique({ where: { id: idExamen } });
+    if (!examen) {
+      throw new NotFoundException('Examen no encontrado');
+    }
+
+    if (rol === RolUsuario.SUPERADMINISTRADOR) {
+      return;
+    }
+
+    if (examen.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No tiene permisos sobre exámenes de otra institución');
+    }
+
+    if (rol === RolUsuario.ADMINISTRADOR) {
+      return;
+    }
+
+    if (rol === RolUsuario.DOCENTE && examen.creadoPorId === idUsuario) {
+      return;
+    }
+
+    throw new ForbiddenException('No tiene permisos sobre este examen');
   }
 }

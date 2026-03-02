@@ -28,7 +28,7 @@ export class ExamenesController {
    * Lista exámenes visibles para el usuario autenticado.
    */
   @Get()
-  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Lista exámenes por rol' })
   async listar(@UsuarioActual() usuario: UsuarioAutenticado) {
     return this.examenesService.listar(usuario.rol, usuario.id, usuario.idInstitucion);
@@ -48,7 +48,7 @@ export class ExamenesController {
    * Obtiene detalle de un examen por identificador.
    */
   @Get(':id')
-  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Obtiene examen por id' })
   async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
     return this.examenesService.obtenerPorId(id, usuario.rol, usuario.id, usuario.idInstitucion);
@@ -72,10 +72,10 @@ export class ExamenesController {
    * Archiva un examen del docente autenticado.
    */
   @Delete(':id')
-  @Roles(RolUsuario.DOCENTE)
+  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Archiva un examen' })
   async eliminar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
-    return this.examenesService.archivar(id, usuario.id, usuario.idInstitucion);
+    return this.examenesService.archivar(id, usuario.rol, usuario.id, usuario.idInstitucion);
   }
 
   /**

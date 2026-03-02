@@ -12,6 +12,8 @@ import {
   TipoPregunta,
 } from '@/Tipos';
 
+const PATRON_CONTRASENA_SEGURA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
 const esquemaOpcion = z.object({
   letra: z
     .string()
@@ -26,6 +28,21 @@ export const esquemaIniciarSesion = z.object({
   correo: z.string().email('Ingresa un correo válido'),
   contrasena: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
 });
+
+export const esquemaCambiarContrasenaPrimerLogin = z
+  .object({
+    nuevaContrasena: z
+      .string()
+      .regex(
+        PATRON_CONTRASENA_SEGURA,
+        'Debe incluir mayúscula, minúscula, número y carácter especial.',
+      ),
+    confirmarContrasena: z.string().min(8, 'Confirma la nueva contraseña.'),
+  })
+  .refine((valores) => valores.nuevaContrasena === valores.confirmarContrasena, {
+    message: 'Las contraseñas no coinciden.',
+    path: ['confirmarContrasena'],
+  });
 
 export const esquemaCrearExamen = z.object({
   titulo: z
@@ -108,9 +125,36 @@ export const esquemaCrearUsuarioAcademico = z.object({
   rol: z.union([z.literal(RolUsuario.ESTUDIANTE), z.literal(RolUsuario.DOCENTE)]),
 });
 
+export const esquemaCrearInstitucion = z.object({
+  nombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').max(150),
+  dominio: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine((valor) => !valor || /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(valor), {
+      message: 'Ingresa un dominio válido.',
+    }),
+});
+
+export const esquemaCrearPeriodoAcademico = z.object({
+  nombre: z.string().min(2, 'El nombre del periodo es obligatorio').max(120),
+  fechaInicio: z.string().min(1, 'Selecciona fecha de inicio'),
+  fechaFin: z.string().min(1, 'Selecciona fecha de fin'),
+});
+
+export const esquemaCrearGrupo = z.object({
+  nombre: z.string().min(3, 'El nombre del grupo debe tener al menos 3 caracteres').max(150),
+  descripcion: z.string().max(500).optional().or(z.literal('')),
+  idPeriodo: z.uuid('Selecciona un periodo académico válido'),
+});
+
 export type IniciarSesionFormulario = z.infer<typeof esquemaIniciarSesion>;
+export type CambiarContrasenaPrimerLoginFormulario = z.infer<typeof esquemaCambiarContrasenaPrimerLogin>;
 export type CrearExamenFormulario = z.infer<typeof esquemaCrearExamen>;
 export type CrearPreguntaFormulario = z.infer<typeof esquemaCrearPregunta>;
 export type CrearSesionFormulario = z.infer<typeof esquemaCrearSesion>;
 export type CrearEstudianteFormulario = z.infer<typeof esquemaCrearEstudiante>;
 export type CrearUsuarioAcademicoFormulario = z.infer<typeof esquemaCrearUsuarioAcademico>;
+export type CrearInstitucionFormulario = z.infer<typeof esquemaCrearInstitucion>;
+export type CrearPeriodoAcademicoFormulario = z.infer<typeof esquemaCrearPeriodoAcademico>;
+export type CrearGrupoFormulario = z.infer<typeof esquemaCrearGrupo>;

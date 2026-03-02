@@ -14,12 +14,16 @@ export const API = {
   AUTENTICACION: {
     INICIAR_SESION: '/autenticacion/iniciar-sesion',
     REFRESCAR_TOKENS: '/autenticacion/refrescar-tokens',
+    CAMBIAR_CONTRASENA: '/autenticacion/cambiar-contrasena',
     CERRAR_SESION: '/autenticacion/cerrar-sesion',
   },
   EXAMENES: '/examenes',
   SESIONES: '/sesiones',
   USUARIOS: '/usuarios',
   REPORTES: '/reportes',
+  INSTITUCIONES: '/instituciones',
+  GRUPOS: '/grupos',
+  PERIODOS: '/periodos',
   EVENTOS_SOCKET: {
     ESPACIO_SESIONES: '/sesiones',
     UNIRSE_SALA: 'unirse_sala_sesion',

@@ -11,6 +11,7 @@ import { Line, LineChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { useTableroReportes } from '@/Hooks/useReportes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
 import { obtenerMensajeError } from '@/Lib/ErroresApi';
 
@@ -61,6 +62,12 @@ export default function PaginaTablero() {
 
   return (
     <section className="space-y-6">
+      <EncabezadoPagina
+        etiqueta="Resumen"
+        titulo="Vista ejecutiva de operación"
+        descripcion="Monitorea sesiones activas, estudiantes en línea y tendencia semanal de actividad académica."
+      />
+
       <div className="grid gap-4 md:grid-cols-3">
         <TarjetaMetrica titulo="Sesiones activas hoy" valor={sesionesActivasHoy.data ?? 0} />
         <TarjetaMetrica titulo="Sesiones activas ahora" valor={sesionesActivasAhora.data ?? 0} />

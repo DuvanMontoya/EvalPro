@@ -27,7 +27,7 @@ export class SesionesExamenController {
    * Lista sesiones visibles para el usuario autenticado.
    */
   @Get()
-  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Lista sesiones por rol' })
   async listar(@UsuarioActual() usuario: UsuarioAutenticado) {
     return this.sesionesService.listar(usuario.rol, usuario.id, usuario.idInstitucion);
@@ -57,7 +57,7 @@ export class SesionesExamenController {
    * Obtiene detalle de sesión por ID.
    */
   @Get(':id')
-  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
   @ApiOperation({ summary: 'Obtiene una sesión por id' })
   async obtenerPorId(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
     return this.sesionesService.obtenerPorId(id, usuario.rol, usuario.id, usuario.idInstitucion);

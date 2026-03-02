@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -14,17 +14,25 @@ import { InstitucionesService } from './Instituciones.service';
 @ApiBearerAuth()
 @Controller('instituciones')
 @UseGuards(JwtAutenticacionGuard, RolesGuard)
-@Roles(RolUsuario.SUPERADMINISTRADOR)
 export class InstitucionesController {
   constructor(private readonly institucionesService: InstitucionesService) {}
 
+  @Get()
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE)
+  @ApiOperation({ summary: 'Lista instituciones visibles para el actor autenticado' })
+  async listar(@UsuarioActual() actor: UsuarioAutenticado) {
+    return this.institucionesService.listar(actor);
+  }
+
   @Post()
+  @Roles(RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Crea una institución (solo SUPERADMINISTRADOR)' })
   async crear(@Body() dto: CrearInstitucionDto, @UsuarioActual() actor: UsuarioAutenticado) {
     return this.institucionesService.crear(dto, actor.rol);
   }
 
   @Patch(':id/estado')
+  @Roles(RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Cambia estado de institución (solo SUPERADMINISTRADOR)' })
   async cambiarEstado(
     @Param('id', ParseUUIDPipe) idInstitucion: string,

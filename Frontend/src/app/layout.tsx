@@ -7,7 +7,7 @@
  */
 import type { Metadata } from 'next';
 import { DM_Sans, JetBrains_Mono, Syne } from 'next/font/google';
-import { Toaster } from 'sonner';
+import { PortalToaster } from '@/Componentes/Comunes/PortalToaster';
 import './globals.css';
 
 const fuenteDisplay = Syne({
@@ -47,18 +47,7 @@ export default function RootLayout({ children }: PropiedadesLayoutRaiz) {
     <html lang="es">
       <body className={`${fuenteDisplay.variable} ${fuenteUi.variable} ${fuenteMono.variable} font-ui antialiased`}>
         {children}
-        <Toaster
-          richColors
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: 'var(--fondo-elevado-3)',
-              border: '1px solid var(--borde-fuerte)',
-              color: 'var(--texto-primario)',
-              borderRadius: 'var(--radio-lg)',
-            },
-          }}
-        />
+        <PortalToaster />
       </body>
     </html>
   );

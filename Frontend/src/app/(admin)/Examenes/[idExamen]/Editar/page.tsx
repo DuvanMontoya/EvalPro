@@ -13,6 +13,7 @@ import { useExamenDetalle, useExamenes } from '@/Hooks/useExamenes';
 import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { CrearExamenFormulario } from '@/Lib/validaciones';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { FormularioExamen } from '@/Componentes/Examenes/FormularioExamen';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
@@ -80,21 +81,28 @@ export default function PaginaEditarExamen() {
   }
 
   return (
-    <Tarjeta>
-      <TarjetaEncabezado>
-        <TarjetaTitulo>Editar examen</TarjetaTitulo>
-      </TarjetaEncabezado>
-      <TarjetaContenido>
-        <FormularioExamen
-          onEnviar={manejarActualizar}
-          valoresIniciales={{
-            ...examen,
-            descripcion: examen.descripcion ?? '',
-            instrucciones: examen.instrucciones ?? '',
-          }}
-          etiquetaBoton="Guardar cambios"
-        />
-      </TarjetaContenido>
-    </Tarjeta>
+    <section className="space-y-4">
+      <EncabezadoPagina
+        etiqueta="Edición"
+        titulo="Editar examen"
+        descripcion="Actualiza metadatos permitidos para el examen seleccionado."
+      />
+      <Tarjeta>
+        <TarjetaEncabezado>
+          <TarjetaTitulo>Formulario de edición</TarjetaTitulo>
+        </TarjetaEncabezado>
+        <TarjetaContenido>
+          <FormularioExamen
+            onEnviar={manejarActualizar}
+            valoresIniciales={{
+              ...examen,
+              descripcion: examen.descripcion ?? '',
+              instrucciones: examen.instrucciones ?? '',
+            }}
+            etiquetaBoton="Guardar cambios"
+          />
+        </TarjetaContenido>
+      </Tarjeta>
+    </section>
   );
 }

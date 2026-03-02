@@ -9,6 +9,7 @@
 
 import { useParams } from 'next/navigation';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { GraficaDistribucion } from '@/Componentes/Reportes/GraficaDistribucion';
 import { GraficaDificultadPreguntas } from '@/Componentes/Reportes/GraficaDificultadPreguntas';
@@ -51,6 +52,11 @@ export default function PaginaResultadosSesion() {
 
   return (
     <section className="space-y-6">
+      <EncabezadoPagina
+        etiqueta="Resultados"
+        titulo="Reporte de sesión"
+        descripcion="Visualiza desempeño global, distribución de puntajes y detalle por estudiante."
+      />
       <div className="grid gap-4 md:grid-cols-3">
         <Tarjeta>
           <TarjetaEncabezado>

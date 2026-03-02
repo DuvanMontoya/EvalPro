@@ -12,6 +12,130 @@ import { InscribirEstudianteGrupoDto } from './Dto/InscribirEstudianteGrupo.dto'
 export class GruposService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async listar(actor: UsuarioAutenticado, idInstitucionFiltro?: string) {
+    const where: Record<string, unknown> = {};
+
+    if (actor.rol === RolUsuario.SUPERADMINISTRADOR) {
+      if (idInstitucionFiltro) {
+        where.idInstitucion = idInstitucionFiltro;
+      }
+    } else {
+      if (!actor.idInstitucion) {
+        throw new ForbiddenException('Actor sin institución asociada');
+      }
+      where.idInstitucion = actor.idInstitucion;
+    }
+
+    if (actor.rol === RolUsuario.DOCENTE) {
+      where.docentes = {
+        some: {
+          idDocente: actor.id,
+          activo: true,
+        },
+      };
+    }
+
+    return this.prisma.grupoAcademico.findMany({
+      where,
+      include: {
+        periodo: {
+          select: {
+            id: true,
+            nombre: true,
+            activo: true,
+            fechaInicio: true,
+            fechaFin: true,
+          },
+        },
+        docentes: {
+          where: { activo: true },
+          include: {
+            docente: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                correo: true,
+              },
+            },
+          },
+        },
+        estudiantes: {
+          where: { activo: true },
+          include: {
+            estudiante: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                correo: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { fechaCreacion: 'desc' },
+    });
+  }
+
+  async obtenerPorId(idGrupo: string, actor: UsuarioAutenticado) {
+    const grupo = await this.prisma.grupoAcademico.findUnique({
+      where: { id: idGrupo },
+      include: {
+        periodo: {
+          select: {
+            id: true,
+            nombre: true,
+            activo: true,
+            fechaInicio: true,
+            fechaFin: true,
+          },
+        },
+        docentes: {
+          include: {
+            docente: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                correo: true,
+              },
+            },
+          },
+        },
+        estudiantes: {
+          include: {
+            estudiante: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                correo: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!grupo) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+
+    if (actor.rol !== RolUsuario.SUPERADMINISTRADOR && grupo.idInstitucion !== actor.idInstitucion) {
+      throw new ForbiddenException('No puede consultar grupos fuera de su institución');
+    }
+
+    if (actor.rol === RolUsuario.DOCENTE) {
+      const docenteAsignado = grupo.docentes.some((docente) => docente.idDocente === actor.id && docente.activo);
+      if (!docenteAsignado) {
+        throw new ForbiddenException('No tiene permisos sobre este grupo');
+      }
+    }
+
+    return grupo;
+  }
+
   async crear(dto: CrearGrupoDto, actor: UsuarioAutenticado) {
     const idInstitucion = this.resolverInstitucionObjetivo(actor, dto.idInstitucion);
     const periodo = await this.prisma.periodoAcademico.findUnique({

@@ -10,7 +10,7 @@ import { cn } from '@/Lib/utils';
 
 export function Tabla({ className, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="w-full overflow-auto rounded-xl border border-[var(--borde-sutil)] bg-fondo-elevado-2">
+    <div className="w-full overflow-auto rounded-2xl border border-[var(--borde-sutil)] bg-[linear-gradient(180deg,rgba(22,27,34,0.96),rgba(16,20,28,0.94))]">
       <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   );
@@ -28,7 +28,7 @@ export function TablaFila({ className, ...props }: React.HTMLAttributes<HTMLTabl
   return (
     <tr
       className={cn(
-        'border-b border-[var(--borde-sutil)] transicion-rapida hover:bg-fondo-elevado-3',
+        'border-b border-[var(--borde-sutil)] transicion-rapida hover:bg-[rgba(59,130,246,0.08)]',
         className,
       )}
       {...props}

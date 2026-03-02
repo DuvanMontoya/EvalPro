@@ -19,16 +19,55 @@ interface RespuestaRefrescoInterno {
   usuario: Usuario;
 }
 
+export interface RespuestaPrimerLogin {
+  requiereCambioContrasena: true;
+  tokenTemporal: string;
+}
+
+export type RespuestaInicioSesion = SesionAutenticada | RespuestaPrimerLogin;
+
+interface CambiarContrasenaPrimerLoginDto {
+  nuevaContrasena: string;
+}
+
+export function esRespuestaPrimerLogin(
+  respuesta: RespuestaInicioSesion,
+): respuesta is RespuestaPrimerLogin {
+  return 'requiereCambioContrasena' in respuesta && respuesta.requiereCambioContrasena === true;
+}
+
 /**
  * Inicia sesión con credenciales válidas.
  * @param credenciales - Correo y contraseña del usuario.
  * @returns Sesión autenticada con tokens y usuario.
  */
-export async function iniciarSesion(credenciales: IniciarSesionDto): Promise<SesionAutenticada> {
-  const respuesta = await apiCliente.post<RespuestaApi<SesionAutenticada>>(
+export async function iniciarSesion(credenciales: IniciarSesionDto): Promise<RespuestaInicioSesion> {
+  const respuesta = await apiCliente.post<RespuestaApi<RespuestaInicioSesion>>(
     API.AUTENTICACION.INICIAR_SESION,
     credenciales,
   );
+  return extraerDatos(respuesta);
+}
+
+/**
+ * Completa activación de primer login intercambiando token temporal por sesión completa.
+ * @param tokenTemporal - Token temporal emitido durante primer login.
+ * @param nuevaContrasena - Nueva contraseña definitiva del usuario.
+ */
+export async function cambiarContrasenaPrimerLogin(
+  tokenTemporal: string,
+  nuevaContrasena: string,
+): Promise<SesionAutenticada> {
+  const respuesta = await apiCliente.post<RespuestaApi<SesionAutenticada>>(
+    API.AUTENTICACION.CAMBIAR_CONTRASENA,
+    { nuevaContrasena } satisfies CambiarContrasenaPrimerLoginDto,
+    {
+      headers: {
+        Authorization: `Bearer ${tokenTemporal}`,
+      },
+    },
+  );
+
   return extraerDatos(respuesta);
 }
 

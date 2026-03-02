@@ -14,6 +14,7 @@ import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { useAutenticacion } from '@/Hooks/useAutenticacion';
 import { useEstudiantes } from '@/Hooks/useEstudiantes';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { Boton } from '@/Componentes/Ui/Boton';
 import {
@@ -76,13 +77,16 @@ export default function PaginaEstudiantes() {
 
   return (
     <section className="space-y-4">
-      {puedeCrear ? (
-        <div className="flex justify-end">
+      <EncabezadoPagina
+        etiqueta="Comunidad académica"
+        titulo="Usuarios académicos"
+        descripcion="Consulta docentes y estudiantes, con acceso rápido a historial y detalles."
+        acciones={puedeCrear ? (
           <Boton comoHijo>
             <Link href={RUTAS.ESTUDIANTE_NUEVO}>Nuevo usuario</Link>
           </Boton>
-        </div>
-      ) : null}
+        ) : undefined}
+      />
 
       <div className="max-w-xs">
         <Seleccion value={filtroRol} onValueChange={(valor) => setFiltroRol(valor as typeof filtroRol)}>
@@ -116,7 +120,7 @@ export default function PaginaEstudiantes() {
               <TablaCelda>{usuarioAcademico.activo ? 'Activo' : 'Inactivo'}</TablaCelda>
               <TablaCelda>
                 <Boton comoHijo tamano="pequeno" variante="contorno">
-                  <Link href={`/Estudiantes/${usuarioAcademico.id}`}>Ver detalle</Link>
+                  <Link href={RUTAS.ESTUDIANTE_DETALLE(usuarioAcademico.id)}>Ver detalle</Link>
                 </Boton>
               </TablaCelda>
             </TablaFila>

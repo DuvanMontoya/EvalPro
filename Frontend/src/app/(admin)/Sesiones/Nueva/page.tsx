@@ -19,6 +19,7 @@ import { CrearSesionFormulario, esquemaCrearSesion } from '@/Lib/validaciones';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { EstadoVacio } from '@/Componentes/Comunes/EstadoVacio';
 import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { EncabezadoPagina } from '@/Componentes/Comunes/EncabezadoPagina';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
 import { Etiqueta } from '@/Componentes/Ui/Etiqueta';
 import { AreaTexto } from '@/Componentes/Ui/AreaTexto';
@@ -86,12 +87,18 @@ export default function PaginaNuevaSesion() {
   );
 
   return (
-    <Tarjeta>
-      <TarjetaEncabezado>
-        <TarjetaTitulo>Nueva sesión</TarjetaTitulo>
-      </TarjetaEncabezado>
-      <TarjetaContenido>
-        <form className="space-y-4" onSubmit={formulario.handleSubmit(enviar)}>
+    <section className="space-y-4">
+      <EncabezadoPagina
+        etiqueta="Programación"
+        titulo="Nueva sesión"
+        descripcion="Selecciona un examen publicado y crea una sesión lista para activación."
+      />
+      <Tarjeta>
+        <TarjetaEncabezado>
+          <TarjetaTitulo>Configuración de sesión</TarjetaTitulo>
+        </TarjetaEncabezado>
+        <TarjetaContenido>
+          <form className="space-y-4" onSubmit={formulario.handleSubmit(enviar)}>
           <div className="space-y-2">
             <Etiqueta>Examen</Etiqueta>
             <Seleccion value={formulario.watch('idExamen')} onValueChange={(valor) => formulario.setValue('idExamen', valor)}>
@@ -136,8 +143,9 @@ export default function PaginaNuevaSesion() {
           >
             {formulario.formState.isSubmitting || mutacionCrearSesion.isPending ? 'Creando...' : 'Crear sesión'}
           </Boton>
-        </form>
-      </TarjetaContenido>
-    </Tarjeta>
+          </form>
+        </TarjetaContenido>
+      </Tarjeta>
+    </section>
   );
 }
