@@ -24,6 +24,7 @@ import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
 import { RolesGuard } from '../Comun/Guards/Roles.guard';
 import { CrearUsuarioDto } from './Dto/CrearUsuario.dto';
+import { CrearUsuarioRolDto } from './Dto/CrearUsuarioRol.dto';
 import { ActualizarUsuarioDto } from './Dto/ActualizarUsuario.dto';
 import { UsuariosService } from './Usuarios.service';
 
@@ -57,6 +58,28 @@ export class UsuariosController {
   }
 
   /**
+   * Crea un usuario docente con rol forzado desde backend.
+   * @param dto - Datos base de usuario docente.
+   */
+  @Post('docentes')
+  @Roles(RolUsuario.ADMINISTRADOR)
+  @ApiOperation({ summary: 'Crea un docente' })
+  async crearDocente(@Body() dto: CrearUsuarioRolDto) {
+    return this.usuariosService.crearDocente(dto);
+  }
+
+  /**
+   * Crea un usuario estudiante con rol forzado desde backend.
+   * @param dto - Datos base de usuario estudiante.
+   */
+  @Post('estudiantes')
+  @Roles(RolUsuario.ADMINISTRADOR)
+  @ApiOperation({ summary: 'Crea un estudiante' })
+  async crearEstudiante(@Body() dto: CrearUsuarioRolDto) {
+    return this.usuariosService.crearEstudiante(dto);
+  }
+
+  /**
    * Obtiene un usuario por identificador.
    * @param id - UUID del usuario.
    * @param usuario - Usuario autenticado.
@@ -84,7 +107,7 @@ export class UsuariosController {
     @UsuarioActual() usuario: Usuario,
   ) {
     this.validarPropiedad(id, usuario);
-    return this.usuariosService.actualizar(id, dto);
+    return this.usuariosService.actualizar(id, dto, usuario.rol, usuario.id);
   }
 
   /**
