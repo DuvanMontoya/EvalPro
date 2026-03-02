@@ -1,0 +1,4 @@
+# Archivo de analisis intencionalmente minimo para evitar reglas no requeridas por el proyecto.
+analyzer:
+  exclude:
+    - "**/*.g.dart"

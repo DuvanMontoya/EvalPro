@@ -1,0 +1,43 @@
+/**
+ * @archivo   Intentos.controller.ts
+ * @descripcion Controla endpoints del estudiante para iniciar intentos y recibir examen.
+ * @modulo    Intentos
+ * @autor     EvalPro
+ * @fecha     2026-03-02
+ */
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { RolUsuario, Usuario } from '@prisma/client';
+import { Roles } from '../Comun/Decoradores/Roles.decorador';
+import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
+import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
+import { RolesGuard } from '../Comun/Guards/Roles.guard';
+import { IniciarIntentoDto } from './Dto/IniciarIntento.dto';
+import { IntentosService } from './Intentos.service';
+
+@ApiTags('Intentos')
+@ApiBearerAuth()
+@Controller('intentos')
+@UseGuards(JwtAutenticacionGuard, RolesGuard)
+@Roles(RolUsuario.ESTUDIANTE)
+export class IntentosController {
+  constructor(private readonly intentosService: IntentosService) {}
+
+  /**
+   * Inicia un intento de examen para el estudiante autenticado.
+   */
+  @Post()
+  @ApiOperation({ summary: 'Inicia un intento de examen' })
+  async iniciar(@Body() dto: IniciarIntentoDto, @UsuarioActual() usuario: Usuario) {
+    return this.intentosService.iniciar(dto, usuario.id);
+  }
+
+  /**
+   * Obtiene el examen asociado al intento sin datos de respuestas correctas.
+   */
+  @Get(':id/examen')
+  @ApiOperation({ summary: 'Obtiene examen para un intento' })
+  async obtenerExamen(@Param('id') idIntento: string, @UsuarioActual() usuario: Usuario) {
+    return this.intentosService.obtenerExamen(idIntento, usuario.id);
+  }
+}

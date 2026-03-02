@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: evalpro_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USUARIO}
+      POSTGRES_PASSWORD: ${POSTGRES_CONTRASENA}
+      POSTGRES_DB: ${POSTGRES_BASE_DATOS}
+    ports:
+      - '${POSTGRES_PUERTO}:5432'
+    volumes:
+      - postgres_datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USUARIO} -d ${POSTGRES_BASE_DATOS}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: node:20
+    container_name: evalpro_backend
+    restart: unless-stopped
+    working_dir: /workspace/Backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USUARIO}:${POSTGRES_CONTRASENA}@postgres:5432/${POSTGRES_BASE_DATOS}?schema=public
+      JWT_SECRETO_ACCESO: ${JWT_SECRETO_ACCESO}
+      JWT_EXPIRACION_ACCESO: ${JWT_EXPIRACION_ACCESO}
+      JWT_SECRETO_REFRESH: ${JWT_SECRETO_REFRESH}
+      JWT_EXPIRACION_REFRESH: ${JWT_EXPIRACION_REFRESH}
+      PUERTO_APP: ${PUERTO_APP}
+      CORS_ORIGENES_PERMITIDOS: ${CORS_ORIGENES_PERMITIDOS}
+      ENTORNO: ${ENTORNO}
+      BCRYPT_RONDAS_HASH: ${BCRYPT_RONDAS_HASH}
+      ADMIN_CORREO_INICIAL: ${ADMIN_CORREO_INICIAL}
+      ADMIN_CONTRASENA_INICIAL: ${ADMIN_CONTRASENA_INICIAL}
+      TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA: ${TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA}
+      TELEMETRIA_MAX_EVENTOS_SEGUNDO_PLANO: ${TELEMETRIA_MAX_EVENTOS_SEGUNDO_PLANO}
+    ports:
+      - '${PUERTO_APP}:3001'
+    volumes:
+      - ./:/workspace
+      - backend_node_modules:/workspace/Backend/node_modules
+    command: >
+      sh -c "npm ci &&
+      npx prisma generate &&
+      npx prisma db push &&
+      npx prisma db seed &&
+      npm run build &&
+      npm run start:prod"
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3001/api/v1/salud || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    image: node:20
+    container_name: evalpro_frontend
+    restart: unless-stopped
+    working_dir: /workspace/Frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_WEBSOCKET_URL: ${NEXT_PUBLIC_WEBSOCKET_URL}
+      NEXT_PUBLIC_VERSION_APP: ${NEXT_PUBLIC_VERSION_APP}
+    ports:
+      - '${PUERTO_FRONTEND}:3000'
+    volumes:
+      - ./:/workspace
+      - frontend_node_modules:/workspace/Frontend/node_modules
+    command: >
+      sh -c "npm ci &&
+      npm run build &&
+      npm run start -- --hostname 0.0.0.0 --port 3000"
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000 || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_datos:
+  backend_node_modules:
+  frontend_node_modules:

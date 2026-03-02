@@ -1,0 +1,58 @@
+/**
+ * @archivo   layout.tsx
+ * @descripcion Aplica layout administrativo con sidebar, encabezado, control de sesión y React Query.
+ * @modulo    Admin
+ * @autor     EvalPro
+ * @fecha     2026-03-02
+ */
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAutenticacion } from '@/Hooks/useAutenticacion';
+import { RUTAS } from '@/Constantes/Rutas.constantes';
+import { BarraLateral } from '@/Componentes/Layout/BarraLateral';
+import { EncabezadoAdmin } from '@/Componentes/Layout/EncabezadoAdmin';
+import { Cargando } from '@/Componentes/Comunes/Cargando';
+import { ErrorLimite } from '@/Componentes/Comunes/ErrorLimite';
+import { ProveedorConsulta } from '@/Componentes/Comunes/ProveedorConsulta';
+
+interface PropiedadesLayoutAdmin {
+  children: React.ReactNode;
+}
+
+/**
+ * Renderiza layout principal con control de autenticación para rutas administrativas.
+ */
+export default function LayoutAdmin({ children }: PropiedadesLayoutAdmin) {
+  const router = useRouter();
+  const { verificarSesion, cargando, estaAutenticado } = useAutenticacion();
+
+  useEffect(() => {
+    verificarSesion().catch(() => {
+      router.replace(RUTAS.INICIO_SESION);
+    });
+  }, [router, verificarSesion]);
+
+  if (cargando) {
+    return <Cargando mensaje="Verificando sesión..." />;
+  }
+
+  if (!estaAutenticado) {
+    return null;
+  }
+
+  return (
+    <ProveedorConsulta>
+      <ErrorLimite>
+        <div className="flex min-h-screen bg-fondo">
+          <BarraLateral />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <EncabezadoAdmin />
+            <main className="flex-1 p-4 md:p-6">{children}</main>
+          </div>
+        </div>
+      </ErrorLimite>
+    </ProveedorConsulta>
+  );
+}

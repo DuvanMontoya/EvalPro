@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RolUsuario {
+  ADMINISTRADOR
+  DOCENTE
+  ESTUDIANTE
+}
+
+enum TipoPregunta {
+  OPCION_MULTIPLE
+  SELECCION_MULTIPLE
+  RESPUESTA_ABIERTA
+  VERDADERO_FALSO
+}
+
+enum ModalidadExamen {
+  DIGITAL_COMPLETO
+  HOJA_RESPUESTAS
+}
+
+enum EstadoExamen {
+  BORRADOR
+  PUBLICADO
+  ARCHIVADO
+}
+
+enum EstadoSesion {
+  PENDIENTE
+  ACTIVA
+  FINALIZADA
+  CANCELADA
+}
+
+enum EstadoIntento {
+  EN_PROGRESO
+  ENVIADO
+  ANULADO
+  SINCRONIZACION_PENDIENTE
+}
+
+enum TipoEventoTelemetria {
+  INICIO_EXAMEN
+  CAMBIO_PREGUNTA
+  RESPUESTA_GUARDADA
+  APLICACION_EN_SEGUNDO_PLANO
+  PANTALLA_ABANDONADA
+  CAPTURA_BLOQUEADA
+  FORZAR_CIERRE
+  SESION_INVALIDA
+  EXAMEN_ENVIADO
+  SINCRONIZACION_COMPLETADA
+}
+
+model Usuario {
+  id                 String         @id @default(uuid())
+  nombre             String         @db.VarChar(100)
+  apellidos          String         @db.VarChar(100)
+  correo             String         @unique @db.VarChar(255)
+  contrasena         String         @db.VarChar(255)
+  rol                RolUsuario
+  activo             Boolean        @default(true)
+  tokenRefresh       String?        @db.Text
+  fechaCreacion      DateTime       @default(now())
+  fechaActualizacion DateTime       @updatedAt
+  examenesCreados    Examen[]       @relation("ExamenCreadoPor")
+  sesionesCreadas    SesionExamen[] @relation("SesionCreadaPor")
+  intentos           IntentoExamen[]
+
+  @@map("usuarios")
+}
+
+model Examen {
+  id                    String          @id @default(uuid())
+  titulo                String          @db.VarChar(200)
+  descripcion           String?         @db.Text
+  instrucciones         String?         @db.Text
+  modalidad             ModalidadExamen
+  estado                EstadoExamen    @default(BORRADOR)
+  duracionMinutos       Int             @default(60)
+  totalPreguntas        Int             @default(0)
+  puntajeMaximo         Float           @default(0.0)
+  semillaAleatorizacion Int
+  permitirNavegacion    Boolean         @default(true)
+  mostrarPuntaje        Boolean         @default(false)
+  fechaCreacion         DateTime        @default(now())
+  fechaActualizacion    DateTime        @updatedAt
+  creadoPorId           String
+  creadoPor             Usuario         @relation("ExamenCreadoPor", fields: [creadoPorId], references: [id])
+  preguntas             Pregunta[]
+  sesiones              SesionExamen[]
+
+  @@map("examenes")
+}
+
+model Pregunta {
+  id                 String           @id @default(uuid())
+  enunciado          String           @db.Text
+  tipo               TipoPregunta
+  orden              Int
+  puntaje            Float            @default(1.0)
+  tiempoSugerido     Int?
+  imagenUrl          String?          @db.VarChar(500)
+  fechaCreacion      DateTime         @default(now())
+  fechaActualizacion DateTime         @updatedAt
+  examenId           String
+  examen             Examen           @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  opciones           OpcionRespuesta[]
+  respuestas         Respuesta[]
+
+  @@map("preguntas")
+}
+
+model OpcionRespuesta {
+  id         String   @id @default(uuid())
+  letra      String   @db.VarChar(1)
+  contenido  String   @db.Text
+  esCorrecta Boolean  @default(false)
+  orden      Int
+  preguntaId String
+  pregunta   Pregunta @relation(fields: [preguntaId], references: [id], onDelete: Cascade)
+
+  @@map("opciones_respuesta")
+}
+
+model SesionExamen {
+  id                 String          @id @default(uuid())
+  codigoAcceso       String          @unique @db.VarChar(8)
+  estado             EstadoSesion    @default(PENDIENTE)
+  fechaInicio        DateTime?
+  fechaFin           DateTime?
+  duracionReal       Int?
+  descripcion        String?         @db.VarChar(255)
+  semillaGrupo       Int
+  fechaCreacion      DateTime        @default(now())
+  fechaActualizacion DateTime        @updatedAt
+  examenId           String
+  examen             Examen          @relation(fields: [examenId], references: [id])
+  creadaPorId        String
+  creadaPor          Usuario         @relation("SesionCreadaPor", fields: [creadaPorId], references: [id])
+  intentos           IntentoExamen[]
+
+  @@map("sesiones_examen")
+}
+
+model IntentoExamen {
+  id                String               @id @default(uuid())
+  estado            EstadoIntento        @default(EN_PROGRESO)
+  semillaPersonal   Int
+  puntajeObtenido   Float?
+  porcentaje        Float?
+  fechaInicio       DateTime             @default(now())
+  fechaEnvio        DateTime?
+  ipDispositivo     String?              @db.VarChar(50)
+  modeloDispositivo String?              @db.VarChar(100)
+  sistemaOperativo  String?              @db.VarChar(50)
+  versionApp        String?              @db.VarChar(20)
+  esSospechoso      Boolean              @default(false)
+  razonSospecha     String?              @db.Text
+  estudianteId      String
+  estudiante        Usuario              @relation(fields: [estudianteId], references: [id])
+  sesionId          String
+  sesion            SesionExamen         @relation(fields: [sesionId], references: [id])
+  respuestas        Respuesta[]
+  eventosTelemetria EventoTelemetria[]
+
+  @@unique([estudianteId, sesionId])
+  @@map("intentos_examen")
+}
+
+model Respuesta {
+  id                    String        @id @default(uuid())
+  valorTexto            String?       @db.Text
+  opcionesSeleccionadas String[]
+  esCorrecta            Boolean?
+  puntajeObtenido       Float?
+  tiempoRespuesta       Int?
+  fechaRespuesta        DateTime      @default(now())
+  esSincronizada        Boolean       @default(true)
+  intentoId             String
+  intento               IntentoExamen @relation(fields: [intentoId], references: [id], onDelete: Cascade)
+  preguntaId            String
+  pregunta              Pregunta      @relation(fields: [preguntaId], references: [id])
+
+  @@unique([intentoId, preguntaId])
+  @@map("respuestas")
+}
+
+model EventoTelemetria {
+  id                 String               @id @default(uuid())
+  tipo               TipoEventoTelemetria
+  descripcion        String?              @db.VarChar(500)
+  metadatos          Json?
+  numeroPregunta     Int?
+  tiempoTranscurrido Int?
+  fechaEvento        DateTime             @default(now())
+  intentoId          String
+  intento            IntentoExamen        @relation(fields: [intentoId], references: [id], onDelete: Cascade)
+
+  @@map("eventos_telemetria")
+}

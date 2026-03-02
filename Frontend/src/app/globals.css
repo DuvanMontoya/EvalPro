@@ -1,0 +1,40 @@
+/*
+ * @archivo   globals.css
+ * @descripcion Define variables de tema, tipografía y utilidades base para todo el frontend.
+ * @modulo    App
+ * @autor     EvalPro
+ * @fecha     2026-03-02
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --fondo: 38 45% 97%;
+  --frente: 220 17% 12%;
+  --tarjeta: 0 0% 100%;
+  --borde: 32 28% 84%;
+  --primario: 209 89% 36%;
+  --primario-frente: 0 0% 100%;
+  --secundario: 34 78% 55%;
+  --secundario-frente: 220 17% 12%;
+  --peligro: 0 71% 46%;
+  --peligro-frente: 0 0% 100%;
+  --exito: 148 62% 32%;
+  --exito-frente: 0 0% 100%;
+  --radio-lg: 0.75rem;
+}
+
+* {
+  @apply border-borde;
+}
+
+body {
+  color: hsl(var(--frente));
+  background: radial-gradient(circle at 20% 0%, #f7efe0 0%, #f6f3ee 45%, #eef3f7 100%);
+  min-height: 100vh;
+}
+
+.texto-muted {
+  @apply text-sm text-slate-600;
+}
