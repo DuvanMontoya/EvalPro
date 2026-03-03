@@ -17,7 +17,7 @@ abstract class Tema {
       seedColor: Colores.azulPrimario,
       brightness: Brightness.light,
       primary: Colores.azulPrimario,
-      secondary: Colores.turquesaAcento,
+      secondary: Colores.azulSecundario,
       error: Colores.rojoError,
       surface: Colores.blanco,
     );
@@ -59,7 +59,7 @@ abstract class Tema {
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         foregroundColor: Colores.textoPrincipal,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colores.grisFondo,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -67,7 +67,7 @@ abstract class Tema {
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(0, Dimensiones.alturaBoton),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(Dimensiones.radioMd),
+            borderRadius: BorderRadius.circular(Dimensiones.radioLg),
           ),
           elevation: 0,
           backgroundColor: Colores.azulPrimario,
@@ -81,11 +81,13 @@ abstract class Tema {
         style: FilledButton.styleFrom(
           minimumSize: const Size(0, Dimensiones.alturaBoton),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(Dimensiones.radioMd),
+            borderRadius: BorderRadius.circular(Dimensiones.radioLg),
           ),
           textStyle: baseTextTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
+          backgroundColor: Colores.azulPrimario,
+          foregroundColor: Colores.blanco,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -100,7 +102,7 @@ abstract class Tema {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colores.blanco,
+        fillColor: const Color(0xFFF7F9FC),
         hintStyle: baseTextTheme.bodyMedium?.copyWith(
           color: Colores.textoTerciario,
         ),
@@ -134,12 +136,13 @@ abstract class Tema {
         ),
       ),
       cardTheme: CardThemeData(
-        elevation: Dimensiones.elevacionTarjeta,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
         color: Colores.blanco,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Dimensiones.radioXl),
-          side: const BorderSide(color: Colores.grisBorde, width: 0.9),
+          side: const BorderSide(color: Colores.grisBorde, width: 1),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -155,7 +158,7 @@ abstract class Tema {
       dividerColor: Colores.grisBorde,
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Dimensiones.radioMd),
+          borderRadius: BorderRadius.circular(Dimensiones.radioLg),
         ),
         color: WidgetStateProperty.all(Colores.grisFondoSecundario),
         labelStyle: baseTextTheme.bodySmall?.copyWith(

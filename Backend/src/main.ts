@@ -48,8 +48,9 @@ async function iniciarAplicacion(): Promise<void> {
   );
 
   const puerto = servicioConfiguracion.get<number>('PUERTO_APP') ?? 3001;
-  await aplicacion.listen(puerto);
-  Logger.log(`Servidor listo en puerto ${puerto}`, 'EvalPro');
+  const host = servicioConfiguracion.get<string>('HOST_APP') ?? '0.0.0.0';
+  await aplicacion.listen(puerto, host);
+  Logger.log(`Servidor listo en http://${host}:${puerto}`, 'EvalPro');
 }
 
 void iniciarAplicacion();

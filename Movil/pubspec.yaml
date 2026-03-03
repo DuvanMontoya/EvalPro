@@ -33,6 +33,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - Entornos/dev.json
+    - Entornos/stage.json
+    - Entornos/prod.json
   fonts:
     - family: PlusJakartaSans
       fonts:

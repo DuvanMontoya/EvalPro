@@ -11,8 +11,9 @@ import 'Aplicacion.dart';
 import 'Configuracion/Entorno.dart';
 
 /// Inicia la aplicacion Flutter con el contenedor global de Riverpod.
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Entorno.inicializar();
   Entorno.validar();
   runApp(const ProviderScope(child: Aplicacion()));
 }

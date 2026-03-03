@@ -26,6 +26,9 @@ Cada archivo define al menos:
 - `DIAS_RETENCION_TELEMETRIA`
 - `VERSION_APP`
 
+La app intenta cargar `Entornos/dev.json` automáticamente al iniciar.
+Si pasas `--dart-define-from-file`, ese valor tiene prioridad.
+
 > **Regla:** Para desarrollo de escritorio es recomendable que `API_URL` y `WEBSOCKET_URL`
 > apunten a `localhost` (o a la IP donde tengas levantado el backend).
 
@@ -104,11 +107,18 @@ flutter run -d emulator-5554 --dart-define-from-file=Entornos/dev.json
 ### 3.2. Dispositivo físico (misma red local)
 
 1. Reemplaza en `Entornos/dev.json` la URL por tu IP local si usas teléfono real (ejemplo: `http://192.168.20.21:3001`).
-2. Ejecuta:
+2. Ejecuta (recomendado):
 
 ```bash
 cd Movil
 flutter run -d <id-dispositivo> --dart-define-from-file=Entornos/dev.json
+```
+
+3. También funciona sin `--dart-define` porque se usa `Entornos/dev.json` como fallback:
+
+```bash
+cd Movil
+flutter run -d <id-dispositivo>
 ```
 
 > `10.0.2.2` solo funciona en emulador Android. En dispositivo físico siempre usa IP LAN del host.

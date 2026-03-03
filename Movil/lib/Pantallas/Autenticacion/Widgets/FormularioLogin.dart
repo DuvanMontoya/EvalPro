@@ -7,7 +7,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../Constantes/Colores.dart';
 import '../../../Constantes/Dimensiones.dart';
 import '../../../Constantes/Textos.dart';
 import '../../../Providers/AutenticacionProvider.dart';
@@ -96,13 +95,6 @@ class _FormularioLoginState extends ConsumerState<FormularioLogin> {
             ),
             validator: ValidadoresAutenticacion.validarContrasena,
           ),
-          const SizedBox(height: Dimensiones.espaciadoSm),
-          Text(
-            'Tus credenciales se validan con controles de seguridad institucional.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colores.textoTerciario,
-                ),
-          ),
           const SizedBox(height: Dimensiones.espaciadoXl),
           ElevatedButton(
             key: const Key('login_submit_button'),
@@ -114,16 +106,10 @@ class _FormularioLoginState extends ConsumerState<FormularioLogin> {
                     child: CircularProgressIndicator(
                       key: Key('login_loading_indicator'),
                       strokeWidth: 2.2,
-                      color: Colores.blanco,
+                      color: Colors.white,
                     ),
                   )
                 : const Text(Textos.iniciarSesion),
-          ),
-          const SizedBox(height: Dimensiones.espaciadoMd),
-          TextButton(
-            key: const Key('login_recovery_button'),
-            onPressed: _cargando ? null : () {},
-            child: const Text('Necesitas ayuda para acceder?'),
           ),
         ],
       ),

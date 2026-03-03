@@ -18,7 +18,7 @@ import '../../Providers/AutenticacionProvider.dart';
 class InicioPantalla extends ConsumerWidget {
   const InicioPantalla({super.key});
 
-  /// Construye panel de inicio para estudiante autenticado.
+  /// Construye panel de inicio segun permisos del rol autenticado.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usuario = ref.watch(autenticacionEstadoProvider).usuario;
@@ -44,223 +44,167 @@ class InicioPantalla extends ConsumerWidget {
         rol == RolUsuario.DOCENTE || rol == RolUsuario.ADMINISTRADOR;
 
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[Color(0xFFF0F4FB), Color(0xFFF9FAFD)],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final columnaAmplia = constraints.maxWidth >= 960;
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(Dimensiones.espaciadoLg),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1120),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        _EncabezadoInicio(
-                          nombre: usuario?.nombre ?? 'Usuario',
-                          rol: rol?.name ?? '-',
-                          alCerrarSesion: () async {
-                            await ref
-                                .read(autenticacionEstadoProvider.notifier)
-                                .cerrarSesion();
-                            if (context.mounted) {
-                              context.go(Rutas.iniciarSesion);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: Dimensiones.espaciadoXl),
-                        if (esEstudiante)
-                          _SeccionAcciones(
-                            titulo: 'Tu espacio de evaluacion',
-                            descripcion:
-                                'Ingresa a sesiones activas o revisa resultados publicados.',
-                            acciones: <_AccionInicio>[
-                              _AccionInicio(
-                                etiqueta: 'Unirse a una sesion',
-                                icono: Icons.how_to_reg_rounded,
-                                onPressed: () => context.go(Rutas.unirseExamen),
-                                esPrimaria: true,
-                              ),
-                              _AccionInicio(
-                                etiqueta: Textos.misResultados,
-                                icono: Icons.grading_rounded,
-                                onPressed: () =>
-                                    context.go(Rutas.resultadosEstudiante),
-                              ),
-                            ],
-                            columnaAmplia: columnaAmplia,
-                          ),
-                        if (puedeGestionarAcademico) ...<Widget>[
-                          _SeccionAcciones(
-                            titulo: 'Gestion academica',
-                            descripcion:
-                                'Administra sesiones, examenes y operacion docente.',
-                            acciones: <_AccionInicio>[
-                              _AccionInicio(
-                                etiqueta: Textos.gestionarSesiones,
-                                icono: Icons.event_note_outlined,
-                                onPressed: () =>
-                                    context.go(Rutas.gestionSesiones),
-                                esPrimaria: true,
-                              ),
-                              _AccionInicio(
-                                etiqueta: Textos.gestionarExamenes,
-                                icono: Icons.menu_book_outlined,
-                                onPressed: () =>
-                                    context.go(Rutas.gestionExamenes),
-                              ),
-                              if (puedeGestionarGrupos)
-                                _AccionInicio(
-                                  etiqueta: Textos.gestionarGrupos,
-                                  icono: Icons.groups_2_outlined,
-                                  onPressed: () =>
-                                      context.go(Rutas.gestionGrupos),
-                                ),
-                              if (puedeGestionarPeriodos)
-                                _AccionInicio(
-                                  etiqueta: Textos.gestionarPeriodos,
-                                  icono: Icons.calendar_month_outlined,
-                                  onPressed: () =>
-                                      context.go(Rutas.gestionPeriodos),
-                                ),
-                              if (puedeGestionarUsuarios)
-                                _AccionInicio(
-                                  etiqueta: Textos.gestionarUsuarios,
-                                  icono: Icons.manage_accounts_outlined,
-                                  onPressed: () =>
-                                      context.go(Rutas.gestionUsuarios),
-                                ),
-                              if (puedeGestionarInstituciones)
-                                _AccionInicio(
-                                  etiqueta: Textos.gestionarInstituciones,
-                                  icono: Icons.apartment_outlined,
-                                  onPressed: () =>
-                                      context.go(Rutas.gestionInstituciones),
-                                ),
-                              if (puedeGestionarReclamos)
-                                _AccionInicio(
-                                  etiqueta: Textos.gestionarReclamos,
-                                  icono: Icons.support_agent_outlined,
-                                  onPressed: () =>
-                                      context.go(Rutas.gestionReclamos),
-                                ),
-                              if (puedeCalificarManual)
-                                _AccionInicio(
-                                  etiqueta: Textos.calificacionManual,
-                                  icono: Icons.rate_review_outlined,
-                                  onPressed: () => context
-                                      .go(Rutas.gestionCalificacionManual),
-                                ),
-                            ],
-                            columnaAmplia: columnaAmplia,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              );
+      appBar: AppBar(
+        title: const Text('EvalPro'),
+        actions: <Widget>[
+          IconButton(
+            key: const Key('inicio_logout_button'),
+            tooltip: Textos.cerrarSesion,
+            icon: const Icon(Icons.logout_rounded),
+            onPressed: () async {
+              await ref
+                  .read(autenticacionEstadoProvider.notifier)
+                  .cerrarSesion();
+              if (context.mounted) {
+                context.go(Rutas.iniciarSesion);
+              }
             },
           ),
+        ],
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(Dimensiones.espaciadoLg),
+          children: <Widget>[
+            _TarjetaUsuario(
+              nombre: usuario?.nombre ?? 'Usuario',
+              rol: rol?.name ?? '-',
+            ),
+            const SizedBox(height: Dimensiones.espaciadoLg),
+            if (esEstudiante)
+              _BloqueAcciones(
+                titulo: 'Tu espacio de evaluacion',
+                descripcion:
+                    'Ingresa a sesiones activas o revisa resultados publicados.',
+                acciones: <_AccionInicio>[
+                  _AccionInicio(
+                    etiqueta: 'Unirse a una sesion',
+                    icono: Icons.how_to_reg_rounded,
+                    onPressed: () => context.go(Rutas.unirseExamen),
+                    esPrimaria: true,
+                  ),
+                  _AccionInicio(
+                    etiqueta: Textos.misResultados,
+                    icono: Icons.grading_rounded,
+                    onPressed: () => context.go(Rutas.resultadosEstudiante),
+                  ),
+                ],
+              ),
+            if (puedeGestionarAcademico) ...<Widget>[
+              _BloqueAcciones(
+                titulo: 'Gestion academica',
+                descripcion:
+                    'Administra sesiones, examenes y operacion docente.',
+                acciones: <_AccionInicio>[
+                  _AccionInicio(
+                    etiqueta: Textos.gestionarSesiones,
+                    icono: Icons.event_note_outlined,
+                    onPressed: () => context.go(Rutas.gestionSesiones),
+                    esPrimaria: true,
+                  ),
+                  _AccionInicio(
+                    etiqueta: Textos.gestionarExamenes,
+                    icono: Icons.menu_book_outlined,
+                    onPressed: () => context.go(Rutas.gestionExamenes),
+                  ),
+                  if (puedeGestionarGrupos)
+                    _AccionInicio(
+                      etiqueta: Textos.gestionarGrupos,
+                      icono: Icons.groups_2_outlined,
+                      onPressed: () => context.go(Rutas.gestionGrupos),
+                    ),
+                  if (puedeGestionarPeriodos)
+                    _AccionInicio(
+                      etiqueta: Textos.gestionarPeriodos,
+                      icono: Icons.calendar_month_outlined,
+                      onPressed: () => context.go(Rutas.gestionPeriodos),
+                    ),
+                  if (puedeGestionarUsuarios)
+                    _AccionInicio(
+                      etiqueta: Textos.gestionarUsuarios,
+                      icono: Icons.manage_accounts_outlined,
+                      onPressed: () => context.go(Rutas.gestionUsuarios),
+                    ),
+                  if (puedeGestionarInstituciones)
+                    _AccionInicio(
+                      etiqueta: Textos.gestionarInstituciones,
+                      icono: Icons.apartment_outlined,
+                      onPressed: () => context.go(Rutas.gestionInstituciones),
+                    ),
+                  if (puedeGestionarReclamos)
+                    _AccionInicio(
+                      etiqueta: Textos.gestionarReclamos,
+                      icono: Icons.support_agent_outlined,
+                      onPressed: () => context.go(Rutas.gestionReclamos),
+                    ),
+                  if (puedeCalificarManual)
+                    _AccionInicio(
+                      etiqueta: Textos.calificacionManual,
+                      icono: Icons.rate_review_outlined,
+                      onPressed: () =>
+                          context.go(Rutas.gestionCalificacionManual),
+                    ),
+                ],
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
 }
 
-class _EncabezadoInicio extends StatelessWidget {
+class _TarjetaUsuario extends StatelessWidget {
   final String nombre;
   final String rol;
-  final Future<void> Function() alCerrarSesion;
 
-  const _EncabezadoInicio({
+  const _TarjetaUsuario({
     required this.nombre,
     required this.rol,
-    required this.alCerrarSesion,
   });
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(Dimensiones.radio2xl),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[Colores.azulProfundo, Colores.azulPrimario],
-        ),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Colores.sombra,
-            blurRadius: 26,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
+    return Card(
       child: Padding(
-        padding: const EdgeInsets.all(Dimensiones.espaciadoXl),
+        padding: const EdgeInsets.all(Dimensiones.espaciadoLg),
         child: Row(
           children: <Widget>[
             Container(
-              width: 56,
-              height: 56,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: Colores.blanco.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(Dimensiones.radioLg),
+                color: Colores.azulPrimario.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(Dimensiones.radioMd),
               ),
               child: const Icon(
                 Icons.account_circle_rounded,
-                color: Colores.blanco,
-                size: 34,
+                color: Colores.azulPrimario,
+                size: 28,
               ),
             ),
-            const SizedBox(width: Dimensiones.espaciadoLg),
+            const SizedBox(width: Dimensiones.espaciadoMd),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
                     'Hola, $nombre',
-                    style: textTheme.titleLarge?.copyWith(
-                      color: Colores.blanco,
+                    style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: Dimensiones.espaciadoXs),
                   Text(
                     '${Textos.rolActual}: $rol',
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: Colores.blanco.withValues(alpha: 0.85),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: Colores.textoSecundario,
                     ),
                   ),
                 ],
               ),
             ),
-            FilledButton.tonalIcon(
-              key: const Key('inicio_logout_button'),
-              onPressed: alCerrarSesion,
-              icon: const Icon(Icons.logout_rounded),
-              label: const Text(Textos.cerrarSesion),
-              style: FilledButton.styleFrom(
-                foregroundColor: Colores.blanco,
-                backgroundColor: Colores.blanco.withValues(alpha: 0.14),
-                disabledBackgroundColor: Colores.blanco.withValues(alpha: 0.08),
-                disabledForegroundColor: Colores.blanco.withValues(alpha: 0.5),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Dimensiones.espaciadoLg,
-                  vertical: Dimensiones.espaciadoMd,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -268,51 +212,41 @@ class _EncabezadoInicio extends StatelessWidget {
   }
 }
 
-class _SeccionAcciones extends StatelessWidget {
+class _BloqueAcciones extends StatelessWidget {
   final String titulo;
   final String descripcion;
   final List<_AccionInicio> acciones;
-  final bool columnaAmplia;
 
-  const _SeccionAcciones({
+  const _BloqueAcciones({
     required this.titulo,
     required this.descripcion,
     required this.acciones,
-    required this.columnaAmplia,
   });
 
   @override
   Widget build(BuildContext context) {
-    final crossAxisCount = columnaAmplia ? 3 : 1;
-    final aspectRatio = columnaAmplia ? 2.4 : 2.9;
     final textTheme = Theme.of(context).textTheme;
-
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(Dimensiones.espaciadoXl),
+        padding: const EdgeInsets.all(Dimensiones.espaciadoLg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               titulo,
-              style:
-                  textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: Dimensiones.espaciadoSm),
             Text(descripcion, style: textTheme.bodyMedium),
             const SizedBox(height: Dimensiones.espaciadoLg),
-            GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: acciones.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: Dimensiones.espaciadoMd,
-                mainAxisSpacing: Dimensiones.espaciadoMd,
-                childAspectRatio: aspectRatio,
-              ),
-              itemBuilder: (_, index) =>
-                  _TarjetaAccion(accion: acciones[index]),
+            Wrap(
+              spacing: Dimensiones.espaciadoMd,
+              runSpacing: Dimensiones.espaciadoMd,
+              children: acciones
+                  .map((accion) => _BotonAccion(accion: accion))
+                  .toList(growable: false),
             ),
           ],
         ),
@@ -321,76 +255,34 @@ class _SeccionAcciones extends StatelessWidget {
   }
 }
 
-class _TarjetaAccion extends StatelessWidget {
+class _BotonAccion extends StatelessWidget {
   final _AccionInicio accion;
 
-  const _TarjetaAccion({required this.accion});
+  const _BotonAccion({required this.accion});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorTexto =
-        accion.esPrimaria ? Colores.azulProfundo : Colores.textoPrincipal;
+    final estilo = accion.esPrimaria
+        ? FilledButton.styleFrom(
+            backgroundColor: Colores.azulPrimario,
+            foregroundColor: Colores.blanco,
+          )
+        : FilledButton.styleFrom(
+            backgroundColor: Colores.grisFondoSecundario,
+            foregroundColor: Colores.textoPrincipal,
+          );
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(Dimensiones.radioLg),
-      onTap: accion.onPressed,
-      child: Ink(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(Dimensiones.radioLg),
-          gradient: accion.esPrimaria
-              ? const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: <Color>[Color(0xFFE6EEFF), Color(0xFFE9F6FF)],
-                )
-              : null,
-          color: accion.esPrimaria ? null : Colores.blanco,
-          border: Border.all(
-            color:
-                accion.esPrimaria ? const Color(0xFFC4D7FF) : Colores.grisBorde,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Dimensiones.espaciadoLg,
-            vertical: Dimensiones.espaciadoMd,
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(Dimensiones.radioMd),
-                  color: accion.esPrimaria
-                      ? Colores.azulPrimario.withValues(alpha: 0.16)
-                      : Colores.grisFondoSecundario,
-                ),
-                child: Icon(
-                  accion.icono,
-                  color: accion.esPrimaria
-                      ? Colores.azulPrimario
-                      : Colores.textoSecundario,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: Dimensiones.espaciadoMd),
-              Expanded(
-                child: Text(
-                  accion.etiqueta,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorTexto,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_rounded,
-                size: 18,
-                color: colorTexto,
-              ),
-            ],
+    return SizedBox(
+      width: 290,
+      child: FilledButton.icon(
+        style: estilo,
+        onPressed: accion.onPressed,
+        icon: Icon(accion.icono, size: 20),
+        label: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            accion.etiqueta,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),

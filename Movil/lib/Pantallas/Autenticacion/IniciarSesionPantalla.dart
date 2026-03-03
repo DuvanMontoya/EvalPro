@@ -8,11 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../Configuracion/Entorno.dart';
 import '../../Constantes/Colores.dart';
 import '../../Constantes/Dimensiones.dart';
 import '../../Constantes/Rutas.dart';
-import '../../Constantes/Textos.dart';
 import '../../Providers/AutenticacionProvider.dart';
 import 'Widgets/FormularioLogin.dart';
 
@@ -23,6 +21,7 @@ class IniciarSesionPantalla extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final estado = ref.watch(autenticacionEstadoProvider);
+    final textTheme = Theme.of(context).textTheme;
 
     ref.listen(autenticacionEstadoProvider, (anterior, actual) {
       if (actual.estaAutenticado) {
@@ -30,195 +29,95 @@ class IniciarSesionPantalla extends ConsumerWidget {
       }
     });
 
-    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[Color(0xFFEAF2FF), Color(0xFFF7FAFF)],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Column(
-                    children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          Dimensiones.espaciadoXl,
-                          Dimensiones.espaciado2xl,
-                          Dimensiones.espaciadoXl,
-                          Dimensiones.espaciadoLg,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Container(
-                              width: 58,
-                              height: 58,
-                              decoration: BoxDecoration(
-                                color: Colores.azulPrimario,
-                                borderRadius:
-                                    BorderRadius.circular(Dimensiones.radioLg),
-                                boxShadow: const <BoxShadow>[
-                                  BoxShadow(
-                                    color: Colores.sombra,
-                                    blurRadius: 18,
-                                    offset: Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.school_rounded,
-                                color: Colores.blanco,
-                                size: 28,
-                              ),
-                            ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(Dimensiones.espaciadoXl),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        color: Colores.azulPrimario,
+                        borderRadius:
+                            BorderRadius.circular(Dimensiones.radio2xl),
+                      ),
+                      child: const Icon(
+                        Icons.school_rounded,
+                        color: Colores.blanco,
+                        size: 44,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: Dimensiones.espaciadoLg),
+                  Text(
+                    'Bienvenido a EvalPro',
+                    textAlign: TextAlign.center,
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Colores.textoPrincipal,
+                    ),
+                  ),
+                  const SizedBox(height: Dimensiones.espaciadoXl),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(Dimensiones.espaciadoXl),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          const FormularioLogin(),
+                          if (estado.error != null) ...<Widget>[
                             const SizedBox(height: Dimensiones.espaciadoLg),
-                            Text(
-                              'Bienvenido a EvalPro',
-                              style: textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: Colores.textoPrincipal,
-                              ),
-                            ),
-                            const SizedBox(height: Dimensiones.espaciadoSm),
-                            Text(
-                              'Accede con tu cuenta institucional para continuar.',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: Colores.textoSecundario,
-                              ),
-                            ),
-                            const SizedBox(height: Dimensiones.espaciadoXl),
                             Container(
-                              width: double.infinity,
-                              padding:
-                                  const EdgeInsets.all(Dimensiones.espaciadoMd),
+                              key: const Key('login_error_banner'),
+                              padding: const EdgeInsets.all(
+                                Dimensiones.espaciadoMd,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF0F4FA),
-                                borderRadius:
-                                    BorderRadius.circular(Dimensiones.radioMd),
+                                color: const Color(0xFFFEECEC),
+                                borderRadius: BorderRadius.circular(
+                                  Dimensiones.radioMd,
+                                ),
+                                border: Border.all(
+                                  color: const Color(0xFFF4B3B3),
+                                ),
                               ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   const Icon(
-                                    Icons.router_outlined,
+                                    Icons.error_outline_rounded,
+                                    color: Colores.rojoError,
                                     size: 18,
-                                    color: Colores.textoTerciario,
                                   ),
                                   const SizedBox(
                                       width: Dimensiones.espaciadoSm),
                                   Expanded(
                                     child: Text(
-                                      'Entorno API: ${Entorno.apiUrl}',
+                                      estado.error!,
                                       style: textTheme.bodySmall?.copyWith(
-                                        color: Colores.textoTerciario,
+                                        color: Colores.rojoError,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            if (Entorno.apiUrl
-                                .contains('10.0.2.2')) ...<Widget>[
-                              const SizedBox(height: Dimensiones.espaciadoSm),
-                              Text(
-                                '10.0.2.2 funciona solo en emulador Android; en telefono fisico usa la IP local del backend.',
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: Colores.rojoError,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
                           ],
-                        ),
+                        ],
                       ),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(
-                          Dimensiones.espaciadoXl,
-                          Dimensiones.espaciadoXl,
-                          Dimensiones.espaciadoXl,
-                          Dimensiones.espaciadoXl,
-                        ),
-                        decoration: const BoxDecoration(
-                          color: Colores.blanco,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(Dimensiones.radio2xl),
-                            topRight: Radius.circular(Dimensiones.radio2xl),
-                          ),
-                          boxShadow: <BoxShadow>[
-                            BoxShadow(
-                              color: Colores.sombra,
-                              blurRadius: 22,
-                              offset: Offset(0, -8),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            const Text(
-                              Textos.iniciarSesion,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: Dimensiones.espaciadoLg),
-                            const FormularioLogin(),
-                            if (estado.error != null) ...<Widget>[
-                              const SizedBox(height: Dimensiones.espaciadoLg),
-                              Container(
-                                key: const Key('login_error_banner'),
-                                padding: const EdgeInsets.all(
-                                  Dimensiones.espaciadoMd,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEECEC),
-                                  borderRadius: BorderRadius.circular(
-                                      Dimensiones.radioMd),
-                                  border: Border.all(
-                                    color: const Color(0xFFF4B3B3),
-                                  ),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    const Icon(
-                                      Icons.error_outline_rounded,
-                                      color: Colores.rojoError,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(
-                                        width: Dimensiones.espaciadoSm),
-                                    Expanded(
-                                      child: Text(
-                                        estado.error!,
-                                        style: textTheme.bodySmall?.copyWith(
-                                          color: Colores.rojoError,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              );
-            },
+                ],
+              ),
+            ),
           ),
         ),
       ),
