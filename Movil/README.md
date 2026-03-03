@@ -103,13 +103,15 @@ flutter run -d emulator-5554 --dart-define-from-file=Entornos/dev.json
 
 ### 3.2. Dispositivo físico (misma red local)
 
-1. Reemplaza en `Entornos/dev.json` la URL por tu IP local si usas teléfono real.
+1. Reemplaza en `Entornos/dev.json` la URL por tu IP local si usas teléfono real (ejemplo: `http://192.168.20.21:3001`).
 2. Ejecuta:
 
 ```bash
 cd Movil
 flutter run -d <id-dispositivo> --dart-define-from-file=Entornos/dev.json
 ```
+
+> `10.0.2.2` solo funciona en emulador Android. En dispositivo físico siempre usa IP LAN del host.
 
 ---
 
