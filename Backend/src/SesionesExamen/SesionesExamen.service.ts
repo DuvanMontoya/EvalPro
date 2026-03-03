@@ -14,7 +14,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { EstadoExamen, EstadoIntento, EstadoSesion, RolUsuario } from '@prisma/client';
+import { EstadoExamen, EstadoGrupo, EstadoIntento, EstadoSesion, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { generarCodigoSesion } from '../Comun/Utilidades/GeneradorCodigo.util';
 import { RespuestasService } from '../Respuestas/Respuestas.service';
@@ -139,6 +139,38 @@ export class SesionesExamenService {
     const sesion = await this.obtenerSesionGestionable(idSesion, rol, idUsuario, idInstitucion);
     if (sesion.estado !== EstadoSesion.PENDIENTE) {
       throw new BadRequestException('La sesión no está en estado pendiente');
+    }
+
+    const sesionConContexto = await this.prisma.sesionExamen.findUnique({
+      where: { id: idSesion },
+      include: {
+        examen: { select: { estado: true } },
+        asignacion: {
+          select: {
+            fechaInicio: true,
+            fechaFin: true,
+            grupo: { select: { estado: true } },
+          },
+        },
+      },
+    });
+    if (!sesionConContexto) {
+      throw new NotFoundException('Sesión no encontrada');
+    }
+
+    if (sesionConContexto.examen.estado !== EstadoExamen.PUBLICADO) {
+      throw new ConflictException('El examen debe estar publicado para activar la sesión');
+    }
+
+    if (sesionConContexto.asignacion) {
+      const ahora = new Date();
+      if (ahora < sesionConContexto.asignacion.fechaInicio || ahora > sesionConContexto.asignacion.fechaFin) {
+        throw new ForbiddenException('La sesión no está dentro de la ventana de asignación');
+      }
+
+      if (sesionConContexto.asignacion.grupo && sesionConContexto.asignacion.grupo.estado !== EstadoGrupo.ACTIVO) {
+        throw new ConflictException('El grupo de la asignación debe estar activo para activar la sesión');
+      }
     }
 
     const conflictoSesionActiva = await this.prisma.sesionExamen.findFirst({

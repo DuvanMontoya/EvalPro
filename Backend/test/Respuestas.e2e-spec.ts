@@ -99,6 +99,122 @@ describe('Respuestas (e2e)', () => {
     expect(segundoIntento.body?.codigoError).toBe('INTENTO_DUPLICADO');
   });
 
+  it('rechaza activar sesión antes de la ventana de asignación', async () => {
+    const admin = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
+    const docente = await crearUsuarioPrueba(RolUsuario.DOCENTE, true);
+    const estudiante = await crearUsuarioPrueba(RolUsuario.ESTUDIANTE, true);
+
+    const sesionAdmin = await iniciarSesionE2e(aplicacion, admin.correo, admin.contrasena);
+    const sesionDocente = await iniciarSesionE2e(aplicacion, docente.correo, docente.contrasena);
+
+    const fechaInicioPeriodo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const fechaFinPeriodo = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString();
+    const periodo = await request(aplicacion.getHttpServer())
+      .post('/api/v1/periodos')
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({
+        nombre: `Periodo ventana ${Date.now()}`,
+        fechaInicio: fechaInicioPeriodo,
+        fechaFin: fechaFinPeriodo,
+        activo: true,
+      });
+    const datosPeriodo = periodo.body?.datos ?? periodo.body;
+    expect(periodo.status).toBe(201);
+
+    const grupo = await request(aplicacion.getHttpServer())
+      .post('/api/v1/grupos')
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({
+        nombre: `Grupo ventana ${Date.now()}`,
+        descripcion: 'Grupo para validar ventana de activación',
+        idPeriodo: datosPeriodo?.id,
+      });
+    const datosGrupo = grupo.body?.datos ?? grupo.body;
+    expect(grupo.status).toBe(201);
+
+    const asignarDocente = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/grupos/${datosGrupo?.id}/docentes`)
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({ idDocente: docente.id });
+    expect(asignarDocente.status).toBe(201);
+
+    const asignarEstudiante = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/grupos/${datosGrupo?.id}/estudiantes`)
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({ idEstudiante: estudiante.id });
+    expect(asignarEstudiante.status).toBe(201);
+
+    const activarGrupo = await request(aplicacion.getHttpServer())
+      .patch(`/api/v1/grupos/${datosGrupo?.id}/estado`)
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({ estado: 'ACTIVO' });
+    expect(activarGrupo.status).toBe(200);
+
+    const examen = await request(aplicacion.getHttpServer())
+      .post('/api/v1/examenes')
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({
+        titulo: `Examen ventana ${Date.now()}`,
+        descripcion: 'Validación de activación por ventana',
+        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        duracionMinutos: 20,
+        permitirNavegacion: true,
+        mostrarPuntaje: true,
+      });
+    const datosExamen = examen.body?.datos ?? examen.body;
+    const idExamen = datosExamen?.id;
+    expect(examen.status).toBe(201);
+
+    const pregunta = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/examenes/${idExamen}/preguntas`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({
+        enunciado: 'Pregunta de control ventana',
+        tipo: TipoPregunta.OPCION_MULTIPLE,
+        puntaje: 1,
+        opciones: [
+          { letra: 'A', contenido: 'Correcta', esCorrecta: true, orden: 1 },
+          { letra: 'B', contenido: 'Incorrecta', esCorrecta: false, orden: 2 },
+        ],
+      });
+    expect(pregunta.status).toBe(201);
+
+    const publicarExamen = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/examenes/${idExamen}/publicar`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
+    expect(publicarExamen.status).toBe(201);
+
+    const fechaInicioAsignacion = new Date(Date.now() + 60 * 1000).toISOString();
+    const fechaFinAsignacion = new Date(Date.now() + 20 * 60 * 1000).toISOString();
+    const asignacion = await request(aplicacion.getHttpServer())
+      .post('/api/v1/asignaciones')
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({
+        idExamen,
+        idGrupo: datosGrupo?.id,
+        fechaInicio: fechaInicioAsignacion,
+        fechaFin: fechaFinAsignacion,
+        intentosMaximos: 1,
+        mostrarPuntajeInmediato: true,
+        mostrarRespuestasCorrectas: false,
+      });
+    const datosAsignacion = asignacion.body?.datos ?? asignacion.body;
+    expect(asignacion.status).toBe(201);
+
+    const sesion = await request(aplicacion.getHttpServer())
+      .post('/api/v1/sesiones')
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({ idAsignacion: datosAsignacion?.id });
+    const datosSesion = sesion.body?.datos ?? sesion.body;
+    expect(sesion.status).toBe(201);
+
+    const activacionTemprana = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/sesiones/${datosSesion?.id}/activar`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
+    expect(activacionTemprana.status).toBe(403);
+    expect(String(activacionTemprana.body?.mensaje ?? '')).toContain('ventana de asignación');
+  });
+
   it('finaliza intento calculando puntaje y deja preguntas abiertas en calificación manual', async () => {
     const docente = await crearUsuarioPrueba(RolUsuario.DOCENTE, true);
     const estudiante = await crearUsuarioPrueba(RolUsuario.ESTUDIANTE, true);
