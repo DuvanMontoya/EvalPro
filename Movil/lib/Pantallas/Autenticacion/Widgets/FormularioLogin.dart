@@ -7,8 +7,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../Constantes/Colores.dart';
+import '../../../Constantes/Dimensiones.dart';
 import '../../../Constantes/Textos.dart';
 import '../../../Providers/AutenticacionProvider.dart';
+import '../../../Utilidades/ValidadoresAutenticacion.dart';
 
 class FormularioLogin extends ConsumerStatefulWidget {
   const FormularioLogin({super.key});
@@ -22,6 +25,7 @@ class _FormularioLoginState extends ConsumerState<FormularioLogin> {
   final _correo = TextEditingController();
   final _contrasena = TextEditingController();
   bool _cargando = false;
+  bool _ocultarContrasena = true;
 
   @override
   void dispose() {
@@ -31,6 +35,7 @@ class _FormularioLoginState extends ConsumerState<FormularioLogin> {
   }
 
   Future<void> _enviar() async {
+    FocusScope.of(context).unfocus();
     if (!_formulario.currentState!.validate()) {
       return;
     }
@@ -48,40 +53,77 @@ class _FormularioLoginState extends ConsumerState<FormularioLogin> {
   Widget build(BuildContext context) {
     return Form(
       key: _formulario,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           TextFormField(
+            key: const Key('login_email_field'),
             controller: _correo,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: Textos.correo),
-            validator: (valor) {
-              if (valor == null || valor.trim().isEmpty)
-                return 'Ingresa un correo';
-              if (!valor.contains('@')) return 'Correo invalido';
-              return null;
-            },
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: Textos.correo,
+              hintText: 'usuario@institucion.edu',
+              prefixIcon: Icon(Icons.alternate_email_rounded),
+            ),
+            validator: ValidadoresAutenticacion.validarCorreo,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Dimensiones.espaciadoLg),
           TextFormField(
+            key: const Key('login_password_field'),
             controller: _contrasena,
-            obscureText: true,
-            decoration: const InputDecoration(labelText: Textos.contrasena),
-            validator: (valor) {
-              if (valor == null || valor.length < 8)
-                return 'Minimo 8 caracteres';
-              return null;
-            },
+            obscureText: _ocultarContrasena,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _enviar(),
+            decoration: InputDecoration(
+              labelText: Textos.contrasena,
+              prefixIcon: const Icon(Icons.lock_outline_rounded),
+              suffixIcon: IconButton(
+                key: const Key('login_password_toggle'),
+                tooltip: _ocultarContrasena
+                    ? 'Mostrar contrasena'
+                    : 'Ocultar contrasena',
+                onPressed: () {
+                  setState(() => _ocultarContrasena = !_ocultarContrasena);
+                },
+                icon: Icon(
+                  _ocultarContrasena
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
+              ),
+            ),
+            validator: ValidadoresAutenticacion.validarContrasena,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Dimensiones.espaciadoSm),
+          Text(
+            'Tus credenciales se validan con controles de seguridad institucional.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colores.textoTerciario,
+                ),
+          ),
+          const SizedBox(height: Dimensiones.espaciadoXl),
           ElevatedButton(
+            key: const Key('login_submit_button'),
             onPressed: _cargando ? null : _enviar,
             child: _cargando
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      key: Key('login_loading_indicator'),
+                      strokeWidth: 2.2,
+                      color: Colores.blanco,
+                    ),
                   )
                 : const Text(Textos.iniciarSesion),
+          ),
+          const SizedBox(height: Dimensiones.espaciadoMd),
+          TextButton(
+            key: const Key('login_recovery_button'),
+            onPressed: _cargando ? null : () {},
+            child: const Text('Necesitas ayuda para acceder?'),
           ),
         ],
       ),

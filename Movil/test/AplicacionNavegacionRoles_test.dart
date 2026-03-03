@@ -65,6 +65,7 @@ void main() {
     expect(find.text(Textos.misResultados), findsOneWidget);
     expect(find.text(Textos.gestionarSesiones), findsNothing);
 
+    await tester.ensureVisible(find.text(Textos.misResultados));
     await tester.tap(find.text(Textos.misResultados));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text(Textos.misResultados), findsWidgets);
@@ -100,6 +101,7 @@ void main() {
     expect(find.text(Textos.calificacionManual), findsOneWidget);
     expect(find.text(Textos.misResultados), findsNothing);
 
+    await tester.ensureVisible(find.text(Textos.gestionarUsuarios));
     await tester.tap(find.text(Textos.gestionarUsuarios));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text(Textos.gestionarUsuarios), findsWidgets);
