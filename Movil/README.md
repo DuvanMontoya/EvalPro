@@ -123,6 +123,30 @@ flutter run -d <id-dispositivo>
 
 > `10.0.2.2` solo funciona en emulador Android. En dispositivo físico siempre usa IP LAN del host.
 
+### 3.3. Dispositivo físico con `adb reverse` (cuando la LAN bloquea acceso al PC)
+
+Si el teléfono no puede llegar a `http://<IP-PC>:3001` por firewall o aislamiento de red WiFi, usa este flujo:
+
+1. Configura el túnel:
+
+```bash
+adb -s <id-dispositivo> reverse tcp:3001 tcp:3001
+```
+
+2. Ejecuta con el entorno preparado para `127.0.0.1`:
+
+```bash
+cd Movil
+flutter run -d <id-dispositivo> --dart-define-from-file=Entornos/dev.adb.json
+```
+
+3. Alternativa PowerShell (automatiza ambos pasos):
+
+```powershell
+cd Movil
+.\scripts\run_android_adb_reverse.ps1 -DeviceId <id-dispositivo>
+```
+
 ---
 
 ## 4. Stage / Producción

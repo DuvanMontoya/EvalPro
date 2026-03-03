@@ -1,0 +1,5 @@
+{
+  "API_URL": "http://127.0.0.1:3001/api/v1",
+  "WEBSOCKET_URL": "http://127.0.0.1:3001",
+  "VERSION_APP": "1.0.0-dev-adb"
+}
