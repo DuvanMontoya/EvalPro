@@ -11,6 +11,8 @@
     "start:prod": "node dist/main",
     "pruebas:e2e": "jest --config ./test/ConfiguracionPruebasE2e.cjs --runInBand",
     "pruebas:e2e:ci": "npm run pruebas:e2e -- --ci",
+    "datos:limpiar:qa": "ts-node scripts/limpiar-datos-qa.ts --apply",
+    "datos:limpiar:qa:dry": "ts-node scripts/limpiar-datos-qa.ts",
     "prisma:generar": "prisma generate",
     "prisma:migrar": "prisma migrate dev --name inicio",
     "prisma:sembrar": "prisma db seed"

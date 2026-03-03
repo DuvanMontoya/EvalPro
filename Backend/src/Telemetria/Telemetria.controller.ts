@@ -37,7 +37,7 @@ export class TelemetriaController {
    * Lista eventos de telemetría de un intento.
    */
   @Get('intentos/:idIntento/telemetria')
-  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Lista telemetría de un intento' })
   async listarPorIntento(@Param('idIntento', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: UsuarioAutenticado) {
     return this.telemetriaService.listarPorIntento(idIntento, usuario.rol, usuario.id, usuario.idInstitucion);

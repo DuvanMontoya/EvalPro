@@ -5,9 +5,9 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
-import { IsEmail, IsEnum, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class CrearUsuarioDto {
   @ApiProperty({ description: 'Nombre del usuario', example: 'Juan' })
@@ -34,4 +34,9 @@ export class CrearUsuarioDto {
   @ApiProperty({ description: 'Rol del usuario en la plataforma', enum: RolUsuario, example: RolUsuario.ESTUDIANTE })
   @IsEnum(RolUsuario)
   rol!: RolUsuario;
+
+  @ApiPropertyOptional({ description: 'Institución destino (requerido para SUPERADMINISTRADOR salvo rol SUPERADMINISTRADOR)' })
+  @IsOptional()
+  @IsUUID()
+  idInstitucion?: string;
 }

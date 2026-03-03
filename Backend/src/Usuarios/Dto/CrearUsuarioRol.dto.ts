@@ -5,8 +5,8 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class CrearUsuarioRolDto {
   @ApiProperty({ description: 'Nombre del usuario', example: 'Laura' })
@@ -29,4 +29,9 @@ export class CrearUsuarioRolDto {
   @IsString()
   @MinLength(8)
   contrasena!: string;
+
+  @ApiPropertyOptional({ description: 'Institución destino (requerido para SUPERADMINISTRADOR)' })
+  @IsOptional()
+  @IsUUID()
+  idInstitucion?: string;
 }

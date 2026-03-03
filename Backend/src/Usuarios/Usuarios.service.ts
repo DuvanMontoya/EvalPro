@@ -47,9 +47,13 @@ export class UsuariosService {
    */
   async crear(
     dto: CrearUsuarioDto,
+    rolSolicitante: RolUsuario,
     idInstitucionSolicitante: string | null,
   ): Promise<RespuestaUsuarioDto> {
-    if (dto.rol === RolUsuario.ADMINISTRADOR || dto.rol === RolUsuario.SUPERADMINISTRADOR) {
+    if (
+      (dto.rol === RolUsuario.ADMINISTRADOR || dto.rol === RolUsuario.SUPERADMINISTRADOR) &&
+      rolSolicitante !== RolUsuario.SUPERADMINISTRADOR
+    ) {
       throw new BadRequestException({
         message: 'No se permite crear administradores por esta ruta',
         codigoError: CODIGOS_ERROR.ROL_NO_PERMITIDO,
@@ -61,8 +65,10 @@ export class UsuariosService {
         apellidos: dto.apellidos,
         correo: dto.correo,
         contrasena: dto.contrasena,
+        idInstitucion: dto.idInstitucion,
       },
       dto.rol,
+      rolSolicitante,
       idInstitucionSolicitante,
     );
   }
@@ -70,15 +76,23 @@ export class UsuariosService {
   /**
    * Crea un usuario con rol DOCENTE usando credencial temporal.
    */
-  async crearDocente(dto: CrearUsuarioRolDto, idInstitucionSolicitante: string | null): Promise<RespuestaUsuarioDto> {
-    return this.crearConRol(dto, RolUsuario.DOCENTE, idInstitucionSolicitante);
+  async crearDocente(
+    dto: CrearUsuarioRolDto,
+    rolSolicitante: RolUsuario,
+    idInstitucionSolicitante: string | null,
+  ): Promise<RespuestaUsuarioDto> {
+    return this.crearConRol(dto, RolUsuario.DOCENTE, rolSolicitante, idInstitucionSolicitante);
   }
 
   /**
    * Crea un usuario con rol ESTUDIANTE usando credencial temporal.
    */
-  async crearEstudiante(dto: CrearUsuarioRolDto, idInstitucionSolicitante: string | null): Promise<RespuestaUsuarioDto> {
-    return this.crearConRol(dto, RolUsuario.ESTUDIANTE, idInstitucionSolicitante);
+  async crearEstudiante(
+    dto: CrearUsuarioRolDto,
+    rolSolicitante: RolUsuario,
+    idInstitucionSolicitante: string | null,
+  ): Promise<RespuestaUsuarioDto> {
+    return this.crearConRol(dto, RolUsuario.ESTUDIANTE, rolSolicitante, idInstitucionSolicitante);
   }
 
   /**
@@ -87,11 +101,15 @@ export class UsuariosService {
   private async crearConRol(
     dto: CrearUsuarioRolDto,
     rol: RolUsuario,
+    rolSolicitante: RolUsuario,
     idInstitucionSolicitante: string | null,
   ): Promise<RespuestaUsuarioDto> {
-    if (!idInstitucionSolicitante) {
-      throw new ForbiddenException('El actor no tiene institución asociada');
-    }
+    const idInstitucionDestino = this.resolverInstitucionCreacion(
+      rolSolicitante,
+      idInstitucionSolicitante,
+      dto.idInstitucion,
+      rol,
+    );
 
     const correoNormalizado = normalizarCorreoUsuario(dto.correo);
     await this.validarCorreoUnico(correoNormalizado);
@@ -107,7 +125,7 @@ export class UsuariosService {
         correo: correoNormalizado,
         contrasena: hashTemporal,
         rol,
-        idInstitucion: idInstitucionSolicitante,
+        idInstitucion: idInstitucionDestino,
         estadoCuenta: EstadoCuenta.PENDIENTE_ACTIVACION,
         primerLogin: true,
         credencialTemporal: hashTemporal,
@@ -262,6 +280,36 @@ export class UsuariosService {
 
   private calcularVencimientoCredencialTemporal(): Date {
     return new Date(Date.now() + HORAS_CREDENCIAL_TEMPORAL * 60 * 60_000);
+  }
+
+  private resolverInstitucionCreacion(
+    rolSolicitante: RolUsuario,
+    idInstitucionSolicitante: string | null,
+    idInstitucionDto: string | undefined,
+    rolDestino: RolUsuario,
+  ): string | null {
+    if (rolSolicitante === RolUsuario.SUPERADMINISTRADOR) {
+      if (rolDestino === RolUsuario.SUPERADMINISTRADOR) {
+        return null;
+      }
+      if (!idInstitucionDto) {
+        throw new BadRequestException({
+          message: 'SUPERADMINISTRADOR debe indicar idInstitucion para crear este rol',
+          codigoError: CODIGOS_ERROR.VALIDACION_FALLIDA,
+        });
+      }
+      return idInstitucionDto;
+    }
+
+    if (!idInstitucionSolicitante) {
+      throw new ForbiddenException('El actor no tiene institución asociada');
+    }
+
+    if (idInstitucionDto && idInstitucionDto !== idInstitucionSolicitante) {
+      throw new ForbiddenException('No puede crear usuarios fuera de su institución');
+    }
+
+    return idInstitucionSolicitante;
   }
 
   private obtenerRondasHash(): number {

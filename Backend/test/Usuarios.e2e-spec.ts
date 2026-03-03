@@ -72,6 +72,35 @@ describe('Usuarios (e2e)', () => {
     expect(respuesta.body?.codigoError).toBe('ROL_NO_PERMITIDO');
   });
 
+  it('permite a superadministrador crear administrador indicando idInstitucion', async () => {
+    const adminBase = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
+    const correoSuperadmin = process.env.SUPERADMIN_CORREO_INICIAL ?? 'superadmin@evalpro.com';
+    const contrasenaSuperadmin =
+      process.env.SUPERADMIN_CONTRASENA_INICIAL ??
+      process.env.ADMIN_CONTRASENA_INICIAL ??
+      'CambiarInmediatamente123!';
+
+    const sesionSuperadmin = await iniciarSesionE2e(aplicacion, correoSuperadmin, contrasenaSuperadmin);
+    expect(sesionSuperadmin.estado).toBe(200);
+    expect(adminBase.idInstitucion).toBeTruthy();
+
+    const respuesta = await request(aplicacion.getHttpServer())
+      .post('/api/v1/usuarios')
+      .set('Authorization', `Bearer ${sesionSuperadmin.tokenAcceso}`)
+      .send({
+        nombre: 'Admin',
+        apellidos: 'CreadoPorSuperadmin',
+        correo: `admin_super_${Date.now()}@evalpro.test`,
+        contrasena: 'TemporalSegura123!',
+        rol: RolUsuario.ADMINISTRADOR,
+        idInstitucion: adminBase.idInstitucion,
+      });
+
+    expect(respuesta.status).toBe(201);
+    expect(respuesta.body?.datos?.rol).toBe(RolUsuario.ADMINISTRADOR);
+    expect(respuesta.body?.datos?.idInstitucion).toBe(adminBase.idInstitucion);
+  });
+
   it('impide a usuarios no admin crear cuentas', async () => {
     const docente = await crearUsuarioPrueba(RolUsuario.DOCENTE, true);
     const sesionDocente = await iniciarSesionE2e(aplicacion, docente.correo, docente.contrasena);

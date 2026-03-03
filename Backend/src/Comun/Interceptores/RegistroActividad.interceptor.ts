@@ -7,7 +7,7 @@
  */
 import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
 import { Request } from 'express';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, from, map, mergeMap, of, throwError } from 'rxjs';
 import { AuditoriaService } from '../../Auditoria/Auditoria.service';
 import { UsuarioAutenticado } from '../Tipos/UsuarioAutenticado.tipo';
 
@@ -35,55 +35,58 @@ export class RegistroActividadInterceptor implements NestInterceptor {
     const ruta = solicitud.originalUrl ?? '';
     const esOperacionMutable = metodo !== 'GET' && metodo !== 'OPTIONS' && metodo !== 'HEAD';
 
+    const snapshotAntes = this.normalizarSnapshot(solicitud.body);
+    const actor = solicitud.user;
+
     return siguiente.handle().pipe(
-      tap({
-        next: (respuesta) => {
-          const duracionMilisegundos = Date.now() - inicio;
-          this.logger.log(`${metodo} ${ruta} ${duracionMilisegundos}ms`);
+      mergeMap((respuesta) => {
+        const duracionMilisegundos = Date.now() - inicio;
+        this.logger.log(`${metodo} ${ruta} ${duracionMilisegundos}ms`);
 
-          if (!esOperacionMutable) {
-            return;
-          }
+        if (!esOperacionMutable) {
+          return of(respuesta);
+        }
 
-          const actor = solicitud.user;
-          void this.auditoriaService.registrar({
+        return from(
+          this.auditoriaService.registrar({
             idInstitucion: actor?.idInstitucion ?? null,
             idActor: actor?.id ?? null,
             rolActor: actor?.rol ?? null,
             accion: `HTTP_${metodo}`,
             recurso: ruta,
             idRecurso: this.extraerIdRecursoDesdeRuta(ruta),
-            snapshotAntes: null,
+            snapshotAntes,
             snapshotDespues: this.normalizarSnapshot(respuesta),
             ip: this.obtenerIp(solicitud),
             userAgent: solicitud.headers['user-agent'] ?? null,
             resultado: 'EXITO',
-          }).catch(() => undefined);
-        },
-        error: (error) => {
-          const duracionMilisegundos = Date.now() - inicio;
-          this.logger.warn(`${metodo} ${ruta} ${duracionMilisegundos}ms FALLA`);
+          }),
+        ).pipe(map(() => respuesta));
+      }),
+      catchError((error: unknown) => {
+        const duracionMilisegundos = Date.now() - inicio;
+        this.logger.warn(`${metodo} ${ruta} ${duracionMilisegundos}ms FALLA`);
 
-          if (!esOperacionMutable) {
-            return;
-          }
+        if (!esOperacionMutable) {
+          return throwError(() => error);
+        }
 
-          const actor = solicitud.user;
-          void this.auditoriaService.registrar({
+        return from(
+          this.auditoriaService.registrar({
             idInstitucion: actor?.idInstitucion ?? null,
             idActor: actor?.id ?? null,
             rolActor: actor?.rol ?? null,
             accion: `HTTP_${metodo}`,
             recurso: ruta,
             idRecurso: this.extraerIdRecursoDesdeRuta(ruta),
-            snapshotAntes: null,
+            snapshotAntes,
             snapshotDespues: null,
             ip: this.obtenerIp(solicitud),
             userAgent: solicitud.headers['user-agent'] ?? null,
             resultado: 'FALLO',
             razonFallo: error instanceof Error ? error.message : 'Error desconocido',
-          }).catch(() => undefined);
-        },
+          }),
+        ).pipe(mergeMap(() => throwError(() => error)));
       }),
     );
   }

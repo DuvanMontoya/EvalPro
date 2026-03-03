@@ -51,10 +51,10 @@ export class UsuariosController {
    * @param dto - Datos validados de creación.
    */
   @Post()
-  @Roles(RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Crea un usuario nuevo' })
   async crear(@Body() dto: CrearUsuarioDto, @UsuarioActual() usuario: UsuarioAutenticado) {
-    return this.usuariosService.crear(dto, usuario.idInstitucion);
+    return this.usuariosService.crear(dto, usuario.rol, usuario.idInstitucion);
   }
 
   /**
@@ -62,10 +62,10 @@ export class UsuariosController {
    * @param dto - Datos base de usuario docente.
    */
   @Post('docentes')
-  @Roles(RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Crea un docente' })
   async crearDocente(@Body() dto: CrearUsuarioRolDto, @UsuarioActual() usuario: UsuarioAutenticado) {
-    return this.usuariosService.crearDocente(dto, usuario.idInstitucion);
+    return this.usuariosService.crearDocente(dto, usuario.rol, usuario.idInstitucion);
   }
 
   /**
@@ -73,10 +73,10 @@ export class UsuariosController {
    * @param dto - Datos base de usuario estudiante.
    */
   @Post('estudiantes')
-  @Roles(RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Crea un estudiante' })
   async crearEstudiante(@Body() dto: CrearUsuarioRolDto, @UsuarioActual() usuario: UsuarioAutenticado) {
-    return this.usuariosService.crearEstudiante(dto, usuario.idInstitucion);
+    return this.usuariosService.crearEstudiante(dto, usuario.rol, usuario.idInstitucion);
   }
 
   /**
@@ -113,7 +113,7 @@ export class UsuariosController {
    * @param id - UUID del usuario.
    */
   @Delete(':id')
-  @Roles(RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
   @ApiOperation({ summary: 'Desactiva un usuario' })
   async desactivar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
     return this.usuariosService.desactivar(id, usuario.rol, usuario.idInstitucion);

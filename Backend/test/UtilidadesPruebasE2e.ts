@@ -21,6 +21,7 @@ export interface UsuarioPrueba {
   correo: string;
   contrasena: string;
   rol: RolUsuario;
+  idInstitucion: string | null;
 }
 
 const RONDAS_HASH = 12;
@@ -72,7 +73,7 @@ export async function crearUsuarioPrueba(rol: RolUsuario, activo = true): Promis
     },
   });
 
-  return { id: usuario.id, correo, contrasena, rol };
+  return { id: usuario.id, correo, contrasena, rol, idInstitucion };
 }
 
 /**
