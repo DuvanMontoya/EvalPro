@@ -1,5 +1,5 @@
 /// @archivo   AutenticacionServicioPrueba_test.dart
-/// @descripcion Verifica restricciones de rol y persistencia segura en autenticacion movil.
+/// @descripcion Verifica persistencia segura y validaciones de estado en autenticacion movil.
 /// @modulo    test/Servicios
 /// @autor     EvalPro
 /// @fecha     2026-03-02
@@ -12,7 +12,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:movil/Constantes/ApiEndpoints.dart';
 import 'package:movil/Constantes/ClavesAlmacen.dart';
-import 'package:movil/Constantes/Textos.dart';
 import 'package:movil/Modelos/Enums/RolUsuario.dart';
 import 'package:movil/Modelos/SesionAutenticada.dart';
 import 'package:movil/Modelos/Usuario.dart';
@@ -84,7 +83,7 @@ void main() {
     );
   });
 
-  test('iniciarSesion rechaza roles distintos a ESTUDIANTE', () async {
+  test('iniciarSesion permite autenticacion de docente activo', () async {
     final servicio = AutenticacionServicio(
       apiServicio: ApiServicioSimulado(
         alPublicar: (_, __) async => _crearSesion(RolUsuario.DOCENTE).toJson(),
@@ -92,26 +91,20 @@ void main() {
       almacenSeguro: const FlutterSecureStorage(),
     );
 
-    expect(
-      () => servicio.iniciarSesion(
-        correo: 'docente@evalpro.com',
-        contrasena: 'Segura123!',
-      ),
-      throwsA(
-        isA<StateError>().having(
-          (error) => error.message,
-          'mensaje',
-          Textos.errorSoloEstudiantes,
-        ),
-      ),
+    final sesion = await servicio.iniciarSesion(
+      correo: 'docente@evalpro.com',
+      contrasena: 'Segura123!',
     );
+
+    expect(sesion.usuario.rol, RolUsuario.DOCENTE);
     expect(
       await const FlutterSecureStorage().read(key: ClavesAlmacen.tokenAcceso),
-      isNull,
+      'token-acceso',
     );
   });
 
-  test('tieneSesionActiva invalida sesion con usuario no estudiante', () async {
+  test('tieneSesionActiva mantiene sesion valida para administrador activo',
+      () async {
     final almacenamientoSeguro = const FlutterSecureStorage();
     await almacenamientoSeguro.write(
       key: ClavesAlmacen.tokenAcceso,
@@ -121,6 +114,33 @@ void main() {
       key: ClavesAlmacen.usuarioActual,
       value: jsonEncode(
         _crearSesion(RolUsuario.ADMINISTRADOR).usuario.toJson(),
+      ),
+    );
+
+    final servicio = AutenticacionServicio(
+      apiServicio: ApiServicioSimulado(),
+      almacenSeguro: almacenamientoSeguro,
+    );
+
+    final activa = await servicio.tieneSesionActiva();
+    expect(activa, isTrue);
+    expect(
+      await almacenamientoSeguro.read(key: ClavesAlmacen.usuarioActual),
+      isNotNull,
+    );
+  });
+
+  test('tieneSesionActiva invalida sesion con usuario inactivo', () async {
+    final almacenamientoSeguro = const FlutterSecureStorage();
+    await almacenamientoSeguro.write(
+      key: ClavesAlmacen.tokenAcceso,
+      value: 'token-acceso',
+    );
+    final sesion = _crearSesion(RolUsuario.ESTUDIANTE);
+    await almacenamientoSeguro.write(
+      key: ClavesAlmacen.usuarioActual,
+      value: jsonEncode(
+        sesion.usuario.toJson()..['activo'] = false,
       ),
     );
 

@@ -6,9 +6,15 @@
  * @fecha     2026-03-02
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { EstadoIntento } from '@prisma/client';
+import { EstadoIntento, EstadoResultado } from '@prisma/client';
 
 class SesionEstudianteDto {
+  @ApiProperty()
+  idIntento!: string;
+
+  @ApiProperty({ nullable: true })
+  idResultado!: string | null;
+
   @ApiProperty()
   idSesion!: string;
 
@@ -20,6 +26,15 @@ class SesionEstudianteDto {
 
   @ApiProperty({ enum: EstadoIntento })
   estado!: EstadoIntento;
+
+  @ApiProperty({ enum: EstadoResultado, nullable: true })
+  estadoResultado!: EstadoResultado | null;
+
+  @ApiProperty({ nullable: true })
+  pendienteCalificacionManual!: boolean | null;
+
+  @ApiProperty({ nullable: true })
+  resultadoPublicadoEn!: Date | null;
 
   @ApiProperty({ nullable: true })
   puntajeObtenido!: number | null;

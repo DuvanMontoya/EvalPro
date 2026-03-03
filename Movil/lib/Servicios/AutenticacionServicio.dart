@@ -11,7 +11,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../Constantes/ApiEndpoints.dart';
 import '../Constantes/ClavesAlmacen.dart';
 import '../Constantes/Textos.dart';
-import '../Modelos/Enums/RolUsuario.dart';
 import '../Modelos/SesionAutenticada.dart';
 import '../Modelos/Usuario.dart';
 import 'ApiServicio.dart';
@@ -39,7 +38,7 @@ class AutenticacionServicio {
         'contrasena': contrasena,
       },
     );
-    _validarAccesoEstudiante(sesion.usuario);
+    _validarAccesoMovil(sesion.usuario);
 
     await _almacenSeguro.write(
         key: ClavesAlmacen.tokenAcceso, value: sesion.tokenAcceso);
@@ -80,7 +79,7 @@ class AutenticacionServicio {
       if (usuario == null) {
         return false;
       }
-      _validarAccesoEstudiante(usuario);
+      _validarAccesoMovil(usuario);
       return true;
     } catch (_) {
       await _almacenSeguro.deleteAll();
@@ -103,12 +102,9 @@ class AutenticacionServicio {
     }
   }
 
-  void _validarAccesoEstudiante(Usuario usuario) {
-    if (!usuario.activo) {
+  void _validarAccesoMovil(Usuario usuario) {
+    if (!usuario.activo || usuario.estadoCuenta != 'ACTIVO') {
       throw StateError(Textos.errorUsuarioInactivo);
-    }
-    if (usuario.rol != RolUsuario.ESTUDIANTE) {
-      throw StateError(Textos.errorSoloEstudiantes);
     }
   }
 }

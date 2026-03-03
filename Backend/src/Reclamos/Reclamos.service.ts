@@ -9,6 +9,111 @@ import { ResolverReclamoDto } from './Dto/ResolverReclamo.dto';
 export class ReclamosService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async listar(actor: UsuarioAutenticado) {
+    const condiciones: Record<string, unknown>[] = [];
+
+    if (actor.rol !== RolUsuario.SUPERADMINISTRADOR) {
+      if (!actor.idInstitucion) {
+        throw new ForbiddenException('Actor sin institución asociada');
+      }
+      condiciones.push({
+        resultado: {
+          intento: {
+            idInstitucion: actor.idInstitucion,
+          },
+        },
+      });
+    }
+
+    if (actor.rol === RolUsuario.DOCENTE) {
+      condiciones.push({
+        resultado: {
+          intento: {
+            sesion: {
+              creadaPorId: actor.id,
+            },
+          },
+        },
+      });
+    }
+
+    const where = condiciones.length > 0 ? { AND: condiciones } : {};
+    const reclamos = await this.prisma.reclamoCalificacion.findMany({
+      where,
+      include: {
+        estudiante: {
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            correo: true,
+          },
+        },
+        resueltoPor: {
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            correo: true,
+          },
+        },
+        resultado: {
+          include: {
+            intento: {
+              include: {
+                sesion: {
+                  include: {
+                    examen: {
+                      select: {
+                        id: true,
+                        titulo: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { presentadoEn: 'desc' },
+    });
+
+    return reclamos.map((reclamo) => ({
+      id: reclamo.id,
+      resultadoId: reclamo.resultadoId,
+      idEstudiante: reclamo.idEstudiante,
+      idPregunta: reclamo.idPregunta,
+      motivo: reclamo.motivo,
+      estado: reclamo.estado,
+      presentadoEn: reclamo.presentadoEn,
+      resolverEn: reclamo.resolverEn,
+      resolucion: reclamo.resolucion,
+      puntajeAnterior: reclamo.puntajeAnterior,
+      puntajeNuevo: reclamo.puntajeNuevo,
+      estudiante: reclamo.estudiante,
+      resueltoPor: reclamo.resueltoPor,
+      resultado: {
+        id: reclamo.resultado.id,
+        estado: reclamo.resultado.estado,
+        puntajeTotal: reclamo.resultado.puntajeTotal,
+        puntajeMaximoPosible: reclamo.resultado.puntajeMaximoPosible,
+        porcentaje: reclamo.resultado.porcentaje,
+      },
+      intento: {
+        id: reclamo.resultado.intento.id,
+        estado: reclamo.resultado.intento.estado,
+        sesionId: reclamo.resultado.intento.sesionId,
+        fechaEnvio: reclamo.resultado.intento.fechaEnvio,
+      },
+      sesion: {
+        id: reclamo.resultado.intento.sesion.id,
+        codigoAcceso: reclamo.resultado.intento.sesion.codigoAcceso,
+        examen: reclamo.resultado.intento.sesion.examen,
+      },
+    }));
+  }
+
   async crear(idResultado: string, dto: CrearReclamoDto, actor: UsuarioAutenticado) {
     const resultado = await this.prisma.resultadoIntento.findUnique({
       where: { id: idResultado },

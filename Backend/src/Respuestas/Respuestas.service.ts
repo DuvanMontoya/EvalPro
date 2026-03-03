@@ -13,7 +13,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { EstadoIntento, RolUsuario } from '@prisma/client';
+import { EstadoIntento, RolUsuario, TipoPregunta } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { TelemetriaService } from '../Telemetria/Telemetria.service';
 import { CalificacionRespuestasService } from './CalificacionRespuestas.service';
@@ -148,6 +148,106 @@ export class RespuestasService {
       puntajeObtenido: mostrarPuntaje ? puntajeObtenido : null,
       porcentaje: mostrarPuntaje ? porcentaje : null,
     };
+  }
+
+  /**
+   * Lista respuestas abiertas pendientes de calificación manual para panel de gestión.
+   */
+  async listarPendientesCalificacion(rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    const condiciones: Record<string, unknown>[] = [
+      {
+        pregunta: {
+          tipo: {
+            in: [TipoPregunta.RESPUESTA_ABIERTA, TipoPregunta.ABIERTA],
+          },
+        },
+      },
+      {
+        intento: {
+          estado: EstadoIntento.ENVIADO,
+        },
+      },
+      {
+        puntajeObtenido: null,
+      },
+    ];
+
+    if (rol !== RolUsuario.SUPERADMINISTRADOR) {
+      if (!idInstitucion) {
+        throw new ForbiddenException('Actor sin institución asociada');
+      }
+      condiciones.push({
+        intento: {
+          idInstitucion,
+        },
+      });
+    }
+
+    if (rol === RolUsuario.DOCENTE) {
+      condiciones.push({
+        intento: {
+          sesion: {
+            creadaPorId: idUsuario,
+          },
+        },
+      });
+    }
+
+    const respuestas = await this.prisma.respuesta.findMany({
+      where: {
+        AND: condiciones,
+      },
+      include: {
+        pregunta: {
+          select: {
+            id: true,
+            enunciado: true,
+            puntaje: true,
+            tipo: true,
+          },
+        },
+        intento: {
+          include: {
+            estudiante: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                correo: true,
+              },
+            },
+            sesion: {
+              include: {
+                examen: {
+                  select: {
+                    id: true,
+                    titulo: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { guardadoEn: 'asc' },
+    });
+
+    return respuestas.map((respuesta) => ({
+      id: respuesta.id,
+      idIntento: respuesta.intentoId,
+      idPregunta: respuesta.preguntaId,
+      valorTexto: respuesta.valorTexto,
+      opcionesSeleccionadas: respuesta.opcionesSeleccionadas,
+      guardadoEn: respuesta.guardadoEn,
+      tiempoRespuesta: respuesta.tiempoRespuesta,
+      pregunta: respuesta.pregunta,
+      estudiante: respuesta.intento.estudiante,
+      sesion: {
+        id: respuesta.intento.sesion.id,
+        codigoAcceso: respuesta.intento.sesion.codigoAcceso,
+        examen: respuesta.intento.sesion.examen,
+      },
+    }));
   }
 
   /**

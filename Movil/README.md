@@ -1,8 +1,17 @@
 # EvalPro Movil
 
-Aplicación Flutter para estudiantes en el ecosistema EvalPro.
+Aplicación Flutter del ecosistema EvalPro.
 
-## Ejecución por entorno con `--dart-define-from-file`
+Incluye:
+- Flujo de estudiante para unirse a sesión, responder examen y enviar intento.
+- Flujo de estudiante para consultar resultados y presentar reclamos.
+- Módulos móviles de gestión para docente, administrador y superadministrador:
+  instituciones, usuarios, grupos, periodos, sesiones, exámenes, reclamos y
+  calificación manual.
+
+---
+
+## 1. Entornos y variables (`--dart-define-from-file`)
 
 Los archivos de entorno están en `Movil/Entornos/`:
 
@@ -10,14 +19,89 @@ Los archivos de entorno están en `Movil/Entornos/`:
 - `stage.json`
 - `prod.json`
 
-### Emulador Android (desarrollo local)
+Cada archivo define al menos:
+
+- `API_URL` → por ejemplo `http://localhost:3001/api/v1`
+- `WEBSOCKET_URL` → por ejemplo `http://localhost:3001`
+- `DIAS_RETENCION_TELEMETRIA`
+- `VERSION_APP`
+
+> **Regla:** Para desarrollo de escritorio es recomendable que `API_URL` y `WEBSOCKET_URL`
+> apunten a `localhost` (o a la IP donde tengas levantado el backend).
+
+---
+
+## 2. Flujo recomendado de desarrollo con Flutter Desktop (Windows)
+
+### 2.1. Preparar entorno de backend y frontend
+
+1. Desde la raíz del proyecto (`EvalPro/`), levanta el stack de desarrollo:
+
+   ```bash
+   docker compose -f docker-compose.dev.yml up --build
+   ```
+
+2. Verifica:
+   - Frontend: `http://localhost:3000`
+   - Backend: `http://localhost:3001/api/v1/salud`
+
+### 2.2. Habilitar Flutter Desktop (una sola vez en tu máquina)
+
+En tu terminal (fuera de Docker):
+
+```bash
+flutter config --enable-windows-desktop
+flutter doctor
+```
+
+Confirma que en la salida de `flutter doctor` aparezca **Windows** como plataforma habilitada.
+
+### 2.3. Preparar el proyecto Movil para escritorio (una sola vez)
+
+```bash
+cd Movil
+flutter pub get
+flutter create --platforms=windows .
+```
+
+Esto crea la carpeta `windows/` y archivos necesarios para ejecutar como app de escritorio, sin tocar el código Dart existente.
+
+### 2.4. Ejecutar en escritorio con entorno `dev.json`
+
+1. Asegúrate de que `Movil/Entornos/dev.json` tenga:
+
+   ```json
+   {
+     "API_URL": "http://localhost:3001/api/v1",
+     "WEBSOCKET_URL": "http://localhost:3001",
+     "DIAS_RETENCION_TELEMETRIA": 7,
+     "VERSION_APP": "1.0.0"
+   }
+   ```
+
+2. Ejecuta la aplicación de escritorio:
+
+   ```bash
+   cd Movil
+   flutter run -d windows --dart-define-from-file=Entornos/dev.json
+   ```
+
+3. A partir de aquí:
+   - Cada vez que guardes un archivo (`Ctrl+S`), Flutter aplicará **Hot Reload**.
+   - Solo detén y relanza cuando cambies cosas muy profundas (por ejemplo, firmas de `main` o cambios en `Entorno.validar()`), donde podrías necesitar **Hot Restart**.
+
+---
+
+## 3. Android: emulador y dispositivo físico
+
+### 3.1. Emulador Android (desarrollo local)
 
 ```bash
 cd Movil
 flutter run -d emulator-5554 --dart-define-from-file=Entornos/dev.json
 ```
 
-### Dispositivo físico (misma red local)
+### 3.2. Dispositivo físico (misma red local)
 
 1. Reemplaza en `Entornos/dev.json` la URL por tu IP local si usas teléfono real.
 2. Ejecuta:
@@ -27,7 +111,9 @@ cd Movil
 flutter run -d <id-dispositivo> --dart-define-from-file=Entornos/dev.json
 ```
 
-### Stage / Producción
+---
+
+## 4. Stage / Producción
 
 ```bash
 cd Movil
@@ -35,7 +121,9 @@ flutter run --dart-define-from-file=Entornos/stage.json
 flutter run --release --dart-define-from-file=Entornos/prod.json
 ```
 
-## Validación rápida
+---
+
+## 5. Validación rápida del módulo Movil
 
 ```bash
 cd Movil
@@ -43,3 +131,9 @@ flutter pub get
 flutter analyze
 flutter test
 ```
+
+Con este flujo:
+
+- Usas **Docker** para Backend + Frontend.
+- Usas **Flutter Desktop** para un ciclo de desarrollo muy rápido.
+- Mantienes la misma configuración de entorno (`Entornos/*.json`) para móvil y escritorio.

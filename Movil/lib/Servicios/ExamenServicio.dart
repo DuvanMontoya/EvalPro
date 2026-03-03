@@ -1,11 +1,12 @@
 /// @archivo   ExamenServicio.dart
-/// @descripcion Obtiene examenes del backend para intentos activos y parsea su estructura.
+/// @descripcion Gestiona examenes para flujo de intento y panel docente/administrativo.
 /// @modulo    Servicios
 /// @autor     EvalPro
 /// @fecha     2026-03-02
 
 import '../Constantes/ApiEndpoints.dart';
 import '../Modelos/Examen.dart';
+import '../Modelos/ExamenGestion.dart';
 import 'ApiServicio.dart';
 
 class ExamenServicio {
@@ -22,5 +23,31 @@ class ExamenServicio {
 
     final examenJson = respuesta['examen'] as Map<String, dynamic>;
     return Examen.fromJson(examenJson);
+  }
+
+  /// Lista examenes visibles para el usuario autenticado.
+  Future<List<ExamenGestion>> listarExamenesGestion() {
+    return _apiServicio.obtener<List<ExamenGestion>>(
+      ApiEndpoints.examenes,
+      (valor) => (valor as List<dynamic>? ?? <dynamic>[])
+          .map((dato) => ExamenGestion.fromJson(dato as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  /// Publica un examen en estado borrador.
+  Future<ExamenGestion> publicarExamen(String idExamen) {
+    return _apiServicio.publicar<ExamenGestion>(
+      ApiEndpoints.publicarExamen(idExamen),
+      (valor) => ExamenGestion.fromJson(valor as Map<String, dynamic>),
+    );
+  }
+
+  /// Archiva un examen.
+  Future<ExamenGestion> archivarExamen(String idExamen) {
+    return _apiServicio.eliminar<ExamenGestion>(
+      ApiEndpoints.archivarExamen(idExamen),
+      (valor) => ExamenGestion.fromJson(valor as Map<String, dynamic>),
+    );
   }
 }

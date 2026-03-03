@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -16,6 +16,13 @@ import { ReclamosService } from './Reclamos.service';
 @UseGuards(JwtAutenticacionGuard, RolesGuard)
 export class ReclamosController {
   constructor(private readonly reclamosService: ReclamosService) {}
+
+  @Get('reclamos')
+  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
+  @ApiOperation({ summary: 'Lista reclamos visibles para gestión docente/administrativa' })
+  async listar(@UsuarioActual() actor: UsuarioAutenticado) {
+    return this.reclamosService.listar(actor);
+  }
 
   @Post('resultados/:idResultado/reclamos')
   @Roles(RolUsuario.ESTUDIANTE)

@@ -8,8 +8,8 @@ EvalPro es una plataforma completa para la creación, administración y rendici�
 - **Multi‑tenant** por institución (aislamiento estricto entre instituciones).
 - **Ecosistema completo**:
   - **Backend** NestJS + Prisma + PostgreSQL.
-  - **Frontend Web** Next.js (panel administrativo y tablero de docentes/estudiantes).
-  - **Aplicación móvil** Flutter (modo kiosco para estudiantes).
+  - **Frontend Web** Next.js (panel administrativo para superadmin, administrador y docente).
+- **Aplicación móvil** Flutter (flujo de estudiante + panel de gestión móvil multirol para instituciones, usuarios, grupos, periodos, sesiones, exámenes, reclamos y calificación manual).
 
 Toda la lógica de negocio detallada (roles, máquinas de estado, permisos, flujos, anti‑fraude, etc.) está centralizada en `AGENTS.md`.  
 Este `README.md` se enfoca en **cómo poner el sistema en marcha** (local, con y sin Docker) y en **cómo trabajar como desarrollador** dentro del proyecto.
@@ -19,8 +19,8 @@ Este `README.md` se enfoca en **cómo poner el sistema en marcha** (local, con y
 ## 1. Estructura del repositorio
 
 - **`Backend/`**: API REST y WebSocket en NestJS + Prisma.
-- **`Frontend/`**: Aplicación web en Next.js 16 (panel administrativo y vistas de docentes/estudiantes).
-- **`Movil/`**: Aplicación Flutter para estudiantes (modo kiosco, telemetría, uso en emulador o dispositivo físico).
+- **`Frontend/`**: Aplicación web en Next.js 16 (panel administrativo para superadmin, administrador y docente).
+- **`Movil/`**: Aplicación Flutter con flujo de estudiante (modo examen, telemetría, sincronización offline, resultados y reclamos) y módulos de gestión multirol para instituciones, usuarios, grupos, periodos, sesiones, exámenes, reclamos y calificación manual.
 - **`Compartido/`** *(si existe)*: Tipos e interfaces TypeScript compartidos entre Frontend y Backend.
 - **`AGENTS.md`**: **Documento normativo principal** con toda la lógica de negocio y reglas del dominio EvalPro.
 - **`.cursor/rules/Nomenclatura.mdc`**: Reglas de nomenclatura y estilo de código (todo en español).

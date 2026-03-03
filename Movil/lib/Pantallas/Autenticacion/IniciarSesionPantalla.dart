@@ -1,5 +1,5 @@
 /// @archivo   IniciarSesionPantalla.dart
-/// @descripcion Renderiza la pantalla de autenticacion del estudiante.
+/// @descripcion Renderiza la pantalla de autenticacion para cualquier rol habilitado.
 /// @modulo    Pantallas/Autenticacion
 /// @autor     EvalPro
 /// @fecha     2026-03-02

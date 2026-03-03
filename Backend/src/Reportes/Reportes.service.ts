@@ -103,7 +103,17 @@ export class ReportesService {
       where: { id: idEstudiante },
       include: {
         intentos: {
-          include: { sesion: { include: { examen: true } } },
+          include: {
+            sesion: { include: { examen: true } },
+            resultado: {
+              select: {
+                id: true,
+                estado: true,
+                pendienteCalificacionManual: true,
+                publicadoEn: true,
+              },
+            },
+          },
           orderBy: { fechaInicio: 'desc' },
         },
       },
@@ -130,10 +140,15 @@ export class ReportesService {
       idEstudiante: estudiante.id,
       nombreCompleto: `${estudiante.nombre} ${estudiante.apellidos}`,
       intentos: intentosFiltrados.map((intento) => ({
+        idIntento: intento.id,
+        idResultado: intento.resultado?.id ?? null,
         idSesion: intento.sesionId,
         codigoAcceso: intento.sesion.codigoAcceso,
         tituloExamen: intento.sesion.examen.titulo,
         estado: intento.estado,
+        estadoResultado: intento.resultado?.estado ?? null,
+        pendienteCalificacionManual: intento.resultado?.pendienteCalificacionManual ?? null,
+        resultadoPublicadoEn: intento.resultado?.publicadoEn ?? null,
         puntajeObtenido: intento.puntajeObtenido,
         porcentaje: intento.porcentaje,
         esSospechoso: intento.esSospechoso,

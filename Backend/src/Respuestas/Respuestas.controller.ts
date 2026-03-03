@@ -5,7 +5,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { Body, Controller, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
 import { Roles } from '../Comun/Decoradores/Roles.decorador';
@@ -41,6 +41,16 @@ export class RespuestasController {
   @ApiOperation({ summary: 'Finaliza intento y calcula puntaje' })
   async finalizar(@Param('idIntento', ParseUUIDPipe) idIntento: string, @UsuarioActual() usuario: UsuarioAutenticado) {
     return this.respuestasService.finalizar(idIntento, usuario.id, usuario.idInstitucion);
+  }
+
+  /**
+   * Lista respuestas abiertas que siguen pendientes de calificación manual.
+   */
+  @Get('respuestas/pendientes-calificacion')
+  @Roles(RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR)
+  @ApiOperation({ summary: 'Lista respuestas abiertas pendientes de calificación manual' })
+  async listarPendientesCalificacion(@UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.respuestasService.listarPendientesCalificacion(usuario.rol, usuario.id, usuario.idInstitucion);
   }
 
   /**

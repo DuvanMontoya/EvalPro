@@ -164,6 +164,13 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
   const sesionAdmin = await iniciarSesionConFlujoPrimerLogin(correoAdmin, adminTemporal, adminNueva);
   const tokenAdmin = sesionAdmin.tokenAcceso;
 
+  const institucionesAdmin = await solicitud<Array<{ id: string }>>('/instituciones', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+  });
+  assertOrThrow((institucionesAdmin.datos?.length ?? 0) === 1, 'ADMINISTRADOR debe ver solo su institución');
+  assertOrThrow(institucionesAdmin.datos?.[0]?.id === idInstitucion, 'ADMINISTRADOR no visualiza su institución correcta');
+
   const periodo = await solicitud<{ id: string }>('/periodos', {
     method: 'POST',
     headers: { Authorization: `Bearer ${tokenAdmin}` },
@@ -175,6 +182,7 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
     }),
   });
   assertOrThrow(periodo.datos, 'No se pudo crear periodo');
+  const idPeriodo = periodo.datos.id;
 
   const grupo = await solicitud<{ id: string; estado: string }>('/grupos', {
     method: 'POST',
@@ -182,10 +190,23 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
     body: JSON.stringify({
       nombre: `Grupo-${sufijo}`,
       descripcion: 'Grupo de verificación integral',
-      idPeriodo: periodo.datos.id,
+      idPeriodo,
     }),
   });
   assertOrThrow(grupo.datos, 'No se pudo crear grupo');
+  const idGrupo = grupo.datos.id;
+
+  const periodosListado = await solicitud<Array<{ id: string }>>('/periodos', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+  });
+  assertOrThrow((periodosListado.datos?.some((item) => item.id === idPeriodo) ?? false), 'Periodo creado no aparece en listado');
+
+  const gruposListadoInicial = await solicitud<Array<{ id: string }>>('/grupos', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+  });
+  assertOrThrow((gruposListadoInicial.datos?.some((item) => item.id === idGrupo) ?? false), 'Grupo creado no aparece en listado');
 
   console.log('[5/16] Creando docente y estudiante...');
   const correoDocente = construirCorreo('docente', sufijo);
@@ -203,6 +224,7 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
     }),
   });
   assertOrThrow(docenteCreado.datos, 'No se pudo crear docente');
+  const idDocente = docenteCreado.datos.id;
 
   const estudianteCreado = await solicitud<{ id: string }>('/usuarios', {
     method: 'POST',
@@ -216,6 +238,43 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
     }),
   });
   assertOrThrow(estudianteCreado.datos, 'No se pudo crear estudiante');
+  const idEstudiante = estudianteCreado.datos.id;
+
+  const usuariosListado = await solicitud<Array<{ id: string }>>('/usuarios', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+  });
+  assertOrThrow((usuariosListado.datos?.some((item) => item.id === idDocente) ?? false), 'Docente no aparece en listado de usuarios');
+  assertOrThrow((usuariosListado.datos?.some((item) => item.id === idEstudiante) ?? false), 'Estudiante no aparece en listado de usuarios');
+
+  await solicitud(`/usuarios/${idDocente}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+    body: JSON.stringify({
+      nombre: 'Docente Actualizado',
+      apellidos: 'E2E',
+    }),
+  });
+
+  const correoEstudianteBaja = construirCorreo('estudiante-baja', sufijo);
+  const estudianteBajaCreado = await solicitud<{ id: string }>('/usuarios', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+    body: JSON.stringify({
+      nombre: 'Estudiante',
+      apellidos: 'Baja',
+      correo: correoEstudianteBaja,
+      contrasena: 'TemporalEstudianteBaja1!',
+      rol: 'ESTUDIANTE',
+    }),
+  });
+  assertOrThrow(estudianteBajaCreado.datos, 'No se pudo crear estudiante para desactivación');
+  const idEstudianteBaja = estudianteBajaCreado.datos.id;
+
+  await solicitud(`/usuarios/${idEstudianteBaja}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+  });
 
   console.log('[6/16] Activando cuentas docente/estudiante y asignándolos al grupo...');
   const sesionDocente = await iniciarSesionConFlujoPrimerLogin(correoDocente, docenteTemporal, docenteNueva);
@@ -223,22 +282,39 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
   const tokenDocente = sesionDocente.tokenAcceso;
   const tokenEstudiante = sesionEstudiante.tokenAcceso;
 
-  await solicitud(`/grupos/${grupo.datos.id}/docentes`, {
+  await solicitud(`/grupos/${idGrupo}/docentes`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${tokenAdmin}` },
-    body: JSON.stringify({ idDocente: docenteCreado.datos.id }),
+    body: JSON.stringify({ idDocente }),
   });
 
-  await solicitud(`/grupos/${grupo.datos.id}/estudiantes`, {
+  await solicitud(`/grupos/${idGrupo}/estudiantes`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${tokenAdmin}` },
-    body: JSON.stringify({ idEstudiante: estudianteCreado.datos.id }),
+    body: JSON.stringify({ idEstudiante }),
   });
 
-  await solicitud(`/grupos/${grupo.datos.id}/estado`, {
+  await solicitud(`/grupos/${idGrupo}/estado`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${tokenAdmin}` },
     body: JSON.stringify({ estado: 'ACTIVO' }),
+  });
+
+  const gruposDocente = await solicitud<Array<{ id: string }>>('/grupos', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${tokenDocente}` },
+  });
+  assertOrThrow((gruposDocente.datos?.some((item) => item.id === idGrupo) ?? false), 'DOCENTE no visualiza su grupo asignado');
+
+  await solicitud(`/periodos/${idPeriodo}/estado`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+    body: JSON.stringify({ activo: false }),
+  });
+  await solicitud(`/periodos/${idPeriodo}/estado`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+    body: JSON.stringify({ activo: true }),
   });
 
   console.log('[7/16] Creando examen y preguntas (cerrada + abierta)...');
@@ -369,6 +445,7 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
     }),
   });
   assertOrThrow(intento.datos, 'No se pudo iniciar intento');
+  const idIntento = intento.datos.id;
 
   const intentoDuplicado = await solicitud('/intentos', {
     method: 'POST',
@@ -415,15 +492,15 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
 
   console.log('[14/16] Finalizando intento, validando reportes y telemetría docente...');
   const finalIntento = await solicitud<{ idIntento: string; puntajeObtenido: number | null; porcentaje: number | null }>(
-    `/intentos/${intento.datos.id}/finalizar`,
+    `/intentos/${idIntento}/finalizar`,
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${tokenEstudiante}` },
     },
   );
-  assertOrThrow(finalIntento.datos?.idIntento === intento.datos.id, 'No se finalizó el intento esperado');
+  assertOrThrow(finalIntento.datos?.idIntento === idIntento, 'No se finalizó el intento esperado');
 
-  const telemetriaDocente = await solicitud<Array<{ id: string }>>(`/intentos/${intento.datos.id}/telemetria`, {
+  const telemetriaDocente = await solicitud<Array<{ id: string }>>(`/intentos/${idIntento}/telemetria`, {
     method: 'GET',
     headers: { Authorization: `Bearer ${tokenDocente}` },
   });
@@ -446,9 +523,36 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
   assertOrThrow(reporteSesion.datos?.estudiantesQueEnviaron === 1, 'Reporte de sesión no refleja envíos');
   assertOrThrow((reporteSesion.datos?.estudiantesSospechosos ?? 0) >= 1, 'No se reflejó estudiante sospechoso');
 
+  console.log('[14.1/16] Validando pendientes de calificacion manual...');
+  const pendientesCalificacion = await solicitud<Array<{ id: string; idIntento: string; pregunta: { puntaje: number } }>>(
+    '/respuestas/pendientes-calificacion',
+    {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${tokenDocente}` },
+    },
+  );
+  const pendienteIntento = pendientesCalificacion.datos?.find((respuesta) => respuesta.idIntento === idIntento);
+  assertOrThrow(pendienteIntento, 'No se encontró respuesta pendiente de calificación para el intento actual');
+
+  await solicitud(`/respuestas/${pendienteIntento.id}/calificar-manual`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${tokenDocente}` },
+    body: JSON.stringify({
+      puntajeObtenido: Math.min(5, pendienteIntento.pregunta.puntaje),
+      observacion: 'Calificación manual aplicada desde verificación integral.',
+    }),
+  });
+
+  const pendientesDespues = await solicitud<Array<{ id: string; idIntento: string }>>('/respuestas/pendientes-calificacion', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${tokenDocente}` },
+  });
+  const siguePendiente = pendientesDespues.datos?.some((respuesta) => respuesta.id === pendienteIntento.id) ?? false;
+  assertOrThrow(!siguePendiente, 'La respuesta calificada manualmente sigue figurando como pendiente');
+
   console.log('[15/16] Flujo de reclamo: crear y resolver...');
   const resultado = await prisma.resultadoIntento.findFirst({
-    where: { intentoId: intento.datos.id },
+    where: { intentoId: idIntento },
     select: { id: true, puntajeTotal: true },
   });
   assertOrThrow(resultado, 'No se encontró resultado del intento');
@@ -461,8 +565,16 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
     }),
   });
   assertOrThrow(reclamo.datos, 'No se pudo crear reclamo');
+  const idReclamo = reclamo.datos.id;
 
-  await solicitud(`/reclamos/${reclamo.datos.id}/resolver`, {
+  const reclamosDocente = await solicitud<Array<{ id: string; estado: string }>>('/reclamos', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${tokenDocente}` },
+  });
+  const reclamoVisibleDocente = reclamosDocente.datos?.find((item) => item.id === idReclamo);
+  assertOrThrow(reclamoVisibleDocente, 'El reclamo creado no es visible para el docente');
+
+  await solicitud(`/reclamos/${idReclamo}/resolver`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${tokenDocente}` },
     body: JSON.stringify({
@@ -472,14 +584,25 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
     }),
   });
 
-  const reporteEstudiante = await solicitud<{ intentos: Array<{ idSesion: string }> }>(
-    `/reportes/estudiante/${estudianteCreado.datos.id}`,
+  const reclamosAdmin = await solicitud<Array<{ id: string; estado: string }>>('/reclamos', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${tokenAdmin}` },
+  });
+  const reclamoResuelto = reclamosAdmin.datos?.find((item) => item.id === idReclamo);
+  assertOrThrow(reclamoResuelto?.estado === 'RESUELTO', 'El reclamo no quedó resuelto para consulta administrativa');
+
+  const reporteEstudiante = await solicitud<{
+    intentos: Array<{ idSesion: string; idIntento: string; idResultado: string | null }>;
+  }>(
+    `/reportes/estudiante/${idEstudiante}`,
     {
       method: 'GET',
       headers: { Authorization: `Bearer ${tokenAdmin}` },
     },
   );
   assertOrThrow((reporteEstudiante.datos?.intentos.length ?? 0) >= 1, 'No hay intentos en reporte de estudiante');
+  const intentoReportado = reporteEstudiante.datos?.intentos.find((item) => item.idIntento === idIntento);
+  assertOrThrow(Boolean(intentoReportado?.idResultado), 'El reporte de estudiante no devuelve idResultado para reclamos');
 
   console.log('[16/16] Verificación integral finalizada.');
   if (violacionesDetectadas.length > 0) {
