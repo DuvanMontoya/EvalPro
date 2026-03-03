@@ -5,7 +5,6 @@
 /// @fecha     2026-03-02
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../Constantes/Colores.dart';
 import '../Constantes/Dimensiones.dart';
@@ -28,7 +27,11 @@ abstract class Tema {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: Colores.grisFondo,
     );
-    final baseTextTheme = GoogleFonts.plusJakartaSansTextTheme(base.textTheme);
+    final baseTextTheme = base.textTheme.apply(
+      fontFamily: 'PlusJakartaSans',
+      bodyColor: Colores.textoPrincipal,
+      displayColor: Colores.textoPrincipal,
+    );
 
     return base.copyWith(
       textTheme: baseTextTheme.copyWith(

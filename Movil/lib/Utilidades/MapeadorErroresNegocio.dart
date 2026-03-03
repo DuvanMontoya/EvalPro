@@ -23,6 +23,13 @@ class MapeadorErroresNegocio {
     String mensajePorDefecto = Textos.errorGeneral,
   }) {
     if (error is DioException) {
+      if (error.type == DioExceptionType.connectionError ||
+          error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout) {
+        return Textos.errorConexionServidor;
+      }
+
       final datos = error.response?.data;
       if (datos is Map<String, dynamic>) {
         final codigo = datos['codigoError'] as String?;

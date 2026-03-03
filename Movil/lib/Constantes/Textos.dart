@@ -48,6 +48,8 @@ abstract class Textos {
 
   static const errorGeneral = 'Ocurrio un error. Intenta de nuevo.';
   static const errorInicioSesion = 'No fue posible iniciar sesion.';
+  static const errorConexionServidor =
+      'No fue posible conectar con el servidor. Verifica API_URL en Entornos/dev.json.';
   static const errorBusquedaSesion =
       'No fue posible buscar la sesion. Intenta nuevamente.';
   static const errorEnvioExamen =

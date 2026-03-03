@@ -137,3 +137,59 @@ Con este flujo:
 - Usas **Docker** para Backend + Frontend.
 - Usas **Flutter Desktop** para un ciclo de desarrollo muy rápido.
 - Mantienes la misma configuración de entorno (`Entornos/*.json`) para móvil y escritorio.
+
+---
+
+## 6. Pruebas de integración (flujos reales de tap y navegación)
+
+Archivo principal:
+
+- `integration_test/FlujosAplicacion_test.dart`
+
+Incluye:
+
+- Login exitoso de estudiante y redirección al inicio.
+- Login fallido con visualización de banner de error.
+- Navegación de administrador a gestión de usuarios.
+
+### 6.1 Ejecutar en dispositivo físico Android
+
+```bash
+cd Movil
+flutter test integration_test/FlujosAplicacion_test.dart -d <id-dispositivo> --dart-define-from-file=Entornos/dev.json
+```
+
+### 6.2 Ejecutar en emulador
+
+```bash
+cd Movil
+flutter test integration_test/FlujosAplicacion_test.dart -d emulator-5554 --dart-define-from-file=Entornos/dev.json
+```
+
+---
+
+## 7. Golden tests (regresión visual)
+
+Archivo principal:
+
+- `test/Golden/PantallasPrincipalesGolden_test.dart`
+
+Cobertura visual:
+
+- Login base.
+- Login con estado de error.
+- Inicio con rol administrador.
+
+### 7.1 Generar o actualizar snapshots golden
+
+```bash
+cd Movil
+flutter test test/Golden/PantallasPrincipalesGolden_test.dart --update-goldens
+```
+
+### 7.2 Validar que no haya regresiones visuales
+
+```bash
+cd Movil
+flutter test test/Golden/PantallasPrincipalesGolden_test.dart
+```
