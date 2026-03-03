@@ -61,6 +61,13 @@ class ApiServicio {
   /// Maneja errores 401 intentando refresco de token y reintento de la solicitud.
   Future<void> _onError(
       DioException error, ErrorInterceptorHandler manejador) async {
+    if (kDebugMode) {
+      debugPrint(
+        '[EvalPro][API][ERROR] ${error.requestOptions.method} ${error.requestOptions.uri} '
+        'tipo=${error.type} codigo=${error.response?.statusCode} detalle=${error.message}',
+      );
+    }
+
     final esNoAutorizado = error.response?.statusCode == 401;
     final ruta = error.requestOptions.path;
     final fueReintentada = error.requestOptions.extra['reintentada'] == true;

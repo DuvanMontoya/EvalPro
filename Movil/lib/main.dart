@@ -15,5 +15,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Entorno.inicializar();
   Entorno.validar();
+  debugPrint(
+    '[EvalPro][Entorno] API_URL=${Entorno.apiUrl} WEBSOCKET_URL=${Entorno.websocketUrl} VERSION=${Entorno.versionApp}',
+  );
   runApp(const ProviderScope(child: Aplicacion()));
 }
