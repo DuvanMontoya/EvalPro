@@ -39,9 +39,10 @@ import { rolPuedeCrearEstudiantes } from '@/Lib/Permisos';
  * Renderiza tabla de estudiantes.
  */
 export default function PaginaEstudiantes() {
-  const [filtroRol, setFiltroRol] = useState<'TODOS' | RolUsuario.ESTUDIANTE | RolUsuario.DOCENTE>('TODOS');
+  const [filtroRol, setFiltroRol] = useState<'TODOS' | RolUsuario.ESTUDIANTE | RolUsuario.DOCENTE | RolUsuario.ADMINISTRADOR>('TODOS');
   const { consultaUsuariosAcademicos } = useEstudiantes();
   const { usuario } = useAutenticacion();
+  const esSuperadmin = usuario?.rol === RolUsuario.SUPERADMINISTRADOR;
   const puedeCrear = rolPuedeCrearEstudiantes(usuario?.rol);
   const usuariosAcademicos = consultaUsuariosAcademicos.data ?? [];
   const usuariosFiltrados = useMemo(() => {
@@ -67,8 +68,8 @@ export default function PaginaEstudiantes() {
   if (usuariosFiltrados.length === 0) {
     return (
       <EstadoVacio
-        titulo="No hay usuarios académicos"
-        descripcion="Registra docentes y estudiantes para habilitar la operación del sistema."
+        titulo="No hay usuarios registrados"
+        descripcion="Registra administradores, docentes y estudiantes para habilitar la operación del sistema."
         etiquetaAccion={puedeCrear ? 'Nuevo usuario' : undefined}
         hrefAccion={puedeCrear ? RUTAS.ESTUDIANTE_NUEVO : undefined}
       />
@@ -79,8 +80,8 @@ export default function PaginaEstudiantes() {
     <section className="space-y-4">
       <EncabezadoPagina
         etiqueta="Comunidad académica"
-        titulo="Usuarios académicos"
-        descripcion="Consulta docentes y estudiantes, con acceso rápido a historial y detalles."
+        titulo="Usuarios del tenant"
+        descripcion="Consulta administradores, docentes y estudiantes con acceso rápido a historial y detalles."
         acciones={puedeCrear ? (
           <Boton comoHijo>
             <Link href={RUTAS.ESTUDIANTE_NUEVO}>Nuevo usuario</Link>
@@ -95,6 +96,9 @@ export default function PaginaEstudiantes() {
           </SeleccionDisparador>
           <SeleccionContenido>
             <SeleccionItem value="TODOS">Todos</SeleccionItem>
+            {esSuperadmin ? (
+              <SeleccionItem value={RolUsuario.ADMINISTRADOR}>Administradores</SeleccionItem>
+            ) : null}
             <SeleccionItem value={RolUsuario.DOCENTE}>Docentes</SeleccionItem>
             <SeleccionItem value={RolUsuario.ESTUDIANTE}>Estudiantes</SeleccionItem>
           </SeleccionContenido>
@@ -115,7 +119,13 @@ export default function PaginaEstudiantes() {
           {usuariosFiltrados.map((usuarioAcademico) => (
             <TablaFila key={usuarioAcademico.id}>
               <TablaCelda>{usuarioAcademico.nombre} {usuarioAcademico.apellidos}</TablaCelda>
-              <TablaCelda>{usuarioAcademico.rol === RolUsuario.DOCENTE ? 'Docente' : 'Estudiante'}</TablaCelda>
+              <TablaCelda>
+                {usuarioAcademico.rol === RolUsuario.ADMINISTRADOR
+                  ? 'Administrador'
+                  : usuarioAcademico.rol === RolUsuario.DOCENTE
+                    ? 'Docente'
+                    : 'Estudiante'}
+              </TablaCelda>
               <TablaCelda>{usuarioAcademico.correo}</TablaCelda>
               <TablaCelda>{usuarioAcademico.activo ? 'Activo' : 'Inactivo'}</TablaCelda>
               <TablaCelda>

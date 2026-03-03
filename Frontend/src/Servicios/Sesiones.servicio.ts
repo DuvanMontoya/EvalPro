@@ -10,7 +10,8 @@ import { EstadoSesion, RespuestaApi, SesionExamen } from '@/Tipos';
 import { apiCliente, extraerDatos } from '@/Servicios/ApiCliente';
 
 export interface CrearSesionDto {
-  idExamen: string;
+  idExamen?: string;
+  idAsignacion?: string;
   descripcion?: string;
 }
 

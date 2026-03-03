@@ -12,14 +12,15 @@ import { API } from '@/Constantes/Api.constantes';
 import { RespuestaApi, RolUsuario, Usuario } from '@/Tipos';
 import { apiCliente, extraerDatos } from '@/Servicios/ApiCliente';
 
-type RolUsuarioAcademico = RolUsuario.ESTUDIANTE | RolUsuario.DOCENTE;
+type RolUsuarioGestionable = RolUsuario.ESTUDIANTE | RolUsuario.DOCENTE | RolUsuario.ADMINISTRADOR;
 
 interface CrearUsuarioAcademicoDto {
   nombre: string;
   apellidos: string;
   correo: string;
   contrasena: string;
-  rol: RolUsuarioAcademico;
+  rol: RolUsuarioGestionable;
+  idInstitucion?: string;
 }
 
 /**
@@ -33,7 +34,10 @@ export function useEstudiantes() {
     queryFn: async () => {
       const respuesta = await apiCliente.get<RespuestaApi<Usuario[]>>(API.USUARIOS);
       return extraerDatos(respuesta).filter(
-        (usuario) => usuario.rol === RolUsuario.ESTUDIANTE || usuario.rol === RolUsuario.DOCENTE,
+        (usuario) =>
+          usuario.rol === RolUsuario.ESTUDIANTE ||
+          usuario.rol === RolUsuario.DOCENTE ||
+          usuario.rol === RolUsuario.ADMINISTRADOR,
       );
     },
   });

@@ -90,12 +90,21 @@ export default function PaginaGrupos() {
   }, [consultaInstituciones.data, idInstitucionSeleccionada]);
 
   useEffect(() => {
-    if (!consultaGrupos.data || consultaGrupos.data.length === 0) {
+    setIdGrupoSeleccionado('');
+    setIdDocenteSeleccionado('');
+    setIdEstudianteSeleccionado('');
+  }, [idInstitucionSeleccionada]);
+
+  useEffect(() => {
+    const gruposCargados = consultaGrupos.data ?? [];
+    if (gruposCargados.length === 0) {
       setIdGrupoSeleccionado('');
       return;
     }
-    if (!idGrupoSeleccionado) {
-      setIdGrupoSeleccionado(consultaGrupos.data[0]!.id);
+
+    const grupoSeleccionadoSigueVigente = gruposCargados.some((grupo) => grupo.id === idGrupoSeleccionado);
+    if (!grupoSeleccionadoSigueVigente) {
+      setIdGrupoSeleccionado(gruposCargados[0]!.id);
     }
   }, [consultaGrupos.data, idGrupoSeleccionado]);
 

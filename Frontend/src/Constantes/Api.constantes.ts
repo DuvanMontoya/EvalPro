@@ -19,6 +19,7 @@ export const API = {
   },
   EXAMENES: '/examenes',
   SESIONES: '/sesiones',
+  ASIGNACIONES: '/asignaciones',
   USUARIOS: '/usuarios',
   REPORTES: '/reportes',
   INSTITUCIONES: '/instituciones',

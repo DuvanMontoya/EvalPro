@@ -48,6 +48,7 @@ export function FormularioPregunta({ onGuardar }: PropiedadesFormularioPregunta)
   });
 
   const tipo = formulario.watch('tipo');
+  const opcionesActuales = formulario.watch('opciones');
   const opciones = useFieldArray({ control: formulario.control, name: 'opciones' });
 
   useEffect(() => {
@@ -60,6 +61,15 @@ export function FormularioPregunta({ onGuardar }: PropiedadesFormularioPregunta)
       formulario.setValue('opciones', [
         { letra: 'A', contenido: 'Verdadero', esCorrecta: true, orden: 1 },
         { letra: 'B', contenido: 'Falso', esCorrecta: false, orden: 2 },
+      ]);
+      return;
+    }
+
+    const opcionesCargadas = formulario.getValues('opciones') ?? [];
+    if (opcionesCargadas.length < 2) {
+      formulario.setValue('opciones', [
+        { letra: 'A', contenido: '', esCorrecta: true, orden: 1 },
+        { letra: 'B', contenido: '', esCorrecta: false, orden: 2 },
       ]);
     }
   }, [formulario, tipo]);
@@ -123,6 +133,7 @@ export function FormularioPregunta({ onGuardar }: PropiedadesFormularioPregunta)
         <ListaOpciones
           tipo={tipo}
           campos={opciones.fields}
+          valoresOpciones={opcionesActuales}
           register={formulario.register}
           setValue={formulario.setValue}
           onAgregar={agregarOpcion}

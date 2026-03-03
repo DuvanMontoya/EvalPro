@@ -82,6 +82,14 @@ export const esquemaCrearPregunta = z
       return;
     }
 
+    if (valor.tipo === TipoPregunta.VERDADERO_FALSO && valor.opciones.length !== 2) {
+      contexto.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['opciones'],
+        message: 'Verdadero/Falso debe tener exactamente 2 opciones.',
+      });
+    }
+
     const totalCorrectas = valor.opciones.filter((opcion) => opcion.esCorrecta).length;
     if (
       (valor.tipo === TipoPregunta.OPCION_MULTIPLE ||
@@ -106,7 +114,93 @@ export const esquemaCrearPregunta = z
 
 export const esquemaCrearSesion = z.object({
   idExamen: z.uuid('Selecciona un examen válido'),
+  tipoAsignacion: z.enum(['GRUPO', 'ESTUDIANTE']),
+  idGrupo: z.uuid('Selecciona un grupo válido').optional().or(z.literal('')),
+  idEstudiante: z.uuid('Selecciona un estudiante válido').optional().or(z.literal('')),
+  fechaInicio: z.string().min(1, 'Selecciona fecha y hora de inicio'),
+  fechaFin: z.string().min(1, 'Selecciona fecha y hora de cierre'),
+  intentosMaximos: z
+    .number({ error: 'Ingresa un número de intentos válido' })
+    .int('Solo se permiten números enteros')
+    .min(0, 'El mínimo es 0 (ilimitado)')
+    .max(20, 'El máximo es 20'),
+  mostrarPuntajeInmediato: z.boolean(),
+  mostrarRespuestasCorrectas: z.boolean(),
+  publicarResultadosEn: z.string().optional().or(z.literal('')),
   descripcion: z.string().max(255).optional().or(z.literal('')),
+}).superRefine((valores, contexto) => {
+  if (valores.tipoAsignacion === 'GRUPO' && !valores.idGrupo) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['idGrupo'],
+      message: 'Selecciona el grupo objetivo.',
+    });
+  }
+
+  if (valores.tipoAsignacion === 'ESTUDIANTE' && !valores.idEstudiante) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['idEstudiante'],
+      message: 'Selecciona el estudiante objetivo.',
+    });
+  }
+
+  const fechaInicio = new Date(valores.fechaInicio);
+  const fechaFin = new Date(valores.fechaFin);
+  const fechaPublicacion = valores.publicarResultadosEn ? new Date(valores.publicarResultadosEn) : null;
+
+  if (Number.isNaN(fechaInicio.getTime())) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['fechaInicio'],
+      message: 'La fecha de inicio es inválida.',
+    });
+  }
+
+  if (Number.isNaN(fechaFin.getTime())) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['fechaFin'],
+      message: 'La fecha de cierre es inválida.',
+    });
+  }
+
+  if (!Number.isNaN(fechaInicio.getTime()) && !Number.isNaN(fechaFin.getTime()) && fechaFin <= fechaInicio) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['fechaFin'],
+      message: 'La fecha de cierre debe ser mayor a la fecha de inicio.',
+    });
+  }
+
+  if (!Number.isNaN(fechaInicio.getTime()) && fechaInicio <= new Date()) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['fechaInicio'],
+      message: 'La asignación debe iniciar en el futuro.',
+    });
+  }
+
+  if (fechaPublicacion && Number.isNaN(fechaPublicacion.getTime())) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['publicarResultadosEn'],
+      message: 'La fecha de publicación es inválida.',
+    });
+  }
+
+  if (
+    fechaPublicacion &&
+    !Number.isNaN(fechaPublicacion.getTime()) &&
+    !Number.isNaN(fechaFin.getTime()) &&
+    fechaPublicacion < fechaFin
+  ) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['publicarResultadosEn'],
+      message: 'La publicación debe ser igual o posterior al cierre.',
+    });
+  }
 });
 
 export const esquemaCrearEstudiante = z.object({
@@ -122,7 +216,8 @@ export const esquemaCrearUsuarioAcademico = z.object({
   apellidos: z.string().min(2, 'Los apellidos deben tener al menos 2 caracteres').max(100),
   correo: z.string().email('Ingresa un correo válido'),
   contrasena: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
-  rol: z.union([z.literal(RolUsuario.ESTUDIANTE), z.literal(RolUsuario.DOCENTE)]),
+  rol: z.union([z.literal(RolUsuario.ESTUDIANTE), z.literal(RolUsuario.DOCENTE), z.literal(RolUsuario.ADMINISTRADOR)]),
+  idInstitucion: z.uuid('Selecciona una institución válida').optional().or(z.literal('')),
 });
 
 export const esquemaCrearInstitucion = z.object({
