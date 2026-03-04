@@ -15,7 +15,8 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { RolUsuario } from '@prisma/client';
 import {
   ESPACIO_NOMBRES_SESIONES,
   EVENTO_ALERTA_FRAUDE,
@@ -59,6 +60,8 @@ interface SocketAutenticado extends Socket {
   cors: { origin: ORIGENES_SOCKET, credentials: true },
 })
 export class SesionesExamenGateway implements OnGatewayConnection {
+  private readonly logger = new Logger(SesionesExamenGateway.name);
+
   @WebSocketServer()
   servidor!: Server;
 
@@ -88,12 +91,35 @@ export class SesionesExamenGateway implements OnGatewayConnection {
     @MessageBody() payload: UnionSalaPayload,
     @ConnectedSocket() cliente: SocketAutenticado,
   ): Promise<void> {
-    const usuario = this.obtenerUsuarioSocket(cliente);
+    const usuario = await this.obtenerUsuarioSocket(cliente);
     const permitido = await this.autorizacionSocketService.puedeUnirseASesion(payload.idSesion, usuario);
     if (!permitido) {
       throw new WsException('No tiene permisos para unirse a esta sesión');
     }
     await cliente.join(this.obtenerNombreSala(payload.idSesion));
+
+    // Bootstrap de presencia para que el monitor docente vea al estudiante desde el ingreso.
+    if (usuario.rol === RolUsuario.ESTUDIANTE) {
+      const intentoActivo = await this.autorizacionSocketService.obtenerIntentoActivoSesionEstudiante(
+        payload.idSesion,
+        usuario.id,
+      );
+      if (intentoActivo) {
+        this.servidor.to(this.obtenerNombreSala(payload.idSesion)).emit(EVENTO_ESTUDIANTE_PROGRESO, {
+          idIntento: intentoActivo.idIntento,
+          preguntasRespondidas: 0,
+          totalPreguntas: 0,
+          nombreCompleto: intentoActivo.nombreCompleto,
+          modoKioscoActivo: true,
+          eventosFraude: 0,
+          estadoIntento: 'EN_PROGRESO',
+        });
+      } else {
+        this.logger.warn(
+          `Estudiante ${usuario.id} se unió a sesión ${payload.idSesion} sin intento activo para bootstrap.`,
+        );
+      }
+    }
   }
 
   /**
@@ -105,7 +131,7 @@ export class SesionesExamenGateway implements OnGatewayConnection {
     @MessageBody() payload: ProgresoPayload,
     @ConnectedSocket() cliente: SocketAutenticado,
   ): Promise<void> {
-    const usuario = this.obtenerUsuarioSocket(cliente);
+    const usuario = await this.obtenerUsuarioSocket(cliente);
     const idSesion = await this.autorizacionSocketService.obtenerSesionAutorizadaPorIntento(payload.idIntento, usuario);
     if (!idSesion) {
       throw new WsException('No tiene permisos sobre este intento');
@@ -122,7 +148,7 @@ export class SesionesExamenGateway implements OnGatewayConnection {
     @MessageBody() payload: FraudePayload,
     @ConnectedSocket() cliente: SocketAutenticado,
   ): Promise<void> {
-    const usuario = this.obtenerUsuarioSocket(cliente);
+    const usuario = await this.obtenerUsuarioSocket(cliente);
     const idSesion = await this.autorizacionSocketService.obtenerSesionAutorizadaPorIntento(payload.idIntento, usuario);
     if (!idSesion) {
       throw new WsException('No tiene permisos sobre este intento');
@@ -163,10 +189,17 @@ export class SesionesExamenGateway implements OnGatewayConnection {
     return `sesion_${idSesion}`;
   }
 
-  private obtenerUsuarioSocket(cliente: SocketAutenticado): UsuarioSocket {
-    if (!cliente.data.usuario) {
+  private async obtenerUsuarioSocket(cliente: SocketAutenticado): Promise<UsuarioSocket> {
+    if (cliente.data.usuario) {
+      return cliente.data.usuario;
+    }
+
+    const usuario = await this.autorizacionSocketService.autenticarCliente(cliente);
+    if (!usuario) {
       throw new WsException('Socket no autenticado');
     }
-    return cliente.data.usuario;
+
+    cliente.data.usuario = usuario;
+    return usuario;
   }
 }

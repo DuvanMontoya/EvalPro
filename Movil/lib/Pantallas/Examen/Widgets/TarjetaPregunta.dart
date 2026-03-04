@@ -16,29 +16,65 @@ class TarjetaPregunta extends StatelessWidget {
   final Pregunta pregunta;
   final RespuestaLocal? respuesta;
   final ValueChanged<Object> alResponder;
+  final int? indiceActual;
+  final int? totalPreguntas;
 
   const TarjetaPregunta({
     super.key,
     required this.pregunta,
     required this.respuesta,
     required this.alResponder,
+    this.indiceActual,
+    this.totalPreguntas,
   });
 
   /// Construye el contenido de la tarjeta segun tipo de pregunta.
   @override
   Widget build(BuildContext context) {
+    final colorPrimario = Theme.of(context).colorScheme.primary;
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            if (indiceActual != null && totalPreguntas != null) ...<Widget>[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colorPrimario.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Text(
+                  'Pregunta $indiceActual de $totalPreguntas',
+                  style: TextStyle(
+                    color: colorPrimario,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             Text(
               pregunta.enunciado,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                height: 1.12,
+              ),
             ),
             const SizedBox(height: 14),
-            _construirEntrada(context),
+            Expanded(
+              child: SingleChildScrollView(
+                child: _construirEntrada(context),
+              ),
+            ),
           ],
         ),
       ),
@@ -71,6 +107,7 @@ class TarjetaPregunta extends StatelessWidget {
           etiqueta: opcion.letra,
           contenido: opcion.contenido,
           seleccionada: opcion.letra == seleccionada,
+          seleccionMultiple: false,
           alPresionar: () => alResponder(opcion.letra),
         );
       }).toList(),
@@ -86,6 +123,7 @@ class TarjetaPregunta extends StatelessWidget {
           etiqueta: opcion.letra,
           contenido: opcion.contenido,
           seleccionada: activa,
+          seleccionMultiple: true,
           alPresionar: () {
             final nuevas = List<String>.from(seleccionadas);
             if (activa) {

@@ -11,7 +11,7 @@ import 'AutenticacionProvider.dart';
 
 part 'ModoExamenProvider.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 ModoExamenServicio modoExamenServicio(ModoExamenServicioRef ref) {
   return ModoExamenServicio(
     telemetriaServicio: ref.watch(telemetriaServicioProvider),

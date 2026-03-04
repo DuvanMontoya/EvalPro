@@ -92,7 +92,7 @@ export class IntentosService {
         where: {
           sesionId: dto.idSesion,
           estudianteId: idEstudiante,
-          estado: { in: [EstadoIntento.ENVIADO, EstadoIntento.ANULADO] },
+          estado: EstadoIntento.ENVIADO,
         },
       });
       if (intentosPrevios >= sesion.asignacion.intentosMaximos) {

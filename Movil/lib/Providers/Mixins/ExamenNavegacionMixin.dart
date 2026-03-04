@@ -11,7 +11,7 @@ import '../../Modelos/Enums/TipoEventoTelemetria.dart';
 import '../AutenticacionProvider.dart';
 import '../Modelos/ExamenActivoEstado.dart';
 
-mixin ExamenNavegacionMixin on AutoDisposeNotifier<ExamenActivoEstado?> {
+mixin ExamenNavegacionMixin on Notifier<ExamenActivoEstado?> {
   /// Avanza a la siguiente pregunta y registra telemetria de cambio.
   Future<void> avanzarPregunta() async {
     final actual = state;

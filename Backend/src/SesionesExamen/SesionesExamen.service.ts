@@ -387,7 +387,7 @@ export class SesionesExamenService {
       where: {
         sesionId: sesion.id,
         estudianteId: idEstudiante,
-        estado: { in: [EstadoIntento.ENVIADO, EstadoIntento.ANULADO] },
+        estado: EstadoIntento.ENVIADO,
       },
     });
 

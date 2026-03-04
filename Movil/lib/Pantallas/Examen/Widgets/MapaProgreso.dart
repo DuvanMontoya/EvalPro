@@ -28,7 +28,7 @@ class MapaProgreso extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 52,
+      height: 56,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: totalPreguntas,
@@ -40,15 +40,32 @@ class MapaProgreso extends StatelessWidget {
               ? Colores.azulPrimario
               : respondida
                   ? Colores.verdeExito
-                  : Colors.grey;
+                  : Colors.grey.shade400;
+          final colorTexto =
+              esActual || respondida ? Colors.white : Colors.black54;
 
           return InkWell(
             onTap: permitirNavegacion ? () => alSeleccionar(indice) : null,
-            child: CircleAvatar(
-              backgroundColor: color,
-              radius: 18,
-              child: Text('${indice + 1}',
-                  style: const TextStyle(color: Colors.white)),
+            borderRadius: BorderRadius.circular(20),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: esActual
+                    ? color
+                    : color.withValues(alpha: respondida ? 1 : 0.2),
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: esActual ? 2 : 1),
+              ),
+              child: Center(
+                child: Text(
+                  '${indice + 1}',
+                  style:
+                      TextStyle(color: colorTexto, fontWeight: FontWeight.w700),
+                ),
+              ),
             ),
           );
         },

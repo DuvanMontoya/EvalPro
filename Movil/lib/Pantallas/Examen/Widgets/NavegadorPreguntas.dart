@@ -29,6 +29,12 @@ class NavegadorPreguntas extends StatelessWidget {
           Expanded(
             child: OutlinedButton(
               onPressed: alAnterior,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 54),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
               child: const Text('Anterior'),
             ),
           ),
@@ -36,6 +42,12 @@ class NavegadorPreguntas extends StatelessWidget {
         Expanded(
           child: ElevatedButton(
             onPressed: alSiguiente,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(0, 54),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
             child: Text(esUltima ? 'Revisar y Enviar' : 'Siguiente'),
           ),
         ),

@@ -71,7 +71,7 @@ class EstadoAutenticacion {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 FlutterSecureStorage almacenamientoSeguro(AlmacenamientoSeguroRef ref) =>
     const FlutterSecureStorage();
 
@@ -94,12 +94,12 @@ RespuestaDao respuestaDao(RespuestaDaoRef ref) =>
 TelemetriaDao telemetriaDao(TelemetriaDaoRef ref) =>
     TelemetriaDao(ref.watch(baseDatosLocalProvider));
 
-@riverpod
+@Riverpod(keepAlive: true)
 SocketServicio socketServicio(SocketServicioRef ref) => SocketServicio(
       almacenSeguro: ref.watch(almacenamientoSeguroProvider),
     );
 
-@riverpod
+@Riverpod(keepAlive: true)
 ApiServicio apiServicio(ApiServicioRef ref) => ApiServicio(
       almacenSeguro: ref.watch(almacenamientoSeguroProvider),
       alExpirarSesion: () {
@@ -109,7 +109,7 @@ ApiServicio apiServicio(ApiServicioRef ref) => ApiServicio(
       },
     );
 
-@riverpod
+@Riverpod(keepAlive: true)
 AutenticacionServicio autenticacionServicio(AutenticacionServicioRef ref) {
   return AutenticacionServicio(
     apiServicio: ref.watch(apiServicioProvider),
@@ -117,23 +117,23 @@ AutenticacionServicio autenticacionServicio(AutenticacionServicioRef ref) {
   );
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 SesionServicio sesionServicio(SesionServicioRef ref) =>
     SesionServicio(ref.watch(apiServicioProvider));
 
-@riverpod
+@Riverpod(keepAlive: true)
 IntentoServicio intentoServicio(IntentoServicioRef ref) =>
     IntentoServicio(ref.watch(apiServicioProvider));
 
-@riverpod
+@Riverpod(keepAlive: true)
 ExamenServicio examenServicio(ExamenServicioRef ref) =>
     ExamenServicio(ref.watch(apiServicioProvider));
 
-@riverpod
+@Riverpod(keepAlive: true)
 RespuestaServicio respuestaServicio(RespuestaServicioRef ref) =>
     RespuestaServicio(ref.watch(apiServicioProvider));
 
-@riverpod
+@Riverpod(keepAlive: true)
 TelemetriaServicio telemetriaServicio(TelemetriaServicioRef ref) {
   return TelemetriaServicio(
     apiServicio: ref.watch(apiServicioProvider),
@@ -141,7 +141,7 @@ TelemetriaServicio telemetriaServicio(TelemetriaServicioRef ref) {
   );
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 SincronizacionServicio sincronizacionServicio(SincronizacionServicioRef ref) {
   return SincronizacionServicio(
     respuestaDao: ref.watch(respuestaDaoProvider),
@@ -153,7 +153,7 @@ SincronizacionServicio sincronizacionServicio(SincronizacionServicioRef ref) {
   );
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class AutenticacionEstado extends _$AutenticacionEstado {
   @override
   EstadoAutenticacion build() {

@@ -7,12 +7,11 @@ part of 'AutenticacionProvider.dart';
 // **************************************************************************
 
 String _$almacenamientoSeguroHash() =>
-    r'c0a6e891a44a78305980bc86cd4e9e75be06bcc4';
+    r'41aca340c799500c96419f36c11e4a55ea4e4cbe';
 
 /// See also [almacenamientoSeguro].
 @ProviderFor(almacenamientoSeguro)
-final almacenamientoSeguroProvider =
-    AutoDisposeProvider<FlutterSecureStorage>.internal(
+final almacenamientoSeguroProvider = Provider<FlutterSecureStorage>.internal(
   almacenamientoSeguro,
   name: r'almacenamientoSeguroProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -24,7 +23,7 @@ final almacenamientoSeguroProvider =
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef AlmacenamientoSeguroRef = AutoDisposeProviderRef<FlutterSecureStorage>;
+typedef AlmacenamientoSeguroRef = ProviderRef<FlutterSecureStorage>;
 String _$baseDatosLocalHash() => r'ed66ffe4ea5089faf770a28610c70dc24bad2978';
 
 /// See also [baseDatosLocal].
@@ -91,11 +90,11 @@ final telemetriaDaoProvider = AutoDisposeProvider<TelemetriaDao>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef TelemetriaDaoRef = AutoDisposeProviderRef<TelemetriaDao>;
-String _$socketServicioHash() => r'865312057d70fbfc084de6be6d68284015c3a346';
+String _$socketServicioHash() => r'85c39212e26b6c4acfd623231353736e9a1300a8';
 
 /// See also [socketServicio].
 @ProviderFor(socketServicio)
-final socketServicioProvider = AutoDisposeProvider<SocketServicio>.internal(
+final socketServicioProvider = Provider<SocketServicio>.internal(
   socketServicio,
   name: r'socketServicioProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -107,12 +106,12 @@ final socketServicioProvider = AutoDisposeProvider<SocketServicio>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef SocketServicioRef = AutoDisposeProviderRef<SocketServicio>;
-String _$apiServicioHash() => r'5453da62743c4236b510fd5cfb8fd6362d3c638d';
+typedef SocketServicioRef = ProviderRef<SocketServicio>;
+String _$apiServicioHash() => r'1da49d583991eb8ade7e5105153ea612352aec9c';
 
 /// See also [apiServicio].
 @ProviderFor(apiServicio)
-final apiServicioProvider = AutoDisposeProvider<ApiServicio>.internal(
+final apiServicioProvider = Provider<ApiServicio>.internal(
   apiServicio,
   name: r'apiServicioProvider',
   debugGetCreateSourceHash:
@@ -123,14 +122,13 @@ final apiServicioProvider = AutoDisposeProvider<ApiServicio>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef ApiServicioRef = AutoDisposeProviderRef<ApiServicio>;
+typedef ApiServicioRef = ProviderRef<ApiServicio>;
 String _$autenticacionServicioHash() =>
-    r'd5fac37f412bf36149b50e158e616c5402a59d31';
+    r'3e32e03050a56a2467e58f911249c4fdab1616c1';
 
 /// See also [autenticacionServicio].
 @ProviderFor(autenticacionServicio)
-final autenticacionServicioProvider =
-    AutoDisposeProvider<AutenticacionServicio>.internal(
+final autenticacionServicioProvider = Provider<AutenticacionServicio>.internal(
   autenticacionServicio,
   name: r'autenticacionServicioProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -142,13 +140,12 @@ final autenticacionServicioProvider =
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef AutenticacionServicioRef
-    = AutoDisposeProviderRef<AutenticacionServicio>;
-String _$sesionServicioHash() => r'7949a432e25ce8ddbdf5050dbcc1fa2c3a285a3c';
+typedef AutenticacionServicioRef = ProviderRef<AutenticacionServicio>;
+String _$sesionServicioHash() => r'0ecb6911a602aefc96dee45f45cdffa107c89751';
 
 /// See also [sesionServicio].
 @ProviderFor(sesionServicio)
-final sesionServicioProvider = AutoDisposeProvider<SesionServicio>.internal(
+final sesionServicioProvider = Provider<SesionServicio>.internal(
   sesionServicio,
   name: r'sesionServicioProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -160,12 +157,12 @@ final sesionServicioProvider = AutoDisposeProvider<SesionServicio>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef SesionServicioRef = AutoDisposeProviderRef<SesionServicio>;
-String _$intentoServicioHash() => r'59706557066f3596c87dbb5f407eaa55c36c3db1';
+typedef SesionServicioRef = ProviderRef<SesionServicio>;
+String _$intentoServicioHash() => r'37cd30a9c7a5c0781260b23e2bb23c9d9b6ac68c';
 
 /// See also [intentoServicio].
 @ProviderFor(intentoServicio)
-final intentoServicioProvider = AutoDisposeProvider<IntentoServicio>.internal(
+final intentoServicioProvider = Provider<IntentoServicio>.internal(
   intentoServicio,
   name: r'intentoServicioProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -177,12 +174,12 @@ final intentoServicioProvider = AutoDisposeProvider<IntentoServicio>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef IntentoServicioRef = AutoDisposeProviderRef<IntentoServicio>;
-String _$examenServicioHash() => r'baddc3886c7b1f6530bc31603b142c9cd04d914a';
+typedef IntentoServicioRef = ProviderRef<IntentoServicio>;
+String _$examenServicioHash() => r'64a2aee3d8806aba6ae399df99b758fc18511825';
 
 /// See also [examenServicio].
 @ProviderFor(examenServicio)
-final examenServicioProvider = AutoDisposeProvider<ExamenServicio>.internal(
+final examenServicioProvider = Provider<ExamenServicio>.internal(
   examenServicio,
   name: r'examenServicioProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -194,13 +191,12 @@ final examenServicioProvider = AutoDisposeProvider<ExamenServicio>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef ExamenServicioRef = AutoDisposeProviderRef<ExamenServicio>;
-String _$respuestaServicioHash() => r'c513dbc2d49e054e1ad8f00ad0d66d900bfa85d4';
+typedef ExamenServicioRef = ProviderRef<ExamenServicio>;
+String _$respuestaServicioHash() => r'8727a4a78f781bb36517e4054b1955787d56a039';
 
 /// See also [respuestaServicio].
 @ProviderFor(respuestaServicio)
-final respuestaServicioProvider =
-    AutoDisposeProvider<RespuestaServicio>.internal(
+final respuestaServicioProvider = Provider<RespuestaServicio>.internal(
   respuestaServicio,
   name: r'respuestaServicioProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -212,14 +208,13 @@ final respuestaServicioProvider =
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef RespuestaServicioRef = AutoDisposeProviderRef<RespuestaServicio>;
+typedef RespuestaServicioRef = ProviderRef<RespuestaServicio>;
 String _$telemetriaServicioHash() =>
-    r'b2aa22392689e499d3f5ce70693521cb1047a713';
+    r'280680ce2561bc5785a41006516dd1569f384a6a';
 
 /// See also [telemetriaServicio].
 @ProviderFor(telemetriaServicio)
-final telemetriaServicioProvider =
-    AutoDisposeProvider<TelemetriaServicio>.internal(
+final telemetriaServicioProvider = Provider<TelemetriaServicio>.internal(
   telemetriaServicio,
   name: r'telemetriaServicioProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -231,14 +226,14 @@ final telemetriaServicioProvider =
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef TelemetriaServicioRef = AutoDisposeProviderRef<TelemetriaServicio>;
+typedef TelemetriaServicioRef = ProviderRef<TelemetriaServicio>;
 String _$sincronizacionServicioHash() =>
-    r'dc8ab85b04cd84774f3f7e6eff50269fc1823e89';
+    r'd9fdce68a3c8e2e9f3f90346f45b13f0cbb9f1fb';
 
 /// See also [sincronizacionServicio].
 @ProviderFor(sincronizacionServicio)
 final sincronizacionServicioProvider =
-    AutoDisposeProvider<SincronizacionServicio>.internal(
+    Provider<SincronizacionServicio>.internal(
   sincronizacionServicio,
   name: r'sincronizacionServicioProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -250,15 +245,14 @@ final sincronizacionServicioProvider =
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef SincronizacionServicioRef
-    = AutoDisposeProviderRef<SincronizacionServicio>;
+typedef SincronizacionServicioRef = ProviderRef<SincronizacionServicio>;
 String _$autenticacionEstadoHash() =>
-    r'9dcb5a9d52d28063f838b6236ca21a05af84d634';
+    r'10e4c95ad5cd15ce0b978f802bf47518410dc15d';
 
 /// See also [AutenticacionEstado].
 @ProviderFor(AutenticacionEstado)
-final autenticacionEstadoProvider = AutoDisposeNotifierProvider<
-    AutenticacionEstado, EstadoAutenticacion>.internal(
+final autenticacionEstadoProvider =
+    NotifierProvider<AutenticacionEstado, EstadoAutenticacion>.internal(
   AutenticacionEstado.new,
   name: r'autenticacionEstadoProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -268,6 +262,6 @@ final autenticacionEstadoProvider = AutoDisposeNotifierProvider<
   allTransitiveDependencies: null,
 );
 
-typedef _$AutenticacionEstado = AutoDisposeNotifier<EstadoAutenticacion>;
+typedef _$AutenticacionEstado = Notifier<EstadoAutenticacion>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

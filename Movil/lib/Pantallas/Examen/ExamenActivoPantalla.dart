@@ -10,18 +10,33 @@ import 'package:go_router/go_router.dart';
 
 import '../../Constantes/Rutas.dart';
 import '../../Providers/ExamenProvider.dart';
+import '../../Providers/ModoExamenProvider.dart';
 import 'Widgets/IndicadorConexion.dart';
 import 'Widgets/MapaProgreso.dart';
 import 'Widgets/NavegadorPreguntas.dart';
 import 'Widgets/TarjetaPregunta.dart';
 import 'Widgets/TemporizadorExamen.dart';
 
-class ExamenActivoPantalla extends ConsumerWidget {
+class ExamenActivoPantalla extends ConsumerStatefulWidget {
   const ExamenActivoPantalla({super.key});
+
+  @override
+  ConsumerState<ExamenActivoPantalla> createState() =>
+      _ExamenActivoPantallaState();
+}
+
+class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(() async {
+      await ref.read(modoExamenServicioProvider).activarModoKiosco();
+    });
+  }
 
   /// Construye la experiencia de examen digital completo.
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final estado = ref.watch(examenActivoProvider);
     if (estado == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -39,7 +54,11 @@ class ExamenActivoPantalla extends ConsumerWidget {
     return PopScope(
       canPop: false,
       child: Scaffold(
+        backgroundColor: const Color(0xFFF3F5FA),
         appBar: AppBar(
+          automaticallyImplyLeading: false,
+          centerTitle: false,
+          titleSpacing: 16,
           title: TemporizadorExamen(
             duracionMinutos: estado.examen.duracionMinutos,
             alFinalizar: () async {
@@ -58,7 +77,7 @@ class ExamenActivoPantalla extends ConsumerWidget {
           ],
         ),
         body: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           child: Column(
             children: <Widget>[
               MapaProgreso(
@@ -75,6 +94,8 @@ class ExamenActivoPantalla extends ConsumerWidget {
                 child: TarjetaPregunta(
                   pregunta: pregunta,
                   respuesta: estado.respuestasLocales[pregunta.id],
+                  indiceActual: estado.indicePreguntaActual + 1,
+                  totalPreguntas: estado.preguntasAleatorizadas.length,
                   alResponder: (valor) async {
                     await ref
                         .read(examenActivoProvider.notifier)

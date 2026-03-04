@@ -28,13 +28,18 @@ class TemporizadorExamen extends StatefulWidget {
 class _TemporizadorExamenState extends State<TemporizadorExamen> {
   Timer? _timer;
   late int _segundosRestantes;
+  late bool _sinLimite;
   bool _alertoCinco = false;
   bool _alertoUno = false;
 
   @override
   void initState() {
     super.initState();
+    _sinLimite = widget.duracionMinutos <= 0;
     _segundosRestantes = widget.duracionMinutos * 60;
+    if (_sinLimite) {
+      return;
+    }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_segundosRestantes <= 0) {
         _timer?.cancel();
@@ -65,6 +70,9 @@ class _TemporizadorExamenState extends State<TemporizadorExamen> {
 
   Color _obtenerColor() {
     final total = widget.duracionMinutos * 60;
+    if (_sinLimite || total <= 0) {
+      return Colores.verdeExito;
+    }
     final porcentaje = _segundosRestantes / total;
     if (porcentaje <= 0.10) return Colores.rojoError;
     if (porcentaje <= 0.20) return Colores.amarilloAlerta;
@@ -73,6 +81,17 @@ class _TemporizadorExamenState extends State<TemporizadorExamen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_sinLimite) {
+      return Text(
+        'Sin limite',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: _obtenerColor(),
+          fontSize: 18,
+        ),
+      );
+    }
+
     final minutos = (_segundosRestantes ~/ 60).toString().padLeft(2, '0');
     final segundos = (_segundosRestantes % 60).toString().padLeft(2, '0');
 

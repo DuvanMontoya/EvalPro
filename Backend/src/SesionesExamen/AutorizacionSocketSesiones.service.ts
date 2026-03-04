@@ -8,7 +8,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { EstadoCuenta, EstadoInstitucion, RolUsuario } from '@prisma/client';
+import { EstadoCuenta, EstadoInstitucion, EstadoIntento, RolUsuario } from '@prisma/client';
 import { Socket } from 'socket.io';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 
@@ -133,12 +133,48 @@ export class AutorizacionSocketSesionesService {
     return intento.estudianteId === usuario.id ? intento.sesionId : null;
   }
 
+  /**
+   * Obtiene el intento activo de un estudiante dentro de una sesión para bootstrap de monitoreo.
+   * @param idSesion - UUID de la sesión.
+   * @param idEstudiante - UUID del estudiante autenticado en socket.
+   */
+  async obtenerIntentoActivoSesionEstudiante(
+    idSesion: string,
+    idEstudiante: string,
+  ): Promise<{ idIntento: string; nombreCompleto: string } | null> {
+    const intento = await this.prisma.intentoExamen.findFirst({
+      where: {
+        sesionId: idSesion,
+        estudianteId: idEstudiante,
+        estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE] },
+      },
+      include: {
+        estudiante: {
+          select: {
+            nombre: true,
+            apellidos: true,
+          },
+        },
+      },
+      orderBy: { fechaInicio: 'desc' },
+    });
+    if (!intento) {
+      return null;
+    }
+    return {
+      idIntento: intento.id,
+      nombreCompleto: `${intento.estudiante.nombre} ${intento.estudiante.apellidos}`.trim(),
+    };
+  }
+
   private extraerToken(cliente: Socket): string | null {
     const tokenAuth = typeof cliente.handshake.auth?.token === 'string' ? cliente.handshake.auth.token : null;
+    const tokenAuthAcceso =
+      typeof cliente.handshake.auth?.tokenAcceso === 'string' ? cliente.handshake.auth.tokenAcceso : null;
     const autorizacion = typeof cliente.handshake.headers.authorization === 'string'
       ? cliente.handshake.headers.authorization
       : '';
     const tokenEncabezado = autorizacion.startsWith('Bearer ') ? autorizacion.slice(7).trim() : null;
-    return tokenAuth ?? tokenEncabezado;
+    return tokenAuth ?? tokenAuthAcceso ?? tokenEncabezado;
   }
 }

@@ -17,6 +17,7 @@ class SocketServicio {
 
   final FlutterSecureStorage _almacenSeguro;
   io.Socket? _socket;
+  final List<Map<String, Object?>> _eventosPendientes = <Map<String, Object?>>[];
 
   SocketServicio({required FlutterSecureStorage almacenSeguro})
       : _almacenSeguro = almacenSeguro;
@@ -33,7 +34,10 @@ class SocketServicio {
   /// Arma la carga de autenticacion del handshake para el gateway.
   static Map<String, dynamic> construirAutenticacionHandshake(
       String tokenAcceso) {
-    return <String, dynamic>{'tokenAcceso': tokenAcceso};
+    return <String, dynamic>{
+      'token': tokenAcceso,
+      'tokenAcceso': tokenAcceso,
+    };
   }
 
   /// Conecta al servidor websocket y une al usuario a la sala de sesion.
@@ -69,6 +73,7 @@ class SocketServicio {
         'idSesion': idSesion,
         'rol': rol,
       });
+      _drenarEventosPendientes();
     });
     _socket!.connect();
     return true;
@@ -76,6 +81,7 @@ class SocketServicio {
 
   /// Desconecta la sesion websocket activa.
   void desconectar() {
+    _eventosPendientes.clear();
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
@@ -86,7 +92,7 @@ class SocketServicio {
     TipoEventoTelemetria tipoEvento, {
     String? idIntento,
   }) {
-    _socket?.emit(EventosSocket.alertaFraude, <String, dynamic>{
+    _emitirConCola(EventosSocket.alertaFraude, <String, dynamic>{
       'idIntento': idIntento,
       'tipoEvento': tipoEvento.name,
       'fecha': DateTime.now().toIso8601String(),
@@ -99,10 +105,38 @@ class SocketServicio {
     required int respondidas,
     required int total,
   }) {
-    _socket?.emit(EventosSocket.progresoActualizado, <String, dynamic>{
+    _emitirConCola(EventosSocket.progresoActualizado, <String, dynamic>{
       'idIntento': idIntento,
       'preguntasRespondidas': respondidas,
       'totalPreguntas': total,
     });
+  }
+
+  void _emitirConCola(String evento, Map<String, dynamic> payload) {
+    final socket = _socket;
+    if (socket != null && socket.connected) {
+      socket.emit(evento, payload);
+      return;
+    }
+    _eventosPendientes.add(<String, Object?>{
+      'evento': evento,
+      'payload': payload,
+    });
+  }
+
+  void _drenarEventosPendientes() {
+    final socket = _socket;
+    if (socket == null || !socket.connected || _eventosPendientes.isEmpty) {
+      return;
+    }
+    for (final eventoPendiente in _eventosPendientes) {
+      final nombreEvento = eventoPendiente['evento'] as String?;
+      final payload = eventoPendiente['payload'] as Map<String, dynamic>?;
+      if (nombreEvento == null || payload == null) {
+        continue;
+      }
+      socket.emit(nombreEvento, payload);
+    }
+    _eventosPendientes.clear();
   }
 }

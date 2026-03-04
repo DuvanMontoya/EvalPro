@@ -22,9 +22,10 @@ void main() {
     expect(resultado, 'http://localhost:3001/sesiones');
   });
 
-  test('construirAutenticacionHandshake incluye tokenAcceso', () {
+  test('construirAutenticacionHandshake incluye token y tokenAcceso', () {
     final resultado =
         SocketServicio.construirAutenticacionHandshake('token-prueba');
+    expect(resultado['token'], 'token-prueba');
     expect(resultado['tokenAcceso'], 'token-prueba');
   });
 }

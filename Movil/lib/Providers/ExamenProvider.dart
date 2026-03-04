@@ -22,7 +22,7 @@ import 'Modelos/ExamenActivoEstado.dart';
 import 'ModoExamenProvider.dart';
 part 'ExamenProvider.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
   @override
   ExamenActivoEstado? build() => null;
@@ -62,15 +62,6 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
         );
     final modo = ref.read(modoExamenServicioProvider);
     modo.iniciarMonitoreo(intento.id);
-    await modo.activarModoKiosco();
-    await ref.read(socketServicioProvider).conectar(
-          idSesion: sesion.id,
-          rol: RolUsuario.ESTUDIANTE.name,
-        );
-    await ref.read(telemetriaServicioProvider).registrarEvento(
-          idIntento: intento.id,
-          tipo: TipoEventoTelemetria.INICIO_EXAMEN,
-        );
     final ahora = DateTime.now();
     state = ExamenActivoEstado(
       examen: examenAleatorizado,
@@ -83,6 +74,20 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
       errorEnvio: null,
       idIntento: intento.id,
     );
+    await ref.read(socketServicioProvider).conectar(
+          idSesion: sesion.id,
+          rol: RolUsuario.ESTUDIANTE.name,
+        );
+    // Pulso inicial para que el monitor docente refleje presencia en tiempo real.
+    ref.read(socketServicioProvider).emitirProgreso(
+          idIntento: intento.id,
+          respondidas: 0,
+          total: preguntasMezcladas.length,
+        );
+    await ref.read(telemetriaServicioProvider).registrarEvento(
+          idIntento: intento.id,
+          tipo: TipoEventoTelemetria.INICIO_EXAMEN,
+        );
   }
 
   /// Guarda una respuesta local y sincroniza inmediato si hay internet.
