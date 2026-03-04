@@ -7,7 +7,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'Aplicacion.dart';
+import 'app.dart';
 import 'Configuracion/Entorno.dart';
 
 /// Inicia la aplicacion Flutter con el contenedor global de Riverpod.
@@ -18,5 +18,5 @@ Future<void> main() async {
   debugPrint(
     '[EvalPro][Entorno] API_URL=${Entorno.apiUrl} WEBSOCKET_URL=${Entorno.websocketUrl} VERSION=${Entorno.versionApp}',
   );
-  runApp(const ProviderScope(child: Aplicacion()));
+  runApp(const ProviderScope(child: EvalProApp()));
 }
