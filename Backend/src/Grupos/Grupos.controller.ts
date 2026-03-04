@@ -20,14 +20,14 @@ export class GruposController {
   constructor(private readonly gruposService: GruposService) {}
 
   @Get()
-  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE)
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Lista grupos visibles para el actor autenticado' })
   async listar(@UsuarioActual() actor: UsuarioAutenticado, @Query('idInstitucion') idInstitucion?: string) {
     return this.gruposService.listar(actor, idInstitucion);
   }
 
   @Get(':id')
-  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE)
+  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Obtiene detalle de un grupo académico' })
   async obtenerPorId(@Param('id', ParseUUIDPipe) idGrupo: string, @UsuarioActual() actor: UsuarioAutenticado) {
     return this.gruposService.obtenerPorId(idGrupo, actor);

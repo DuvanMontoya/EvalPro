@@ -27,7 +27,7 @@ export class SesionesExamenController {
    * Lista sesiones visibles para el usuario autenticado.
    */
   @Get()
-  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR)
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ADMINISTRADOR, RolUsuario.ESTUDIANTE)
   @ApiOperation({ summary: 'Lista sesiones por rol' })
   async listar(@UsuarioActual() usuario: UsuarioAutenticado) {
     return this.sesionesService.listar(usuario.rol, usuario.id, usuario.idInstitucion);

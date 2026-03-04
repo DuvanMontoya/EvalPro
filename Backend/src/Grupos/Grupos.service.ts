@@ -35,6 +35,42 @@ export class GruposService {
       };
     }
 
+    if (actor.rol === RolUsuario.ESTUDIANTE) {
+      where.estudiantes = {
+        some: {
+          idEstudiante: actor.id,
+          activo: true,
+        },
+      };
+    }
+
+    if (actor.rol === RolUsuario.ESTUDIANTE) {
+      return this.prisma.grupoAcademico.findMany({
+        where,
+        select: {
+          id: true,
+          idInstitucion: true,
+          idPeriodo: true,
+          nombre: true,
+          descripcion: true,
+          estado: true,
+          codigoAcceso: true,
+          fechaCreacion: true,
+          fechaActualizacion: true,
+          periodo: {
+            select: {
+              id: true,
+              nombre: true,
+              activo: true,
+              fechaInicio: true,
+              fechaFin: true,
+            },
+          },
+        },
+        orderBy: { fechaCreacion: 'desc' },
+      });
+    }
+
     return this.prisma.grupoAcademico.findMany({
       where,
       include: {
@@ -131,6 +167,40 @@ export class GruposService {
       if (!docenteAsignado) {
         throw new ForbiddenException('No tiene permisos sobre este grupo');
       }
+    }
+
+    if (actor.rol === RolUsuario.ESTUDIANTE) {
+      const estudianteInscrito = grupo.estudiantes.some((estudiante) => estudiante.idEstudiante === actor.id && estudiante.activo);
+      if (!estudianteInscrito) {
+        throw new ForbiddenException('No tiene permisos sobre este grupo');
+      }
+
+      return {
+        id: grupo.id,
+        idInstitucion: grupo.idInstitucion,
+        idPeriodo: grupo.idPeriodo,
+        nombre: grupo.nombre,
+        descripcion: grupo.descripcion,
+        estado: grupo.estado,
+        codigoAcceso: grupo.codigoAcceso,
+        fechaCreacion: grupo.fechaCreacion,
+        fechaActualizacion: grupo.fechaActualizacion,
+        periodo: grupo.periodo,
+        docentes: grupo.docentes
+          .filter((docente) => docente.activo)
+          .map((docente) => ({
+            id: docente.id,
+            idGrupo: docente.idGrupo,
+            idDocente: docente.idDocente,
+            asignadoEn: docente.asignadoEn,
+            activo: docente.activo,
+            docente: {
+              id: docente.docente.id,
+              nombre: docente.docente.nombre,
+              apellidos: docente.docente.apellidos,
+            },
+          })),
+      };
     }
 
     return grupo;

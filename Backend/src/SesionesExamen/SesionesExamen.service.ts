@@ -102,6 +102,60 @@ export class SesionesExamenService {
    * Lista sesiones según rol, propiedad y tenant.
    */
   async listar(rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    if (rol === RolUsuario.ESTUDIANTE) {
+      if (!idInstitucion) {
+        throw new ForbiddenException('Estudiante sin institución asociada');
+      }
+
+      const ahora = new Date();
+      return this.prisma.sesionExamen.findMany({
+        where: {
+          idInstitucion,
+          estado: EstadoSesion.ACTIVA,
+          asignacion: {
+            is: {
+              fechaInicio: { lte: ahora },
+              fechaFin: { gte: ahora },
+              OR: [
+                { idEstudiante: idUsuario },
+                {
+                  idGrupo: { not: null },
+                  grupo: {
+                    estudiantes: {
+                      some: {
+                        idEstudiante: idUsuario,
+                        activo: true,
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        include: {
+          examen: {
+            select: {
+              id: true,
+              titulo: true,
+              duracionMinutos: true,
+            },
+          },
+          asignacion: {
+            select: {
+              id: true,
+              fechaInicio: true,
+              fechaFin: true,
+              intentosMaximos: true,
+              idGrupo: true,
+              idEstudiante: true,
+            },
+          },
+        },
+        orderBy: { fechaCreacion: 'desc' },
+      });
+    }
+
     const where: Record<string, unknown> = {};
     if (rol !== RolUsuario.SUPERADMINISTRADOR) {
       where.idInstitucion = idInstitucion;

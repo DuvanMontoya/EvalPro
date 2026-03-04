@@ -8,6 +8,99 @@ import { CrearAsignacionDto } from './Dto/CrearAsignacion.dto';
 export class AsignacionesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async listar(actor: UsuarioAutenticado) {
+    if (actor.rol !== RolUsuario.SUPERADMINISTRADOR && !actor.idInstitucion) {
+      throw new ForbiddenException('Actor sin institución asociada');
+    }
+
+    const where = this.construirFiltroLectura(actor);
+    return this.prisma.asignacionExamen.findMany({
+      where,
+      include: {
+        examen: {
+          select: {
+            id: true,
+            titulo: true,
+            estado: true,
+            creadoPorId: true,
+          },
+        },
+        grupo: {
+          select: {
+            id: true,
+            nombre: true,
+            estado: true,
+            idPeriodo: true,
+          },
+        },
+        estudiante: {
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            correo: true,
+          },
+        },
+        actor: {
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            correo: true,
+          },
+        },
+      },
+      orderBy: { fechaCreacion: 'desc' },
+    });
+  }
+
+  async obtenerPorId(idAsignacion: string, actor: UsuarioAutenticado) {
+    const asignacion = await this.prisma.asignacionExamen.findUnique({
+      where: { id: idAsignacion },
+      include: {
+        examen: {
+          select: {
+            id: true,
+            titulo: true,
+            estado: true,
+            creadoPorId: true,
+          },
+        },
+        grupo: {
+          select: {
+            id: true,
+            nombre: true,
+            estado: true,
+            idPeriodo: true,
+          },
+        },
+        estudiante: {
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            correo: true,
+          },
+        },
+        actor: {
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            correo: true,
+          },
+        },
+      },
+    });
+
+    if (!asignacion) {
+      throw new NotFoundException('Asignación no encontrada');
+    }
+
+    await this.validarLecturaAsignacion(asignacion, actor);
+    return asignacion;
+  }
+
   async crear(dto: CrearAsignacionDto, actor: UsuarioAutenticado) {
     if (actor.rol !== RolUsuario.DOCENTE) {
       throw new ForbiddenException('Solo DOCENTE puede crear asignaciones');
@@ -110,5 +203,109 @@ export class AsignacionesService {
         creadoPor: actor.id,
       },
     });
+  }
+
+  private construirFiltroLectura(actor: UsuarioAutenticado): Record<string, unknown> {
+    if (actor.rol === RolUsuario.SUPERADMINISTRADOR) {
+      return {};
+    }
+
+    const whereBase: Record<string, unknown> = { idInstitucion: actor.idInstitucion };
+
+    if (actor.rol === RolUsuario.ADMINISTRADOR) {
+      return whereBase;
+    }
+
+    if (actor.rol === RolUsuario.DOCENTE) {
+      return {
+        ...whereBase,
+        creadoPor: actor.id,
+      };
+    }
+
+    if (actor.rol === RolUsuario.ESTUDIANTE) {
+      const ahora = new Date();
+      return {
+        ...whereBase,
+        fechaInicio: { lte: ahora },
+        fechaFin: { gte: ahora },
+        OR: [
+          { idEstudiante: actor.id },
+          {
+            idGrupo: { not: null },
+            grupo: {
+              estudiantes: {
+                some: {
+                  idEstudiante: actor.id,
+                  activo: true,
+                },
+              },
+            },
+          },
+        ],
+      };
+    }
+
+    return whereBase;
+  }
+
+  private async validarLecturaAsignacion(
+    asignacion: {
+      idInstitucion: string;
+      creadoPor: string;
+      idEstudiante: string | null;
+      idGrupo: string | null;
+      fechaInicio: Date;
+      fechaFin: Date;
+    },
+    actor: UsuarioAutenticado,
+  ): Promise<void> {
+    if (actor.rol === RolUsuario.SUPERADMINISTRADOR) {
+      return;
+    }
+
+    if (!actor.idInstitucion || asignacion.idInstitucion !== actor.idInstitucion) {
+      throw new ForbiddenException('No puede consultar asignaciones de otra institución');
+    }
+
+    if (actor.rol === RolUsuario.ADMINISTRADOR) {
+      return;
+    }
+
+    if (actor.rol === RolUsuario.DOCENTE) {
+      if (asignacion.creadoPor !== actor.id) {
+        throw new ForbiddenException('No tiene permisos sobre esta asignación');
+      }
+      return;
+    }
+
+    if (actor.rol === RolUsuario.ESTUDIANTE) {
+      const ahora = new Date();
+      if (asignacion.fechaInicio > ahora || asignacion.fechaFin < ahora) {
+        throw new ForbiddenException('La asignación no está vigente para el estudiante');
+      }
+
+      if (asignacion.idEstudiante === actor.id) {
+        return;
+      }
+
+      if (asignacion.idGrupo) {
+        const membresia = await this.prisma.grupoEstudiante.findFirst({
+          where: {
+            idGrupo: asignacion.idGrupo,
+            idEstudiante: actor.id,
+            activo: true,
+          },
+          select: { id: true },
+        });
+        if (membresia) {
+          return;
+        }
+      }
+
+      throw new ForbiddenException('No tiene permisos sobre esta asignación');
+    }
+
+    throw new ForbiddenException('Rol no autorizado para consultar asignaciones');
   }
 }
