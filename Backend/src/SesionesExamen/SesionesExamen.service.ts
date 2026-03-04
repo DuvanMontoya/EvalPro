@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { EstadoExamen, EstadoGrupo, EstadoIntento, EstadoSesion, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
+import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { generarCodigoSesion } from '../Comun/Utilidades/GeneradorCodigo.util';
 import { RespuestasService } from '../Respuestas/Respuestas.service';
 import { CrearSesionDto } from './Dto/CrearSesion.dto';
@@ -219,7 +220,10 @@ export class SesionesExamenService {
     if (sesionConContexto.asignacion) {
       const ahora = new Date();
       if (ahora < sesionConContexto.asignacion.fechaInicio || ahora > sesionConContexto.asignacion.fechaFin) {
-        throw new ForbiddenException('La sesión no está dentro de la ventana de asignación');
+        throw new ForbiddenException({
+          message: 'La sesión no está dentro de la ventana de asignación',
+          codigoError: CODIGOS_ERROR.SESION_NO_ACTIVA,
+        });
       }
 
       if (sesionConContexto.asignacion.grupo && sesionConContexto.asignacion.grupo.estado !== EstadoGrupo.ACTIVO) {
@@ -261,7 +265,10 @@ export class SesionesExamenService {
   async finalizar(idSesion: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
     const sesion = await this.obtenerSesionGestionable(idSesion, rol, idUsuario, idInstitucion);
     if (sesion.estado !== EstadoSesion.ACTIVA) {
-      throw new BadRequestException('La sesión no está activa');
+      throw new BadRequestException({
+        message: 'La sesión no está activa',
+        codigoError: CODIGOS_ERROR.SESION_NO_ACTIVA,
+      });
     }
 
     const fechaFin = new Date();
@@ -351,7 +358,10 @@ export class SesionesExamenService {
     if (sesion.asignacion) {
       const ahora = new Date();
       if (ahora < sesion.asignacion.fechaInicio || ahora > sesion.asignacion.fechaFin) {
-        throw new ForbiddenException('La sesión no está dentro de la ventana de asignación');
+        throw new ForbiddenException({
+          message: 'La sesión no está dentro de la ventana de asignación',
+          codigoError: CODIGOS_ERROR.SESION_NO_ACTIVA,
+        });
       }
 
       if (sesion.asignacion.idEstudiante && sesion.asignacion.idEstudiante !== idEstudiante) {
@@ -377,12 +387,16 @@ export class SesionesExamenService {
       where: {
         sesionId: sesion.id,
         estudianteId: idEstudiante,
+        estado: { in: [EstadoIntento.ENVIADO, EstadoIntento.ANULADO] },
       },
     });
 
     if (sesion.asignacion?.intentosMaximos && sesion.asignacion.intentosMaximos > 0) {
       if (intentosPrevios >= sesion.asignacion.intentosMaximos) {
-        throw new ForbiddenException('Se alcanzó el máximo de intentos permitidos para esta sesión');
+        throw new ForbiddenException({
+          message: 'Se alcanzó el máximo de intentos permitidos para esta sesión',
+          codigoError: CODIGOS_ERROR.INTENTOS_AGOTADOS,
+        });
       }
     }
 

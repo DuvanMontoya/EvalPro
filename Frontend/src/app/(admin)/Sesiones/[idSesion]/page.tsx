@@ -18,6 +18,7 @@ import { PanelCodigoAcceso } from '@/Componentes/Sesiones/PanelCodigoAcceso';
 import { Boton } from '@/Componentes/Ui/Boton';
 import { Tarjeta, TarjetaContenido, TarjetaEncabezado, TarjetaTitulo } from '@/Componentes/Ui/Tarjeta';
 import { useAutenticacion } from '@/Hooks/useAutenticacion';
+import { useReporteSesion } from '@/Hooks/useReportes';
 import { useDetalleSesion, useSesiones } from '@/Hooks/useSesiones';
 import { RUTAS } from '@/Constantes/Rutas.constantes';
 import { obtenerMensajeError } from '@/Lib/ErroresApi';
@@ -32,6 +33,7 @@ export default function PaginaDetalleSesion() {
   const { usuario } = useAutenticacion();
   const { mutacionActivarSesion, mutacionFinalizarSesion, mutacionCancelarSesion } = useSesiones();
   const consultaSesion = useDetalleSesion(idSesion);
+  const consultaReporteSesion = useReporteSesion(idSesion);
 
   if (consultaSesion.isLoading) {
     return <Cargando mensaje="Cargando sesión..." />;
@@ -137,7 +139,11 @@ export default function PaginaDetalleSesion() {
         ) : null}
       </Tarjeta>
       {monitorDisponible ? (
-        <MonitorTiempoReal idSesion={idSesion} totalPreguntas={sesion.examen?.totalPreguntas ?? 0} />
+        <MonitorTiempoReal
+          idSesion={idSesion}
+          totalPreguntas={sesion.examen?.totalPreguntas ?? 0}
+          intentosRegistrados={consultaReporteSesion.data?.totalEstudiantes ?? 0}
+        />
       ) : (
         <EstadoVacio
           titulo="Monitor no disponible"

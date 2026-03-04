@@ -16,6 +16,8 @@ class MapeadorErroresNegocio {
   static const _codigoValidacionFallida = 'VALIDACION_FALLIDA';
   static const _codigoSesionNoActiva = 'SESION_NO_ACTIVA';
   static const _codigoIntentoDuplicado = 'INTENTO_DUPLICADO';
+  static const _codigoIntentosAgotados = 'INTENTOS_AGOTADOS';
+  static const _codigoCodigoSesionInvalido = 'CODIGO_SESION_INVALIDO';
 
   /// Retorna un mensaje funcional en espanol para mostrar al usuario final.
   static String mapear(
@@ -33,13 +35,18 @@ class MapeadorErroresNegocio {
       final datos = error.response?.data;
       if (datos is Map<String, dynamic>) {
         final codigo = datos['codigoError'] as String?;
+        final mensajeApi = datos['mensaje'] as String?;
         if (codigo != null) {
+          if ((codigo == _codigoSinPermisos || codigo == _codigoValidacionFallida) &&
+              mensajeApi != null &&
+              mensajeApi.trim().isNotEmpty) {
+            return mensajeApi.trim();
+          }
           return _mapearCodigo(codigo, mensajePorDefecto);
         }
 
-        final mensajeApi = datos['mensaje'] as String?;
         if (mensajeApi != null && mensajeApi.trim().isNotEmpty) {
-          return mensajeApi;
+          return mensajeApi.trim();
         }
       }
     }
@@ -69,6 +76,10 @@ class MapeadorErroresNegocio {
         return Textos.errorSesionNoActiva;
       case _codigoIntentoDuplicado:
         return Textos.errorIntentoDuplicado;
+      case _codigoIntentosAgotados:
+        return Textos.errorIntentosAgotados;
+      case _codigoCodigoSesionInvalido:
+        return Textos.errorCodigoSesionInvalido;
       default:
         return mensajePorDefecto;
     }

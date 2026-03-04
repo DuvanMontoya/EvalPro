@@ -34,11 +34,12 @@ export class ExcepcionGlobalFiltro implements ExceptionFilter {
 
     const codigoError = typeof carga === 'object' && carga && 'codigoError' in carga
       ? String(carga.codigoError)
-      : this.obtenerCodigoPorEstado(estado);
+      : this.obtenerCodigoPorEstado(estado, mensaje);
+    const datos = typeof carga === 'object' && carga && 'datos' in carga ? carga.datos : null;
 
     respuesta.status(estado).json({
       exito: false,
-      datos: null,
+      datos,
       mensaje,
       codigoError,
       marcaTiempo: new Date().toISOString(),
@@ -50,8 +51,12 @@ export class ExcepcionGlobalFiltro implements ExceptionFilter {
    * @param estado - Estado HTTP de la respuesta.
    * @returns Código de error estándar en mayúsculas.
    */
-  private obtenerCodigoPorEstado(estado: number): string {
+  private obtenerCodigoPorEstado(estado: number, mensaje: string): string {
     if (estado === HttpStatus.UNAUTHORIZED) {
+      const mensajeNormalizado = mensaje.toLowerCase();
+      if (mensajeNormalizado.includes('expired') || mensajeNormalizado.includes('expir')) {
+        return CODIGOS_ERROR.TOKEN_EXPIRADO;
+      }
       return CODIGOS_ERROR.TOKEN_INVALIDO;
     }
 

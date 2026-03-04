@@ -26,6 +26,7 @@ import { puedeFinalizarSesion } from '@/Lib/Permisos';
 interface PropiedadesMonitorTiempoReal {
   idSesion: string;
   totalPreguntas: number;
+  intentosRegistrados?: number;
 }
 
 const MAPA_EVENTOS: Record<string, string> = {
@@ -37,7 +38,11 @@ const MAPA_EVENTOS: Record<string, string> = {
 /**
  * Renderiza tablero de monitoreo WebSocket para una sesión activa.
  */
-export function MonitorTiempoReal({ idSesion, totalPreguntas }: PropiedadesMonitorTiempoReal) {
+export function MonitorTiempoReal({
+  idSesion,
+  totalPreguntas,
+  intentosRegistrados = 0,
+}: PropiedadesMonitorTiempoReal) {
   const router = useRouter();
   const [modalFinalizarAbierto, setModalFinalizarAbierto] = useState(false);
   const { mutacionFinalizarSesion } = useSesiones();
@@ -75,6 +80,7 @@ export function MonitorTiempoReal({ idSesion, totalPreguntas }: PropiedadesMonit
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Monitor en tiempo real</h2>
+        <p className="texto-muted text-sm">Intentos registrados: {intentosRegistrados}</p>
         {puedeFinalizar ? (
           <Boton variante="peligro" onClick={() => setModalFinalizarAbierto(true)}>
             Finalizar Sesión para Todos
@@ -91,7 +97,11 @@ export function MonitorTiempoReal({ idSesion, totalPreguntas }: PropiedadesMonit
       {estudiantesNormalizados.length === 0 ? (
         <EstadoVacio
           titulo="Sin estudiantes conectados"
-          descripcion="Cuando los estudiantes se unan a la sesión aparecerán aquí."
+          descripcion={
+            intentosRegistrados > 0
+              ? `No hay conexiones activas en este momento. Hay ${intentosRegistrados} intento(s) registrado(s) en la sesión.`
+              : 'Cuando los estudiantes se unan a la sesión aparecerán aquí.'
+          }
         />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">

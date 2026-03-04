@@ -5,10 +5,7 @@
  * @autor     EvalPro
  * @fecha     2026-03-03
  */
-import { PrismaClient } from '@prisma/client';
-
 const API_BASE = process.env.API_BASE_VERIFICACION ?? 'http://localhost:3001/api/v1';
-const prisma = new PrismaClient();
 
 interface RespuestaApi<T> {
   exito: boolean;
@@ -551,13 +548,19 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
   assertOrThrow(!siguePendiente, 'La respuesta calificada manualmente sigue figurando como pendiente');
 
   console.log('[15/16] Flujo de reclamo: crear y resolver...');
-  const resultado = await prisma.resultadoIntento.findFirst({
-    where: { intentoId: idIntento },
-    select: { id: true, puntajeTotal: true },
-  });
-  assertOrThrow(resultado, 'No se encontró resultado del intento');
+  const reportePrevioReclamo = await solicitud<{
+    intentos: Array<{ idIntento: string; idResultado: string | null }>;
+  }>(
+    `/reportes/estudiante/${idEstudiante}`,
+    {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${tokenAdmin}` },
+    },
+  );
+  const intentoParaReclamo = reportePrevioReclamo.datos?.intentos.find((item) => item.idIntento === idIntento);
+  assertOrThrow(Boolean(intentoParaReclamo?.idResultado), 'No se encontró resultado del intento en reporte de estudiante');
 
-  const reclamo = await solicitud<{ id: string; estado: string }>(`/resultados/${resultado.id}/reclamos`, {
+  const reclamo = await solicitud<{ id: string; estado: string }>(`/resultados/${intentoParaReclamo?.idResultado}/reclamos`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${tokenEstudiante}` },
     body: JSON.stringify({
@@ -619,7 +622,4 @@ ejecutarVerificacionIntegral()
     console.error('\nFALLO EN VERIFICACIÓN INTEGRAL');
     console.error(error);
     process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });

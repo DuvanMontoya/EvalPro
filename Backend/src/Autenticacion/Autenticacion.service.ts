@@ -352,14 +352,14 @@ export class AutenticacionService {
 
     const tokenAcceso = await this.jwtService.signAsync(payload, {
       secret: this.servicioConfiguracion.get<string>('JWT_SECRETO_ACCESO', ''),
-      expiresIn: this.servicioConfiguracion.get<string>('JWT_EXPIRACION_ACCESO', '8h'),
+      expiresIn: this.servicioConfiguracion.get<string>('JWT_EXPIRACION_ACCESO', '15m'),
       jwtid: randomUUID(),
       ...configuracionFirmado,
     });
 
     const tokenRefresh = await this.jwtService.signAsync(payload, {
       secret: this.servicioConfiguracion.get<string>('JWT_SECRETO_REFRESH', ''),
-      expiresIn: this.servicioConfiguracion.get<string>('JWT_EXPIRACION_REFRESH', '7d'),
+      expiresIn: this.servicioConfiguracion.get<string>('JWT_EXPIRACION_REFRESH', '180d'),
       jwtid: randomUUID(),
       ...configuracionFirmado,
     });

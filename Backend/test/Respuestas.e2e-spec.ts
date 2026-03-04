@@ -97,6 +97,159 @@ describe('Respuestas (e2e)', () => {
       .send({ idSesion, codigoAcceso });
     expect(segundoIntento.status).toBe(409);
     expect(segundoIntento.body?.codigoError).toBe('INTENTO_DUPLICADO');
+    expect(segundoIntento.body?.datos?.intentoExistente?.id).toBe(primerIntento.body?.datos?.id);
+  });
+
+  it('mantiene búsqueda disponible con intento en progreso y agota intentos solo tras envío', async () => {
+    const admin = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
+    const docente = await crearUsuarioPrueba(RolUsuario.DOCENTE, true);
+    const estudiante = await crearUsuarioPrueba(RolUsuario.ESTUDIANTE, true);
+
+    const sesionAdmin = await iniciarSesionE2e(aplicacion, admin.correo, admin.contrasena);
+    const sesionDocente = await iniciarSesionE2e(aplicacion, docente.correo, docente.contrasena);
+    const sesionEstudiante = await iniciarSesionE2e(aplicacion, estudiante.correo, estudiante.contrasena);
+
+    const periodo = await request(aplicacion.getHttpServer())
+      .post('/api/v1/periodos')
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({
+        nombre: `Periodo busqueda ${Date.now()}`,
+        fechaInicio: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        fechaFin: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
+        activo: true,
+      });
+    const datosPeriodo = periodo.body?.datos ?? periodo.body;
+    expect(periodo.status).toBe(201);
+
+    const grupo = await request(aplicacion.getHttpServer())
+      .post('/api/v1/grupos')
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({
+        nombre: `Grupo busqueda ${Date.now()}`,
+        descripcion: 'Grupo para validar busqueda con intento en progreso',
+        idPeriodo: datosPeriodo?.id,
+      });
+    const datosGrupo = grupo.body?.datos ?? grupo.body;
+    expect(grupo.status).toBe(201);
+
+    await request(aplicacion.getHttpServer())
+      .post(`/api/v1/grupos/${datosGrupo?.id}/docentes`)
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({ idDocente: docente.id })
+      .expect(201);
+
+    await request(aplicacion.getHttpServer())
+      .post(`/api/v1/grupos/${datosGrupo?.id}/estudiantes`)
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({ idEstudiante: estudiante.id })
+      .expect(201);
+
+    await request(aplicacion.getHttpServer())
+      .patch(`/api/v1/grupos/${datosGrupo?.id}/estado`)
+      .set('Authorization', `Bearer ${sesionAdmin.tokenAcceso}`)
+      .send({ estado: 'ACTIVO' })
+      .expect(200);
+
+    const examen = await request(aplicacion.getHttpServer())
+      .post('/api/v1/examenes')
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({
+        titulo: `Examen busqueda ${Date.now()}`,
+        descripcion: 'Control de intentos en busqueda',
+        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        duracionMinutos: 20,
+        permitirNavegacion: true,
+        mostrarPuntaje: true,
+      });
+    const datosExamen = examen.body?.datos ?? examen.body;
+    expect(examen.status).toBe(201);
+
+    await request(aplicacion.getHttpServer())
+      .post(`/api/v1/examenes/${datosExamen?.id}/preguntas`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({
+        enunciado: 'Pregunta de control',
+        tipo: TipoPregunta.OPCION_MULTIPLE,
+        puntaje: 1,
+        opciones: [
+          { letra: 'A', contenido: 'Correcta', esCorrecta: true, orden: 1 },
+          { letra: 'B', contenido: 'Incorrecta', esCorrecta: false, orden: 2 },
+        ],
+      })
+      .expect(201);
+
+    await request(aplicacion.getHttpServer())
+      .post(`/api/v1/examenes/${datosExamen?.id}/publicar`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .expect(201);
+
+    const asignacion = await prisma.asignacionExamen.create({
+      data: {
+        idInstitucion: docente.idInstitucion as string,
+        idExamen: datosExamen?.id,
+        idGrupo: datosGrupo?.id,
+        idEstudiante: null,
+        fechaInicio: new Date(Date.now() - 60_000),
+        fechaFin: new Date(Date.now() + 60 * 60 * 1000),
+        intentosMaximos: 1,
+        mostrarPuntajeInmediato: true,
+        mostrarRespuestasCorrectas: false,
+        publicarResultadosEn: null,
+        creadoPor: docente.id,
+      },
+    });
+
+    const sesion = await request(aplicacion.getHttpServer())
+      .post('/api/v1/sesiones')
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({ idAsignacion: asignacion.id });
+    const datosSesion = sesion.body?.datos ?? sesion.body;
+    expect(sesion.status).toBe(201);
+
+    const activacion = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/sesiones/${datosSesion?.id}/activar`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
+    const datosActivacion = activacion.body?.datos ?? activacion.body;
+    expect(activacion.status).toBe(201);
+    const codigoAcceso = datosActivacion?.codigoAcceso as string;
+
+    const busquedaInicial = await request(aplicacion.getHttpServer())
+      .get(`/api/v1/sesiones/buscar/${codigoAcceso}`)
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`);
+    expect(busquedaInicial.status).toBe(200);
+    expect(busquedaInicial.body?.datos?.intentosPrevios).toBe(0);
+
+    const primerIntento = await request(aplicacion.getHttpServer())
+      .post('/api/v1/intentos')
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
+      .send({ idSesion: datosSesion?.id, codigoAcceso });
+    const datosPrimerIntento = primerIntento.body?.datos ?? primerIntento.body;
+    expect(primerIntento.status).toBe(201);
+
+    const busquedaConIntentoEnProgreso = await request(aplicacion.getHttpServer())
+      .get(`/api/v1/sesiones/buscar/${codigoAcceso}`)
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`);
+    expect(busquedaConIntentoEnProgreso.status).toBe(200);
+    expect(busquedaConIntentoEnProgreso.body?.datos?.intentosPrevios).toBe(0);
+
+    const intentoDuplicado = await request(aplicacion.getHttpServer())
+      .post('/api/v1/intentos')
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
+      .send({ idSesion: datosSesion?.id, codigoAcceso });
+    expect(intentoDuplicado.status).toBe(409);
+    expect(intentoDuplicado.body?.codigoError).toBe('INTENTO_DUPLICADO');
+    expect(intentoDuplicado.body?.datos?.intentoExistente?.id).toBe(datosPrimerIntento?.id);
+
+    const finalizacion = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/intentos/${datosPrimerIntento?.id}/finalizar`)
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`);
+    expect(finalizacion.status).toBe(201);
+
+    const busquedaTrasFinalizar = await request(aplicacion.getHttpServer())
+      .get(`/api/v1/sesiones/buscar/${codigoAcceso}`)
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`);
+    expect(busquedaTrasFinalizar.status).toBe(403);
+    expect(busquedaTrasFinalizar.body?.codigoError).toBe('INTENTOS_AGOTADOS');
   });
 
   it('rechaza activar sesión antes de la ventana de asignación', async () => {

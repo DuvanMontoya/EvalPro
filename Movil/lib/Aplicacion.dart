@@ -34,18 +34,50 @@ import 'Providers/AutenticacionProvider.dart';
 import 'Providers/ExamenProvider.dart';
 
 /// Widget raiz que configura tema y enrutamiento.
-class Aplicacion extends ConsumerWidget {
+class Aplicacion extends ConsumerStatefulWidget {
   const Aplicacion({super.key});
 
-  /// Construye la aplicacion usando el estado de autenticacion y examen activo.
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final estadoAutenticacion = ref.watch(autenticacionEstadoProvider);
-    final examenActivo = ref.watch(examenActivoProvider);
+  ConsumerState<Aplicacion> createState() => _AplicacionState();
+}
 
-    final enrutador = GoRouter(
+class _AplicacionState extends ConsumerState<Aplicacion> {
+  late final ValueNotifier<int> _refrescadorEnrutador;
+  late final GoRouter _enrutador;
+  late final ProviderSubscription<dynamic> _suscripcionAutenticacion;
+  late final ProviderSubscription<dynamic> _suscripcionExamenActivo;
+
+  @override
+  void initState() {
+    super.initState();
+    _refrescadorEnrutador = ValueNotifier<int>(0);
+    _enrutador = _crearEnrutador();
+    _suscripcionAutenticacion = ref.listenManual(
+      autenticacionEstadoProvider,
+      (_, __) => _refrescadorEnrutador.value++,
+    );
+    _suscripcionExamenActivo = ref.listenManual(
+      examenActivoProvider,
+      (_, __) => _refrescadorEnrutador.value++,
+    );
+  }
+
+  @override
+  void dispose() {
+    _suscripcionAutenticacion.close();
+    _suscripcionExamenActivo.close();
+    _enrutador.dispose();
+    _refrescadorEnrutador.dispose();
+    super.dispose();
+  }
+
+  GoRouter _crearEnrutador() {
+    return GoRouter(
       initialLocation: Rutas.iniciarSesion,
+      refreshListenable: _refrescadorEnrutador,
       redirect: (contexto, estado) {
+        final estadoAutenticacion = ref.read(autenticacionEstadoProvider);
+        final examenActivo = ref.read(examenActivoProvider);
         final rol = estadoAutenticacion.usuario?.rol;
         final esEstudiante = rol == RolUsuario.ESTUDIANTE;
         if (!estadoAutenticacion.inicializado) {
@@ -171,12 +203,16 @@ class Aplicacion extends ConsumerWidget {
         ),
       ],
     );
+  }
 
+  /// Construye la aplicacion usando estado autenticado y enrutador estable.
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'EvalPro Movil',
       debugShowCheckedModeBanner: false,
       theme: Tema.obtenerTema(),
-      routerConfig: enrutador,
+      routerConfig: _enrutador,
     );
   }
 }

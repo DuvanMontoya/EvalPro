@@ -4,6 +4,8 @@
 /// @autor     EvalPro
 /// @fecha     2026-03-02
 
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -68,14 +70,20 @@ class ModoExamenServicio with WidgetsBindingObserver {
 
     if (estado == AppLifecycleState.paused ||
         estado == AppLifecycleState.inactive) {
-      _telemetriaServicio.registrarEventoSync(
-        idIntento: idIntento,
-        tipo: TipoEventoTelemetria.APLICACION_EN_SEGUNDO_PLANO,
-      );
-      _socketServicio.emitirAlertaFraude(
-        TipoEventoTelemetria.APLICACION_EN_SEGUNDO_PLANO,
-        idIntento: idIntento,
-      );
+      try {
+        unawaited(
+          _telemetriaServicio.registrarEventoSync(
+            idIntento: idIntento,
+            tipo: TipoEventoTelemetria.APLICACION_EN_SEGUNDO_PLANO,
+          ),
+        );
+        _socketServicio.emitirAlertaFraude(
+          TipoEventoTelemetria.APLICACION_EN_SEGUNDO_PLANO,
+          idIntento: idIntento,
+        );
+      } catch (_) {
+        // Nunca romper la UI por fallas de telemetria/fraude en segundo plano.
+      }
     }
   }
 }

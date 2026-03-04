@@ -48,11 +48,17 @@ export class IntentosService {
     }
 
     if (sesion.estado !== EstadoSesion.ACTIVA) {
-      throw new BadRequestException('La sesión no está activa');
+      throw new BadRequestException({
+        message: 'La sesión no está activa',
+        codigoError: CODIGOS_ERROR.SESION_NO_ACTIVA,
+      });
     }
 
     if (!sesion.codigoAcceso || sesion.codigoAcceso.trim().toUpperCase() !== dto.codigoAcceso.trim().toUpperCase()) {
-      throw new ForbiddenException('Código de acceso inválido para la sesión');
+      throw new ForbiddenException({
+        message: 'Código de acceso inválido para la sesión',
+        codigoError: CODIGOS_ERROR.CODIGO_SESION_INVALIDO,
+      });
     }
 
     await this.validarElegibilidadAsignacion(sesion.asignacion, idEstudiante);
@@ -63,13 +69,21 @@ export class IntentosService {
         sesionId: dto.idSesion,
         estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE] },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        estado: true,
+        semillaPersonal: true,
+        sesionId: true,
+      },
     });
 
     if (intentoExistente) {
       throw new ConflictException({
         message: 'El estudiante ya tiene un intento en esta sesión',
         codigoError: CODIGOS_ERROR.INTENTO_DUPLICADO,
+        datos: {
+          intentoExistente,
+        },
       });
     }
 
@@ -82,7 +96,10 @@ export class IntentosService {
         },
       });
       if (intentosPrevios >= sesion.asignacion.intentosMaximos) {
-        throw new ForbiddenException('Se alcanzó el número máximo de intentos permitidos');
+        throw new ForbiddenException({
+          message: 'Se alcanzó el número máximo de intentos permitidos',
+          codigoError: CODIGOS_ERROR.INTENTOS_AGOTADOS,
+        });
       }
     }
 
@@ -240,7 +257,10 @@ export class IntentosService {
 
     const ahora = new Date();
     if (ahora < asignacion.fechaInicio || ahora > asignacion.fechaFin) {
-      throw new ForbiddenException('La sesión está fuera de la ventana de la asignación');
+      throw new ForbiddenException({
+        message: 'La sesión está fuera de la ventana de la asignación',
+        codigoError: CODIGOS_ERROR.SESION_NO_ACTIVA,
+      });
     }
 
     if (asignacion.idEstudiante && asignacion.idEstudiante !== idEstudiante) {

@@ -27,6 +27,42 @@ void main() {
     expect(mensaje, Textos.errorSesionNoActiva);
   });
 
+  test('mapea codigo INTENTOS_AGOTADOS al mensaje esperado', () {
+    final error = DioException(
+      requestOptions: RequestOptions(path: '/sesiones/buscar'),
+      response: Response<dynamic>(
+        requestOptions: RequestOptions(path: '/sesiones/buscar'),
+        statusCode: 403,
+        data: <String, dynamic>{
+          'codigoError': 'INTENTOS_AGOTADOS',
+        },
+      ),
+    );
+
+    final mensaje = MapeadorErroresNegocio.mapear(error);
+    expect(mensaje, Textos.errorIntentosAgotados);
+  });
+
+  test('usa mensaje API detallado cuando codigo es SIN_PERMISOS', () {
+    final error = DioException(
+      requestOptions: RequestOptions(path: '/sesiones/buscar'),
+      response: Response<dynamic>(
+        requestOptions: RequestOptions(path: '/sesiones/buscar'),
+        statusCode: 403,
+        data: <String, dynamic>{
+          'codigoError': 'SIN_PERMISOS',
+          'mensaje': 'El estudiante no pertenece activamente al grupo de la asignacion',
+        },
+      ),
+    );
+
+    final mensaje = MapeadorErroresNegocio.mapear(error);
+    expect(
+      mensaje,
+      'El estudiante no pertenece activamente al grupo de la asignacion',
+    );
+  });
+
   test('usa mensaje de StateError cuando existe', () {
     final mensaje = MapeadorErroresNegocio.mapear(
       StateError(Textos.errorSoloEstudiantes),

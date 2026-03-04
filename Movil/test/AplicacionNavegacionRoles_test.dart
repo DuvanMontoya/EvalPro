@@ -4,13 +4,24 @@
 /// @autor     EvalPro
 /// @fecha     2026-03-03
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:movil/Aplicacion.dart';
+import 'package:movil/Constantes/Rutas.dart';
 import 'package:movil/Constantes/Textos.dart';
+import 'package:movil/Modelos/Enums/ModalidadExamen.dart';
 import 'package:movil/Modelos/Enums/RolUsuario.dart';
+import 'package:movil/Modelos/Enums/TipoPregunta.dart';
+import 'package:movil/Modelos/Examen.dart';
+import 'package:movil/Modelos/OpcionRespuesta.dart';
+import 'package:movil/Modelos/Pregunta.dart';
+import 'package:movil/Modelos/RespuestaLocal.dart';
 import 'package:movil/Modelos/Usuario.dart';
 import 'package:movil/Providers/AutenticacionProvider.dart';
+import 'package:movil/Providers/ExamenProvider.dart';
+import 'package:movil/Providers/Modelos/ExamenActivoEstado.dart';
 
 import 'Auxiliares/ApiServicioSimulado.dart';
 
@@ -71,6 +82,84 @@ void main() {
     await tester.tap(find.text(Textos.misResultados));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text(Textos.misResultados), findsWidgets);
+  });
+
+  testWidgets(
+      'estudiante no rebota a unirse cuando existe examen activo al navegar',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          apiServicioProvider.overrideWith(_construirApiSimulada),
+          autenticacionEstadoProvider.overrideWith(
+            () => _AutenticacionEstadoFalso(
+              EstadoAutenticacion(
+                inicializado: true,
+                estaAutenticado: true,
+                usuario: _crearUsuario(RolUsuario.ESTUDIANTE),
+                error: null,
+                tokenTemporalPrimerLogin: null,
+              ),
+            ),
+          ),
+        ],
+        child: const Aplicacion(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final contexto = tester.element(find.text('Unirse a una sesion'));
+    final container = ProviderScope.containerOf(contexto, listen: false);
+    container.read(examenActivoProvider.notifier).state =
+        _crearEstadoExamenActivoPrueba();
+    await tester.pump();
+
+    final contextoActual = tester.element(find.byType(Scaffold).first);
+    GoRouter.of(contextoActual).go(Rutas.examenActivo);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unirse a sesion'), findsNothing);
+    expect(find.text('Pregunta de prueba'), findsOneWidget);
+  });
+
+  testWidgets(
+      'no reinicia navegacion a inicio cuando cambia examen activo estando en unirse',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          apiServicioProvider.overrideWith(_construirApiSimulada),
+          autenticacionEstadoProvider.overrideWith(
+            () => _AutenticacionEstadoFalso(
+              EstadoAutenticacion(
+                inicializado: true,
+                estaAutenticado: true,
+                usuario: _crearUsuario(RolUsuario.ESTUDIANTE),
+                error: null,
+                tokenTemporalPrimerLogin: null,
+              ),
+            ),
+          ),
+        ],
+        child: const Aplicacion(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final contextoInicio = tester.element(find.text('Unirse a una sesion'));
+    GoRouter.of(contextoInicio).go(Rutas.unirseExamen);
+    await tester.pumpAndSettle();
+    expect(find.text('Unirse a sesion'), findsOneWidget);
+
+    final contextoUnirse = tester.element(find.byType(Scaffold).first);
+    final container = ProviderScope.containerOf(contextoUnirse, listen: false);
+    container.read(examenActivoProvider.notifier).state =
+        _crearEstadoExamenActivoPrueba();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unirse a sesion'), findsOneWidget);
+    expect(find.text('Tu espacio de evaluacion'), findsNothing);
   });
 
   testWidgets('administrador accede a botones de gestion', (tester) async {
@@ -197,5 +286,54 @@ Usuario _crearUsuario(RolUsuario rol) {
     estadoCuenta: 'ACTIVO',
     primerLogin: false,
     activo: true,
+  );
+}
+
+ExamenActivoEstado _crearEstadoExamenActivoPrueba() {
+  final pregunta = Pregunta(
+    id: 'pregunta-prueba',
+    enunciado: 'Pregunta de prueba',
+    tipo: TipoPregunta.OPCION_MULTIPLE,
+    orden: 1,
+    puntaje: 1,
+    opciones: const <OpcionRespuesta>[
+      OpcionRespuesta(
+        id: 'opcion-a',
+        letra: 'A',
+        contenido: 'Opcion A',
+        orden: 1,
+        preguntaId: 'pregunta-prueba',
+      ),
+      OpcionRespuesta(
+        id: 'opcion-b',
+        letra: 'B',
+        contenido: 'Opcion B',
+        orden: 2,
+        preguntaId: 'pregunta-prueba',
+      ),
+    ],
+  );
+
+  final examen = Examen(
+    id: 'examen-prueba',
+    titulo: 'Examen de prueba',
+    modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+    duracionMinutos: 20,
+    permitirNavegacion: true,
+    mostrarPuntaje: true,
+    preguntas: <Pregunta>[pregunta],
+  );
+
+  final ahora = DateTime.utc(2026, 3, 4, 12, 0, 0);
+  return ExamenActivoEstado(
+    examen: examen,
+    preguntasAleatorizadas: <Pregunta>[pregunta],
+    indicePreguntaActual: 0,
+    respuestasLocales: const <String, RespuestaLocal>{},
+    tiempoInicioExamen: ahora,
+    tiempoInicioPreguntaActual: ahora,
+    estaEnviando: false,
+    errorEnvio: null,
+    idIntento: 'intento-prueba',
   );
 }

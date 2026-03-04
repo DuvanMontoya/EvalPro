@@ -53,6 +53,10 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
     setState(() => _uniendo = true);
     try {
       await ref.read(examenActivoProvider.notifier).iniciarExamen(sesion);
+      await Future<void>.delayed(Duration.zero);
+      if (ref.read(examenActivoProvider) == null) {
+        throw StateError('No fue posible preparar el examen.');
+      }
       if (!mounted) {
         return;
       }

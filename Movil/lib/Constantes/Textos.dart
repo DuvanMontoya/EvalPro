@@ -62,6 +62,10 @@ abstract class Textos {
       'La sesion no esta activa. Espera al docente o solicita un nuevo codigo.';
   static const errorIntentoDuplicado =
       'Ya existe un intento para esta sesion. Contacta al docente.';
+  static const errorIntentosAgotados =
+      'Ya agotaste el numero de intentos permitidos para esta sesion.';
+  static const errorCodigoSesionInvalido =
+      'El codigo ingresado no coincide con la sesion activa.';
   static const errorTokenInvalido =
       'Tu sesion expiro. Inicia sesion nuevamente.';
   static const errorValidacion = 'Los datos enviados no son validos.';

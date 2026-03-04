@@ -100,8 +100,14 @@ SocketServicio socketServicio(SocketServicioRef ref) => SocketServicio(
     );
 
 @riverpod
-ApiServicio apiServicio(ApiServicioRef ref) =>
-    ApiServicio(almacenSeguro: ref.watch(almacenamientoSeguroProvider));
+ApiServicio apiServicio(ApiServicioRef ref) => ApiServicio(
+      almacenSeguro: ref.watch(almacenamientoSeguroProvider),
+      alExpirarSesion: () {
+        ref
+            .read(autenticacionEstadoProvider.notifier)
+            .marcarSesionExpiradaLocalmente();
+      },
+    );
 
 @riverpod
 AutenticacionServicio autenticacionServicio(AutenticacionServicioRef ref) {
@@ -254,6 +260,17 @@ class AutenticacionEstado extends _$AutenticacionEstado {
       estaAutenticado: false,
       usuario: null,
       error: null,
+      tokenTemporalPrimerLogin: null,
+    );
+  }
+
+  /// Sincroniza estado global cuando el interceptor invalida sesión local.
+  void marcarSesionExpiradaLocalmente() {
+    state = const EstadoAutenticacion(
+      inicializado: true,
+      estaAutenticado: false,
+      usuario: null,
+      error: Textos.errorTokenInvalido,
       tokenTemporalPrimerLogin: null,
     );
   }
