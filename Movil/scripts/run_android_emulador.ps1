@@ -11,21 +11,10 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Obtener-DispositivoEmuladorActivo {
-  try {
-    $rutaAdb = Obtener-RutaAdb
-    $lineasAdb = & $rutaAdb devices
-    foreach ($linea in $lineasAdb) {
-      if ($linea -match '^\s*(emulator-\d+)\s+device\s*$') {
-        return $Matches[1]
-      }
-    }
-  } catch {
-    # Fallback a flutter devices si adb no está disponible temporalmente.
-  }
-
-  $salida = flutter devices
-  foreach ($linea in $salida) {
-    if ($linea -match '^\s*(emulator-\d+)\s+.+android') {
+  $rutaAdb = Obtener-RutaAdb
+  $lineasAdb = & $rutaAdb devices
+  foreach ($linea in $lineasAdb) {
+    if ($linea -match '^\s*(emulator-\d+)\s+device\s*$') {
       return $Matches[1]
     }
   }
@@ -206,7 +195,7 @@ function Testear-PuertoDesdeEmulador {
     [int]$Puerto
   )
 
-  $salida = & $RutaAdb -s $IdDispositivo shell "nc -z -w 2 $HostObjetivo $Puerto; echo EXIT:`$?"
+  $salida = & $RutaAdb -s $IdDispositivo shell "nc -z -w 2 $HostObjetivo $Puerto >/dev/null 2>&1; echo EXIT:`$?"
   return ($salida -join "`n") -match 'EXIT:0'
 }
 
@@ -256,12 +245,19 @@ if ([string]::IsNullOrWhiteSpace($DeviceId)) {
   Write-Host "Lanzando emulador: $EmulatorId (via flutter) ..."
   $valorPrevioNativo = $PSNativeCommandUseErrorActionPreference
   $codigoSalidaFlutter = -1
+  $huboFalloExplicitoEmulador = $false
   $PSNativeCommandUseErrorActionPreference = $false
   try {
-    & flutter emulators --launch $EmulatorId | Out-Host
+    $salidaFlutter = & flutter emulators --launch $EmulatorId 2>&1
+    $salidaFlutter | Out-Host
+    $textoSalidaFlutter = ($salidaFlutter | ForEach-Object { "$_" }) -join "`n"
+    $huboFalloExplicitoEmulador = $textoSalidaFlutter -match 'exited with code\s+\d+' -or $textoSalidaFlutter -match 'Address these issues and try again'
     $codigoSalidaFlutter = $LASTEXITCODE
   } finally {
     $PSNativeCommandUseErrorActionPreference = $valorPrevioNativo
+  }
+  if ($huboFalloExplicitoEmulador) {
+    $codigoSalidaFlutter = 1
   }
   if ($codigoSalidaFlutter -ne 0) {
     Write-Host "Aviso: 'flutter emulators --launch' devolvió código $codigoSalidaFlutter. Se usará fallback inmediato."
