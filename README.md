@@ -117,17 +117,18 @@ Después de ejecutar semillas (`npm run prisma:sembrar` en `Backend/`), quedan c
 
 | Rol | Correo | Contraseña |
 |---|---|---|
-| SUPERADMINISTRADOR | `superadmin@evalpro.com` | `CambiarInmediatamente123!` |
-| ADMINISTRADOR | `admin@evalpro.com` | `CambiarInmediatamente123!` |
-| DOCENTE | `docente@evalpro.com` | `DocenteEvalPro123!` |
-| ESTUDIANTE | `estudiante@evalpro.com` | `EstudianteEvalPro123!` |
+| SUPERADMINISTRADOR | `superadmin@evalpro.com` | `Gaussiano1008*` |
+| ADMINISTRADOR | `admin@evalpro.com` | `Gaussiano1008*` |
+| DOCENTE | `docente@evalpro.com` | `Gaussiano1008*` |
+| ESTUDIANTE | `estudiante@evalpro.com` | `Gaussiano1008*` |
 
 Credenciales demo adicionales (si tu base local venía con datos previos inconsistentes):
 
 | Rol | Correo | Contraseña |
 |---|---|---|
-| DOCENTE | `docente.demo@evalpro.com` | `DocenteEvalPro123!` |
-| ESTUDIANTE | `estudiante.demo@evalpro.com` | `EstudianteEvalPro123!` |
+| SUPERADMINISTRADOR | `superadmin.gauss@evalpro.com` | `Gaussiano1008*` |
+| DOCENTE | `docente.demo@evalpro.com` | `Gaussiano1008*` |
+| ESTUDIANTE | `estudiante.demo@evalpro.com` | `Gaussiano1008*` |
 
 Notas:
 - Estas cuentas son de desarrollo local.
@@ -135,6 +136,13 @@ Notas:
 - Si `docente@evalpro.com` o `estudiante@evalpro.com` no inician en una base vieja, reinicia el stack con:
   - `docker compose -f docker-compose.dev.yml down -v`
   - `docker compose -f docker-compose.dev.yml up --build`
+- Si tu stack estaba levantado antes del cambio de contraseña global, puedes entrar de inmediato con:
+  - `superadmin.gauss@evalpro.com` / `Gaussiano1008*`
+  - `docente.demo@evalpro.com` / `Gaussiano1008*`
+  - `estudiante.demo@evalpro.com` / `Gaussiano1008*`
+- Si `SUPERADMINISTRADOR` recibe `SIN_PERMISOS` al editar usuarios desde móvil/web:
+  - `docker compose -f docker-compose.dev.yml up --build backend`
+  - Esto recompila backend y aplica reglas actuales de autorización.
 - Las credenciales se pueden sobreescribir por variables de entorno:
   - `SUPERADMIN_CORREO_INICIAL`, `SUPERADMIN_CONTRASENA_INICIAL`
   - `ADMIN_CORREO_INICIAL`, `ADMIN_CONTRASENA_INICIAL`
@@ -417,6 +425,25 @@ Ejemplo real de sintaxis:
 
 ```bash
 flutter run -d R58N123ABC --dart-define-from-file=Entornos/dev.adb.json
+```
+
+4. Opción directa/profesional (auto IP LAN o `adb reverse` en un solo comando):
+
+```powershell
+cd Movil
+.\scripts\run_android_fisico.ps1 -DeviceId <id-dispositivo>
+```
+
+Ejemplo directo con IP LAN:
+
+```powershell
+.\scripts\run_android_fisico.ps1 -DeviceId R58N123ABC -ApiHost 192.168.20.21
+```
+
+Con `adb reverse` automático:
+
+```powershell
+.\scripts\run_android_fisico.ps1 -DeviceId <id-dispositivo> -UseAdbReverse
 ```
 
 #### 6.5.5. Stage / Producción (móvil)

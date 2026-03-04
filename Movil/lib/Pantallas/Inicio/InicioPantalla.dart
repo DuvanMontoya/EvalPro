@@ -154,13 +154,23 @@ class InicioPantalla extends ConsumerWidget {
               _BloqueAcciones(
                 titulo: 'Operacion global',
                 descripcion:
-                    'Gestiona instituciones y estructura base multi-tenant.',
+                    'Supervisa operacion multi-tenant y estado academico global.',
                 acciones: <_AccionInicio>[
+                  _AccionInicio(
+                    etiqueta: Textos.gestionarSesiones,
+                    icono: Icons.event_note_outlined,
+                    onPressed: () => context.go(Rutas.gestionSesiones),
+                    esPrimaria: true,
+                  ),
+                  _AccionInicio(
+                    etiqueta: Textos.gestionarExamenes,
+                    icono: Icons.menu_book_outlined,
+                    onPressed: () => context.go(Rutas.gestionExamenes),
+                  ),
                   _AccionInicio(
                     etiqueta: Textos.gestionarInstituciones,
                     icono: Icons.apartment_outlined,
                     onPressed: () => context.go(Rutas.gestionInstituciones),
-                    esPrimaria: true,
                   ),
                   _AccionInicio(
                     etiqueta: Textos.gestionarUsuarios,

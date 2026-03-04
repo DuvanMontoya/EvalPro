@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_spacing.dart';
 
 enum EvalBadgeVariant { primary, success, warning, error, neutral }
 

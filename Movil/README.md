@@ -48,19 +48,24 @@ npm run prisma:sembrar
 
 Puedes iniciar sesión con estos perfiles:
 
-- `SUPERADMINISTRADOR`: `superadmin@evalpro.com` / `CambiarInmediatamente123!`
-- `ADMINISTRADOR`: `admin@evalpro.com` / `CambiarInmediatamente123!`
-- `DOCENTE`: `docente@evalpro.com` / `DocenteEvalPro123!`
-- `ESTUDIANTE`: `estudiante@evalpro.com` / `EstudianteEvalPro123!`
+- `SUPERADMINISTRADOR`: `superadmin@evalpro.com` / `Gaussiano1008*`
+- `ADMINISTRADOR`: `admin@evalpro.com` / `Gaussiano1008*`
+- `DOCENTE`: `docente@evalpro.com` / `Gaussiano1008*`
+- `ESTUDIANTE`: `estudiante@evalpro.com` / `Gaussiano1008*`
 
 Credenciales demo adicionales (útiles si tu base local venía corrupta de pruebas previas):
 
-- `DOCENTE`: `docente.demo@evalpro.com` / `DocenteEvalPro123!`
-- `ESTUDIANTE`: `estudiante.demo@evalpro.com` / `EstudianteEvalPro123!`
+- `SUPERADMINISTRADOR`: `superadmin.gauss@evalpro.com` / `Gaussiano1008*`
+- `DOCENTE`: `docente.demo@evalpro.com` / `Gaussiano1008*`
+- `ESTUDIANTE`: `estudiante.demo@evalpro.com` / `Gaussiano1008*`
 
 Nota:
 - Para usuarios recién creados por gestión, el backend puede exigir cambio de contraseña en primer login.
   La app móvil ya soporta ese flujo y te mostrará el formulario de cambio automáticamente.
+- Si tu stack ya estaba corriendo antes del cambio global de contraseñas, usa las cuentas demo:
+  - `superadmin.gauss@evalpro.com` / `Gaussiano1008*`
+  - `docente.demo@evalpro.com` / `Gaussiano1008*`
+  - `estudiante.demo@evalpro.com` / `Gaussiano1008*`
 
 Si la app se ve vacía o sin datos de gestión:
 
@@ -68,6 +73,14 @@ Si la app se ve vacía o sin datos de gestión:
 docker compose -f docker-compose.dev.yml down -v
 docker compose -f docker-compose.dev.yml up --build
 ```
+
+Si `SUPERADMINISTRADOR` recibe `SIN_PERMISOS` al editar usuarios:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build backend
+```
+
+Eso fuerza recompilación del backend con las reglas actuales de autorización.
 
 Ese reinicio recrea la base de datos del stack Docker y vuelve a ejecutar semillas.
 
@@ -198,6 +211,25 @@ Si quieres forzar un dispositivo específico:
 
 ```powershell
 .\scripts\run_android_adb_reverse.ps1 -DeviceId <id-dispositivo>
+```
+
+4. Script profesional directo (sin editar JSON manualmente):
+
+```powershell
+cd Movil
+.\scripts\run_android_fisico.ps1 -DeviceId <id-dispositivo>
+```
+
+Ejemplo directo con IP LAN:
+
+```powershell
+.\scripts\run_android_fisico.ps1 -DeviceId R58N123ABC -ApiHost 192.168.20.21
+```
+
+Forzando modo `adb reverse`:
+
+```powershell
+.\scripts\run_android_fisico.ps1 -DeviceId <id-dispositivo> -UseAdbReverse
 ```
 
 ---

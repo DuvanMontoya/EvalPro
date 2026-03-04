@@ -112,7 +112,7 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
   const sufijo = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const violacionesDetectadas: string[] = [];
   const superadminCorreo = process.env.SUPERADMIN_CORREO_INICIAL ?? 'superadmin@evalpro.com';
-  const superadminContrasena = process.env.SUPERADMIN_CONTRASENA_INICIAL ?? 'CambiarInmediatamente123!';
+  const superadminContrasena = process.env.SUPERADMIN_CONTRASENA_INICIAL ?? 'Gaussiano1008*';
 
   const adminTemporal = 'TemporalAdmin1!';
   const adminNueva = 'AdminDefinitiva1!';

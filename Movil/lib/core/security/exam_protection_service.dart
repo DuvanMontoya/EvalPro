@@ -10,7 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
-import '../../presentation/widgets/common/eval_button.dart';
+import '../widgets/common/eval_button.dart';
 
 enum ExamProtectionEventType {
   segundoPlano,

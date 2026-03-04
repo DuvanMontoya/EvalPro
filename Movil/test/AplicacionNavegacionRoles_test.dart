@@ -109,6 +109,44 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text(Textos.gestionarUsuarios), findsWidgets);
   });
+
+  testWidgets('superadministrador accede a operacion global y academica',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          apiServicioProvider.overrideWith(_construirApiSimulada),
+          autenticacionEstadoProvider.overrideWith(
+            () => _AutenticacionEstadoFalso(
+              EstadoAutenticacion(
+                inicializado: true,
+                estaAutenticado: true,
+                usuario: _crearUsuario(RolUsuario.SUPERADMINISTRADOR),
+                error: null,
+                tokenTemporalPrimerLogin: null,
+              ),
+            ),
+          ),
+        ],
+        child: const Aplicacion(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(Textos.gestionarSesiones), findsOneWidget);
+    expect(find.text(Textos.gestionarExamenes), findsOneWidget);
+    expect(find.text(Textos.gestionarInstituciones), findsOneWidget);
+    expect(find.text(Textos.gestionarUsuarios), findsOneWidget);
+    expect(find.text(Textos.gestionarGrupos), findsOneWidget);
+    expect(find.text(Textos.gestionarPeriodos), findsOneWidget);
+    expect(find.text(Textos.gestionarReclamos), findsOneWidget);
+    expect(find.text(Textos.calificacionManual), findsNothing);
+
+    await tester.ensureVisible(find.text(Textos.gestionarSesiones));
+    await tester.tap(find.text(Textos.gestionarSesiones));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text(Textos.gestionarSesiones), findsWidgets);
+  });
 }
 
 ApiServicioSimulado _construirApiSimulada(ApiServicioRef ref) {

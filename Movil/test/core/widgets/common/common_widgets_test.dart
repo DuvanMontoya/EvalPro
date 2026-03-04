@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:movil/core/theme/app_theme.dart';
-import 'package:movil/presentation/widgets/common/connectivity_banner.dart';
-import 'package:movil/presentation/widgets/common/eval_avatar.dart';
-import 'package:movil/presentation/widgets/common/eval_badge.dart';
-import 'package:movil/presentation/widgets/common/eval_button.dart';
-import 'package:movil/presentation/widgets/common/eval_card.dart';
-import 'package:movil/presentation/widgets/common/eval_empty_state.dart';
-import 'package:movil/presentation/widgets/common/eval_error_state.dart';
-import 'package:movil/presentation/widgets/common/eval_shimmer.dart';
-import 'package:movil/presentation/widgets/common/eval_text_field.dart';
+import 'package:movil/core/widgets/common/connectivity_banner.dart';
+import 'package:movil/core/widgets/common/eval_avatar.dart';
+import 'package:movil/core/widgets/common/eval_badge.dart';
+import 'package:movil/core/widgets/common/eval_button.dart';
+import 'package:movil/core/widgets/common/eval_card.dart';
+import 'package:movil/core/widgets/common/eval_empty_state.dart';
+import 'package:movil/core/widgets/common/eval_error_state.dart';
+import 'package:movil/core/widgets/common/eval_shimmer.dart';
+import 'package:movil/core/widgets/common/eval_text_field.dart';
 
 void main() {
   setUpAll(() {

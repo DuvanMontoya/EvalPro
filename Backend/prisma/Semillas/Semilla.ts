@@ -14,6 +14,7 @@ const NOMBRE_INSTITUCION_INICIAL = 'EvalPro Institución Inicial';
 const NOMBRE_PERIODO_INICIAL = '2026-1';
 const NOMBRE_GRUPO_INICIAL = 'Grupo Demo EvalPro';
 const MAX_INTENTOS_CODIGO_GRUPO = 10;
+const CONTRASENA_INICIAL_DEFECTO = 'Gaussiano1008*';
 
 interface DefinicionCuentaInicial {
   correo: string;
@@ -29,13 +30,14 @@ interface DefinicionCuentaInicial {
  */
 async function ejecutarSemilla(): Promise<void> {
   const correoAdministrador = process.env.ADMIN_CORREO_INICIAL;
-  const contrasenaAdministrador = process.env.ADMIN_CONTRASENA_INICIAL;
+  const contrasenaAdministrador =
+    process.env.ADMIN_CONTRASENA_INICIAL ?? CONTRASENA_INICIAL_DEFECTO;
   const correoSuperadmin = process.env.SUPERADMIN_CORREO_INICIAL ?? 'superadmin@evalpro.com';
   const contrasenaSuperadmin = process.env.SUPERADMIN_CONTRASENA_INICIAL ?? contrasenaAdministrador;
   const correoDocente = process.env.DOCENTE_CORREO_INICIAL ?? 'docente@evalpro.com';
-  const contrasenaDocente = process.env.DOCENTE_CONTRASENA_INICIAL ?? 'DocenteEvalPro123!';
+  const contrasenaDocente = process.env.DOCENTE_CONTRASENA_INICIAL ?? CONTRASENA_INICIAL_DEFECTO;
   const correoEstudiante = process.env.ESTUDIANTE_CORREO_INICIAL ?? 'estudiante@evalpro.com';
-  const contrasenaEstudiante = process.env.ESTUDIANTE_CONTRASENA_INICIAL ?? 'EstudianteEvalPro123!';
+  const contrasenaEstudiante = process.env.ESTUDIANTE_CONTRASENA_INICIAL ?? CONTRASENA_INICIAL_DEFECTO;
   const rondasHash = Number(process.env.BCRYPT_RONDAS_HASH ?? '12');
 
   if (!correoAdministrador || !contrasenaAdministrador) {

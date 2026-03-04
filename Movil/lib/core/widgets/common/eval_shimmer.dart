@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_spacing.dart';
 
 class EvalShimmer extends StatelessWidget {
   const EvalShimmer({required this.child, super.key});

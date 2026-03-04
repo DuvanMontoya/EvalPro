@@ -2,6 +2,13 @@
 Fecha: 2026-03-03
 Alcance: `Movil/lib`
 
+## Actualizacion de cierre (2026-03-04)
+
+- El arbol legacy reportado en esta auditoria (`lib/presentation/*` y `lib/router/app_router.dart`) fue eliminado completamente.
+- Los widgets comunes que requerian pruebas se movieron al arbol activo: `lib/core/widgets/common/*`.
+- La prueba correspondiente se movio a: `test/core/widgets/common/common_widgets_test.dart`.
+- Esta auditoria se conserva como referencia historica del problema inicial; el estado vigente esta consolidado en `AUDITORIA_TECNICA_2026-03-04.md`.
+
 ## 1. Hallazgos Criticos
 
 1. Router activo con logica mock
@@ -53,9 +60,8 @@ Alcance: `Movil/lib`
 ## 4. Deuda Tecnica Residual
 
 1. Codigo legacy no activo
-- El arbol `lib/presentation/*` y `lib/router/app_router.dart` permanece en repositorio como legado.
-- No esta en el flujo de ejecucion actual.
+- Estado al 2026-03-04: eliminado completamente.
 
 2. Recomendacion de siguiente fase
-- Eliminar o mover `lib/presentation/*` a un modulo `legacy/` fuera de `lib` para evitar duplicidad futura.
+- Mantener validacion CI para evitar reintroducir carpetas o imports legacy.
 - Mantener una sola arquitectura de UI y routing.

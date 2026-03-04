@@ -74,13 +74,8 @@ describe('Usuarios (e2e)', () => {
 
   it('permite a superadministrador crear administrador indicando idInstitucion', async () => {
     const adminBase = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
-    const correoSuperadmin = process.env.SUPERADMIN_CORREO_INICIAL ?? 'superadmin@evalpro.com';
-    const contrasenaSuperadmin =
-      process.env.SUPERADMIN_CONTRASENA_INICIAL ??
-      process.env.ADMIN_CONTRASENA_INICIAL ??
-      'CambiarInmediatamente123!';
-
-    const sesionSuperadmin = await iniciarSesionE2e(aplicacion, correoSuperadmin, contrasenaSuperadmin);
+    const superadmin = await crearUsuarioPrueba(RolUsuario.SUPERADMINISTRADOR, true);
+    const sesionSuperadmin = await iniciarSesionE2e(aplicacion, superadmin.correo, superadmin.contrasena);
     expect(sesionSuperadmin.estado).toBe(200);
     expect(adminBase.idInstitucion).toBeTruthy();
 
@@ -99,6 +94,24 @@ describe('Usuarios (e2e)', () => {
     expect(respuesta.status).toBe(201);
     expect(respuesta.body?.datos?.rol).toBe(RolUsuario.ADMINISTRADOR);
     expect(respuesta.body?.datos?.idInstitucion).toBe(adminBase.idInstitucion);
+  });
+
+  it('permite a superadministrador actualizar usuarios de cualquier institucion', async () => {
+    const superadmin = await crearUsuarioPrueba(RolUsuario.SUPERADMINISTRADOR, true);
+    const administradorObjetivo = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
+    const sesionSuperadmin = await iniciarSesionE2e(aplicacion, superadmin.correo, superadmin.contrasena);
+    expect(sesionSuperadmin.estado).toBe(200);
+
+    const respuesta = await request(aplicacion.getHttpServer())
+      .patch(`/api/v1/usuarios/${administradorObjetivo.id}`)
+      .set('Authorization', `Bearer ${sesionSuperadmin.tokenAcceso}`)
+      .send({
+        nombre: 'ActualizadoPorSuperadmin',
+      });
+
+    expect(respuesta.status).toBe(200);
+    expect(respuesta.body?.datos?.id).toBe(administradorObjetivo.id);
+    expect(respuesta.body?.datos?.nombre).toBe('ActualizadoPorSuperadmin');
   });
 
   it('impide a usuarios no admin crear cuentas', async () => {
