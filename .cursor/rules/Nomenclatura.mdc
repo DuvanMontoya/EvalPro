@@ -7,7 +7,7 @@ alwaysApply: true
 # Nomenclatura EvalPro — Español Obligatorio
 
 ## Regla absolutamente no negociable
-TODO nombre de variable, función, clase, archivo, carpeta y comentario debe estar en **español**.
+Todo nombre de variable, función, clase, archivo, carpeta y comentario debe estar en **español**.
 
 ## Convenciones por tipo
 - Carpetas y archivos: **PascalCase español** → `Autenticacion/`, `ExamenServicio.ts`

@@ -5,7 +5,6 @@
 /// @fecha     2026-03-02
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../Configuracion/Entorno.dart';
@@ -17,11 +16,11 @@ class ApiServicio {
   final Dio _cliente;
   final Dio _clienteRefresco;
   final FlutterSecureStorage _almacenSeguro;
-  final VoidCallback? _alExpirarSesion;
+  final void Function()? _alExpirarSesion;
 
   ApiServicio({
     required FlutterSecureStorage almacenSeguro,
-    VoidCallback? alExpirarSesion,
+    void Function()? alExpirarSesion,
   })  : _almacenSeguro = almacenSeguro,
         _alExpirarSesion = alExpirarSesion,
         _cliente = Dio(
@@ -65,13 +64,6 @@ class ApiServicio {
   /// Maneja errores 401 intentando refresco de token y reintento de la solicitud.
   Future<void> _onError(
       DioException error, ErrorInterceptorHandler manejador) async {
-    if (kDebugMode) {
-      debugPrint(
-        '[EvalPro][API][ERROR] ${error.requestOptions.method} ${error.requestOptions.uri} '
-        'tipo=${error.type} codigo=${error.response?.statusCode} detalle=${error.message}',
-      );
-    }
-
     final esNoAutorizado = error.response?.statusCode == 401;
     final ruta = error.requestOptions.path;
     final fueReintentada = error.requestOptions.extra['reintentada'] == true;

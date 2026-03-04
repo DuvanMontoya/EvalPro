@@ -6,7 +6,7 @@
  * @fecha     2026-03-02
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsInt, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsArray, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class EntradaRespuestaDto {
   @ApiProperty({ description: 'ID de la pregunta respondida' })
