@@ -153,8 +153,14 @@ Esto crea la carpeta `windows/` y archivos necesarios para ejecutar como app de 
 
 ```bash
 cd Movil
-flutter run -d emulator-5554 --dart-define-from-file=Entornos/dev.json
+.\scripts\run_android_emulador.ps1
 ```
+
+Este script profesional:
+
+- Arranca el emulador si aún no está activo.
+- Usa `10.0.2.2` para backend local (requerido en emulador Android).
+- Ejecuta `flutter run` con `API_URL` y `WEBSOCKET_URL` correctos sin editar JSON.
 
 ### 3.2. Dispositivo físico (misma red local)
 

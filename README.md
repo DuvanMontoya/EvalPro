@@ -180,6 +180,22 @@ curl http://localhost:3001/api/v1/salud
 
 La forma más sencilla de levantar **PostgreSQL + Backend + Frontend** en modo desarrollo es usando `docker-compose.dev.yml`.
 
+### 4.0. Arranque local profesional (sin Docker para frontend/backend)
+
+Si ya tienes PostgreSQL local activo, puedes levantar entorno listo para desarrollo con un solo comando:
+
+```powershell
+cd c:\GitHub\EvalPro
+.\scripts\levantar_entorno_local.ps1
+```
+
+Este flujo:
+
+- Repara runtime de backend y valida salud en `http://localhost:3001/api/v1/salud`.
+- Levanta frontend en segundo plano en `http://localhost:3000`.
+- Deja log del frontend en `Frontend/.frontend_dev_runtime.log`.
+- Te entrega comandos directos para ejecutar móvil en emulador o dispositivo físico.
+
 ### 4.1. Levantar entorno completo de desarrollo (hot‑reload)
 
 Desde la raíz del proyecto:
@@ -392,10 +408,14 @@ Para dispositivo físico usa IP LAN o `adb reverse` (ver 6.5.4).
 
 ```bash
 cd Movil
-flutter run -d emulator-5554 --dart-define-from-file=Entornos/dev.json
+.\scripts\run_android_emulador.ps1
 ```
 
-Reemplaza `emulator-5554` por el ID de tu emulador.
+Este script:
+
+- Lanza el emulador si no está iniciado.
+- Usa `10.0.2.2` para conectar contra backend local en `3001`.
+- Ejecuta `flutter run` con `API_URL` y `WEBSOCKET_URL` correctos para emulador Android.
 
 #### 6.5.4. Ejecutar en dispositivo físico (comando exacto recomendado)
 
