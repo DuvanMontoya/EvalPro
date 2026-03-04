@@ -122,9 +122,19 @@ Después de ejecutar semillas (`npm run prisma:sembrar` en `Backend/`), quedan c
 | DOCENTE | `docente@evalpro.com` | `DocenteEvalPro123!` |
 | ESTUDIANTE | `estudiante@evalpro.com` | `EstudianteEvalPro123!` |
 
+Credenciales demo adicionales (si tu base local venía con datos previos inconsistentes):
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| DOCENTE | `docente.demo@evalpro.com` | `DocenteEvalPro123!` |
+| ESTUDIANTE | `estudiante.demo@evalpro.com` | `EstudianteEvalPro123!` |
+
 Notas:
 - Estas cuentas son de desarrollo local.
 - Si ya habías sembrado antes, vuelve a ejecutar `npm run prisma:sembrar` para asegurar estos usuarios y datos demo mínimos (periodo/grupo/membresías).
+- Si `docente@evalpro.com` o `estudiante@evalpro.com` no inician en una base vieja, reinicia el stack con:
+  - `docker compose -f docker-compose.dev.yml down -v`
+  - `docker compose -f docker-compose.dev.yml up --build`
 - Las credenciales se pueden sobreescribir por variables de entorno:
   - `SUPERADMIN_CORREO_INICIAL`, `SUPERADMIN_CONTRASENA_INICIAL`
   - `ADMIN_CORREO_INICIAL`, `ADMIN_CONTRASENA_INICIAL`

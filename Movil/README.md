@@ -53,6 +53,11 @@ Puedes iniciar sesión con estos perfiles:
 - `DOCENTE`: `docente@evalpro.com` / `DocenteEvalPro123!`
 - `ESTUDIANTE`: `estudiante@evalpro.com` / `EstudianteEvalPro123!`
 
+Credenciales demo adicionales (útiles si tu base local venía corrupta de pruebas previas):
+
+- `DOCENTE`: `docente.demo@evalpro.com` / `DocenteEvalPro123!`
+- `ESTUDIANTE`: `estudiante.demo@evalpro.com` / `EstudianteEvalPro123!`
+
 Nota:
 - Para usuarios recién creados por gestión, el backend puede exigir cambio de contraseña en primer login.
   La app móvil ya soporta ese flujo y te mostrará el formulario de cambio automáticamente.
