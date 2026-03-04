@@ -42,8 +42,9 @@ function Stop-FrontendPortProcesses {
     $nombre = [string]$proceso.Name
     $linea = [string]$proceso.CommandLine
     $esFrontendLocal = ($nombre -match 'node\.exe|cmd\.exe') -and ($linea -match 'EvalPro\\Frontend')
+    $esProxyDocker = $nombre -in @('com.docker.backend.exe', 'wslrelay.exe', 'Docker Desktop.exe')
 
-    if (-not $esFrontendLocal) {
+    if (-not $esFrontendLocal -and -not $esProxyDocker) {
       throw "Puerto $LocalPort ocupado por proceso no reconocido: $nombre (PID=$id)."
     }
 
@@ -124,8 +125,12 @@ function Start-FrontendDev {
   if (Test-Path $frontendErrPath) {
     Remove-Item $frontendErrPath -Force -ErrorAction SilentlyContinue
   }
+  $nextLock = Join-Path $FrontendPath '.next\dev\lock'
+  if (Test-Path $nextLock) {
+    Remove-Item $nextLock -Force -ErrorAction SilentlyContinue
+  }
 
-  $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'npm run dev' -WorkingDirectory $FrontendPath -RedirectStandardOutput $RuntimeLogPath -RedirectStandardError $frontendErrPath -PassThru
+  $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'npm run dev -- --port 3000' -WorkingDirectory $FrontendPath -RedirectStandardOutput $RuntimeLogPath -RedirectStandardError $frontendErrPath -PassThru
   Write-Output "Frontend lanzado en segundo plano (PID=$($proc.Id))."
 }
 
