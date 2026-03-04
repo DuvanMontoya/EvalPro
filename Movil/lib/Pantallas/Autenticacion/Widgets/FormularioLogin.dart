@@ -20,6 +20,9 @@ class FormularioLogin extends ConsumerStatefulWidget {
 }
 
 class _FormularioLoginState extends ConsumerState<FormularioLogin> {
+  static final RegExp _patronContrasenaSegura =
+      RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$');
+
   final _formulario = GlobalKey<FormState>();
   final _correo = TextEditingController();
   final _contrasena = TextEditingController();
@@ -39,13 +42,159 @@ class _FormularioLoginState extends ConsumerState<FormularioLogin> {
       return;
     }
     setState(() => _cargando = true);
-    await ref.read(autenticacionEstadoProvider.notifier).iniciarSesion(
-          correo: _correo.text.trim(),
-          contrasena: _contrasena.text,
-        );
+    final gestorAutenticacion = ref.read(autenticacionEstadoProvider.notifier);
+    await gestorAutenticacion.iniciarSesion(
+      correo: _correo.text.trim(),
+      contrasena: _contrasena.text,
+    );
     if (mounted) {
+      final estado = gestorAutenticacion.state;
+      if (!estado.estaAutenticado &&
+          estado.tokenTemporalPrimerLogin != null &&
+          estado.tokenTemporalPrimerLogin!.trim().isNotEmpty) {
+        await _mostrarCambioContrasenaPrimerLogin(gestorAutenticacion);
+      }
       setState(() => _cargando = false);
     }
+  }
+
+  Future<void> _mostrarCambioContrasenaPrimerLogin(
+    AutenticacionEstado gestorAutenticacion,
+  ) async {
+    final formularioCambio = GlobalKey<FormState>();
+    final nuevaContrasena = TextEditingController();
+    final confirmarContrasena = TextEditingController();
+    bool ocultarNueva = true;
+    bool ocultarConfirmacion = true;
+    bool cargandoCambio = false;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (contexto) {
+        return StatefulBuilder(
+          builder: (contexto, setEstado) {
+            return AlertDialog(
+              title: const Text('Cambia tu contrasena'),
+              content: Form(
+                key: formularioCambio,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    TextFormField(
+                      controller: nuevaContrasena,
+                      obscureText: ocultarNueva,
+                      decoration: InputDecoration(
+                        labelText: 'Nueva contrasena',
+                        suffixIcon: IconButton(
+                          tooltip: ocultarNueva ? 'Mostrar' : 'Ocultar',
+                          onPressed: () =>
+                              setEstado(() => ocultarNueva = !ocultarNueva),
+                          icon: Icon(
+                            ocultarNueva
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                        ),
+                      ),
+                      validator: _validarContrasenaSegura,
+                    ),
+                    const SizedBox(height: Dimensiones.espaciadoMd),
+                    TextFormField(
+                      controller: confirmarContrasena,
+                      obscureText: ocultarConfirmacion,
+                      decoration: InputDecoration(
+                        labelText: 'Confirmar contrasena',
+                        suffixIcon: IconButton(
+                          tooltip: ocultarConfirmacion ? 'Mostrar' : 'Ocultar',
+                          onPressed: () => setEstado(
+                              () => ocultarConfirmacion = !ocultarConfirmacion),
+                          icon: Icon(
+                            ocultarConfirmacion
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                        ),
+                      ),
+                      validator: (valor) {
+                        if ((valor ?? '').isEmpty) {
+                          return 'Confirma la contrasena.';
+                        }
+                        if (valor != nuevaContrasena.text) {
+                          return 'Las contrasenas no coinciden.';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: cargandoCambio
+                      ? null
+                      : () {
+                          Navigator.of(contexto).pop();
+                        },
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: cargandoCambio
+                      ? null
+                      : () async {
+                          FocusScope.of(context).unfocus();
+                          if (!formularioCambio.currentState!.validate()) {
+                            return;
+                          }
+                          setEstado(() => cargandoCambio = true);
+                          await gestorAutenticacion.completarPrimerLogin(
+                            nuevaContrasena: nuevaContrasena.text,
+                          );
+                          final estado = gestorAutenticacion.state;
+                          if (!mounted) {
+                            return;
+                          }
+                          if (estado.estaAutenticado) {
+                            Navigator.of(contexto).pop();
+                            return;
+                          }
+                          setEstado(() => cargandoCambio = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                estado.error ?? Textos.errorInicioSesion,
+                              ),
+                            ),
+                          );
+                        },
+                  child: cargandoCambio
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Guardar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    nuevaContrasena.dispose();
+    confirmarContrasena.dispose();
+  }
+
+  String? _validarContrasenaSegura(String? valor) {
+    final texto = valor ?? '';
+    if (texto.isEmpty) {
+      return 'Ingresa una contrasena.';
+    }
+    if (!_patronContrasenaSegura.hasMatch(texto)) {
+      return 'Usa 8+ caracteres con mayuscula, minuscula, numero y simbolo.';
+    }
+    return null;
   }
 
   @override

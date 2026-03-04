@@ -30,95 +30,189 @@ class IniciarSesionPantalla extends ConsumerWidget {
     });
 
     return Scaffold(
-      body: SafeArea(
-        child: Center(
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: <Color>[Color(0xFFDDEBFF), Colores.grisFondo],
+          ),
+        ),
+        child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Dimensiones.espaciadoXl),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Center(
-                    child: Container(
-                      width: 88,
-                      height: 88,
-                      decoration: BoxDecoration(
-                        color: Colores.azulPrimario,
-                        borderRadius:
-                            BorderRadius.circular(Dimensiones.radio2xl),
-                      ),
-                      child: const Icon(
-                        Icons.school_rounded,
-                        color: Colores.blanco,
-                        size: 44,
+            padding: const EdgeInsets.fromLTRB(
+              Dimensiones.espaciadoXl,
+              Dimensiones.espaciadoXl,
+              Dimensiones.espaciadoXl,
+              Dimensiones.espaciado2xl,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 430),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: <Color>[
+                                Colores.azulPrimario,
+                                Colores.azulSecundario,
+                              ],
+                            ),
+                            borderRadius:
+                                BorderRadius.circular(Dimensiones.radioLg),
+                          ),
+                          child: const Icon(
+                            Icons.school_rounded,
+                            color: Colores.blanco,
+                            size: 30,
+                          ),
+                        ),
+                        const SizedBox(width: Dimensiones.espaciadoMd),
+                        Expanded(
+                          child: Text(
+                            'EvalPro Movil',
+                            style: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: Colores.azulProfundo,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: Dimensiones.espaciadoLg),
+                    Text(
+                      'Accede a evaluaciones y gestion institucional desde una sola app.',
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: Colores.textoSecundario,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: Dimensiones.espaciadoLg),
-                  Text(
-                    'Bienvenido a EvalPro',
-                    textAlign: TextAlign.center,
-                    style: textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: Colores.textoPrincipal,
-                    ),
-                  ),
-                  const SizedBox(height: Dimensiones.espaciadoXl),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(Dimensiones.espaciadoXl),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          const FormularioLogin(),
-                          if (estado.error != null) ...<Widget>[
-                            const SizedBox(height: Dimensiones.espaciadoLg),
-                            Container(
-                              key: const Key('login_error_banner'),
-                              padding: const EdgeInsets.all(
-                                Dimensiones.espaciadoMd,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEECEC),
-                                borderRadius: BorderRadius.circular(
-                                  Dimensiones.radioMd,
-                                ),
-                                border: Border.all(
-                                  color: const Color(0xFFF4B3B3),
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  const Icon(
-                                    Icons.error_outline_rounded,
-                                    color: Colores.rojoError,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(
-                                      width: Dimensiones.espaciadoSm),
-                                  Expanded(
-                                    child: Text(
-                                      estado.error!,
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: Colores.rojoError,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                    const SizedBox(height: Dimensiones.espaciadoXl),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(Dimensiones.espaciadoXl),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            Text(
+                              'Iniciar sesion',
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
+                            const SizedBox(height: Dimensiones.espaciadoSm),
+                            Text(
+                              'Usa tu correo institucional y contrasena.',
+                              style: textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: Dimensiones.espaciadoLg),
+                            const FormularioLogin(),
+                            if (estado.error != null) ...<Widget>[
+                              const SizedBox(height: Dimensiones.espaciadoLg),
+                              Container(
+                                key: const Key('login_error_banner'),
+                                padding: const EdgeInsets.all(
+                                  Dimensiones.espaciadoMd,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEECEC),
+                                  borderRadius: BorderRadius.circular(
+                                    Dimensiones.radioMd,
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    const Icon(
+                                      Icons.error_outline_rounded,
+                                      color: Colores.rojoError,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(
+                                        width: Dimensiones.espaciadoSm),
+                                    Expanded(
+                                      child: Text(
+                                        estado.error!,
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: Colores.rojoError,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: Dimensiones.espaciadoLg),
+                    Row(
+                      children: <Widget>[
+                        _PuntoLogin(
+                          icono: Icons.lock_outline_rounded,
+                          texto: 'Sesion segura con JWT',
+                        ),
+                        const SizedBox(width: Dimensiones.espaciadoSm),
+                        _PuntoLogin(
+                          icono: Icons.cloud_done_outlined,
+                          texto: 'Sincronizacion con backend',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PuntoLogin extends StatelessWidget {
+  final IconData icono;
+  final String texto;
+
+  const _PuntoLogin({
+    required this.icono,
+    required this.texto,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Dimensiones.espaciadoMd,
+          vertical: Dimensiones.espaciadoSm,
+        ),
+        decoration: BoxDecoration(
+          color: Colores.blanco.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(Dimensiones.radioMd),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(icono, size: 18, color: Colores.azulPrimario),
+            const SizedBox(width: Dimensiones.espaciadoSm),
+            Expanded(
+              child: Text(
+                texto,
+                style: textTheme.labelMedium?.copyWith(
+                  color: Colores.textoSecundario,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

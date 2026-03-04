@@ -28,6 +28,7 @@ void main() {
                 estaAutenticado: false,
                 usuario: null,
                 error: null,
+                tokenTemporalPrimerLogin: null,
               ),
             ),
           ),
@@ -52,6 +53,7 @@ void main() {
                 estaAutenticado: true,
                 usuario: _crearUsuario(RolUsuario.ESTUDIANTE),
                 error: null,
+                tokenTemporalPrimerLogin: null,
               ),
             ),
           ),
@@ -83,6 +85,7 @@ void main() {
                 estaAutenticado: true,
                 usuario: _crearUsuario(RolUsuario.ADMINISTRADOR),
                 error: null,
+                tokenTemporalPrimerLogin: null,
               ),
             ),
           ),
@@ -139,6 +142,7 @@ class _AutenticacionEstadoFalso extends AutenticacionEstado {
       estaAutenticado: false,
       usuario: null,
       error: null,
+      tokenTemporalPrimerLogin: null,
     );
   }
 }

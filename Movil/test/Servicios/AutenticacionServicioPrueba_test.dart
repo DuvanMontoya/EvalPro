@@ -103,6 +103,56 @@ void main() {
     );
   });
 
+  test(
+      'iniciarSesion solicita cambio de contrasena cuando backend indica primer login',
+      () async {
+    final servicio = AutenticacionServicio(
+      apiServicio: ApiServicioSimulado(
+        alPublicar: (_, __) async => <String, dynamic>{
+          'requiereCambioContrasena': true,
+          'tokenTemporal': 'token-temporal',
+        },
+      ),
+      almacenSeguro: const FlutterSecureStorage(),
+    );
+
+    expect(
+      () => servicio.iniciarSesion(
+        correo: 'docente@evalpro.com',
+        contrasena: 'Temporal123!',
+      ),
+      throwsA(isA<RequiereCambioContrasenaException>()),
+    );
+    expect(
+      await const FlutterSecureStorage().read(key: ClavesAlmacen.tokenAcceso),
+      isNull,
+    );
+  });
+
+  test('completarPrimerLogin persiste sesion final en almacenamiento seguro',
+      () async {
+    final servicio = AutenticacionServicio(
+      apiServicio: ApiServicioSimulado(
+        alPublicar: (ruta, _) async {
+          expect(ruta, ApiEndpoints.autenticacionCambiarContrasena);
+          return _crearSesion(RolUsuario.DOCENTE).toJson();
+        },
+      ),
+      almacenSeguro: const FlutterSecureStorage(),
+    );
+
+    final sesion = await servicio.completarPrimerLogin(
+      tokenTemporal: 'token-temporal',
+      nuevaContrasena: 'NuevaSegura123!',
+    );
+
+    expect(sesion.usuario.rol, RolUsuario.DOCENTE);
+    expect(
+      await const FlutterSecureStorage().read(key: ClavesAlmacen.tokenAcceso),
+      'token-acceso',
+    );
+  });
+
   test('tieneSesionActiva mantiene sesion valida para administrador activo',
       () async {
     final almacenamientoSeguro = const FlutterSecureStorage();

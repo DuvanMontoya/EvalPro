@@ -52,7 +52,11 @@ class ApiServicio {
     RequestInterceptorHandler manejador,
   ) async {
     final token = await _almacenSeguro.read(key: ClavesAlmacen.tokenAcceso);
-    if (token != null && token.isNotEmpty) {
+    final autorizacionExistente = opciones.headers['Authorization'];
+    final yaTieneAutorizacion = autorizacionExistente is String
+        ? autorizacionExistente.trim().isNotEmpty
+        : autorizacionExistente != null;
+    if (token != null && token.isNotEmpty && !yaTieneAutorizacion) {
       opciones.headers['Authorization'] = 'Bearer $token';
     }
     manejador.next(opciones);
@@ -137,8 +141,13 @@ class ApiServicio {
     String ruta,
     T Function(Object? valor) mapear, {
     Object? cuerpo,
+    Map<String, dynamic>? encabezados,
   }) async {
-    final respuesta = await _cliente.post<dynamic>(ruta, data: cuerpo);
+    final respuesta = await _cliente.post<dynamic>(
+      ruta,
+      data: cuerpo,
+      options: Options(headers: encabezados),
+    );
     return mapearDatosApi<T>(respuesta, mapear);
   }
 

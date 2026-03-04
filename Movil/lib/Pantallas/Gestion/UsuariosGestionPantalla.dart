@@ -9,8 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../Constantes/Textos.dart';
 import '../../Modelos/Enums/RolUsuario.dart';
+import '../../Modelos/Enums/EstadoInstitucion.dart';
+import '../../Modelos/InstitucionGestion.dart';
 import '../../Modelos/UsuarioGestion.dart';
 import '../../Providers/AutenticacionProvider.dart';
+import '../../Servicios/InstitucionServicio.dart';
 import '../../Servicios/UsuarioGestionServicio.dart';
 import '../../Utilidades/MapeadorErroresNegocio.dart';
 
@@ -66,9 +69,29 @@ class _UsuariosGestionPantallaState
     final apellidosControlador = TextEditingController();
     final correoControlador = TextEditingController();
     final contrasenaControlador = TextEditingController();
-    final institucionControlador = TextEditingController();
+    List<InstitucionGestion> instituciones = <InstitucionGestion>[];
+    if (rolActor == RolUsuario.SUPERADMINISTRADOR) {
+      try {
+        instituciones =
+            await InstitucionServicio(ref.read(apiServicioProvider)).listar();
+        instituciones = instituciones
+            .where(
+                (institucion) => institucion.estado == EstadoInstitucion.ACTIVA)
+            .toList();
+      } catch (error) {
+        _mostrarError(
+          MapeadorErroresNegocio.mapear(
+            error,
+            mensajePorDefecto: Textos.errorGestion,
+          ),
+        );
+        return;
+      }
+    }
     final roles = _rolesCreacion(rolActor);
     RolUsuario rolSeleccionado = roles.first;
+    InstitucionGestion? institucionSeleccionada =
+        instituciones.isNotEmpty ? instituciones.first : null;
 
     final confirmado = await showDialog<bool>(
       context: context,
@@ -119,10 +142,29 @@ class _UsuariosGestionPantallaState
                   ),
                   if (rolActor == RolUsuario.SUPERADMINISTRADOR &&
                       rolSeleccionado != RolUsuario.SUPERADMINISTRADOR)
-                    TextField(
-                      controller: institucionControlador,
-                      decoration:
-                          const InputDecoration(labelText: 'ID institucion'),
+                    DropdownButtonFormField<String>(
+                      initialValue: institucionSeleccionada?.id,
+                      items: instituciones
+                          .map(
+                            (institucion) => DropdownMenuItem<String>(
+                              value: institucion.id,
+                              child: Text(institucion.nombre),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (valor) {
+                        final seleccion = instituciones.firstWhere(
+                          (institucion) => institucion.id == valor,
+                          orElse: () =>
+                              institucionSeleccionada ?? instituciones.first,
+                        );
+                        setEstado(() {
+                          institucionSeleccionada = seleccion;
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Institucion destino',
+                      ),
                     ),
                 ],
               ),
@@ -152,7 +194,7 @@ class _UsuariosGestionPantallaState
         apellidosControlador.text.trim().isEmpty ||
         correoControlador.text.trim().isEmpty ||
         contrasenaControlador.text.isEmpty ||
-        (requiereInstitucion && institucionControlador.text.trim().isEmpty)) {
+        (requiereInstitucion && institucionSeleccionada == null)) {
       _mostrarError(Textos.errorFormularioInvalido);
       return;
     }
@@ -164,8 +206,7 @@ class _UsuariosGestionPantallaState
         correo: correoControlador.text,
         contrasena: contrasenaControlador.text,
         rol: rolSeleccionado,
-        idInstitucion:
-            requiereInstitucion ? institucionControlador.text.trim() : null,
+        idInstitucion: requiereInstitucion ? institucionSeleccionada?.id : null,
       );
       if (!mounted) {
         return;

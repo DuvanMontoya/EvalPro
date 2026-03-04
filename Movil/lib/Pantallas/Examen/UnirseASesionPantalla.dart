@@ -95,49 +95,113 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
     final estado = ref.watch(sesionActualProvider);
     final sesion = estado.sesion;
     final mensaje = sesion == null ? null : _mensajeEstado(sesion.estado);
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Unirse a sesion')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: <Widget>[
-            TextField(
-              controller: _controladorCodigo,
-              maxLength: 9,
-              textCapitalization: TextCapitalization.characters,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9-]')),
-                TextInputFormatter.withFunction((anterior, nuevo) {
-                  return nuevo.copyWith(text: nuevo.text.toUpperCase());
-                }),
-              ],
-              decoration: const InputDecoration(
-                labelText: Textos.codigoSesion,
-                hintText: 'MATE-7823',
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: <Color>[Color(0xFFE4EEFF), Color(0xFFF2F5FA)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.circular(18),
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Ingresa el codigo compartido por tu docente',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Buscamos la sesion en tiempo real y validamos si esta activa.',
+                  style: textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controladorCodigo,
+            maxLength: 9,
+            textCapitalization: TextCapitalization.characters,
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9-]')),
+              TextInputFormatter.withFunction((anterior, nuevo) {
+                return nuevo.copyWith(text: nuevo.text.toUpperCase());
+              }),
+            ],
+            decoration: const InputDecoration(
+              labelText: Textos.codigoSesion,
+              hintText: 'MATE-7823',
+              prefixIcon: Icon(Icons.confirmation_number_outlined),
+            ),
+            onSubmitted: (_) => _buscarSesion(),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
               onPressed: estado.cargando ? null : _buscarSesion,
-              child: estado.cargando
+              icon: estado.cargando
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text(Textos.buscarSesion),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.search_rounded),
+              label:
+                  Text(estado.cargando ? 'Buscando...' : Textos.buscarSesion),
             ),
+          ),
+          const SizedBox(height: 14),
+          if (estado.error != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEECEC),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                estado.error!,
+                style:
+                    textTheme.bodySmall?.copyWith(color: Colors.red.shade700),
+              ),
+            ),
+          if (mensaje != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                mensaje,
+                style: textTheme.bodySmall?.copyWith(
+                  color: Colors.orange.shade800,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          if (sesion != null &&
+              sesion.estado == EstadoSesion.ACTIVA) ...<Widget>[
             const SizedBox(height: 14),
-            if (estado.error != null)
-              Text(estado.error!, style: const TextStyle(color: Colors.red)),
-            if (mensaje != null) Text(mensaje),
-            if (sesion != null && sesion.estado == EstadoSesion.ACTIVA)
-              TarjetaSesionDisponible(
-                sesion: sesion,
-                alUnirse: _uniendo ? () {} : _unirse,
+            TarjetaSesionDisponible(
+              sesion: sesion,
+              alUnirse: _uniendo ? () {} : _unirse,
+            ),
+            if (_uniendo)
+              const Padding(
+                padding: EdgeInsets.only(top: 10),
+                child: Center(child: CircularProgressIndicator()),
               ),
           ],
-        ),
+        ],
       ),
     );
   }

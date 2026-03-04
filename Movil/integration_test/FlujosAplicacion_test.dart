@@ -26,6 +26,7 @@ void main() {
         estaAutenticado: false,
         usuario: null,
         error: null,
+        tokenTemporalPrimerLogin: null,
       ),
       alIniciarSesion: (notifier,
           {required correo, required contrasena}) async {
@@ -35,6 +36,7 @@ void main() {
             estaAutenticado: true,
             usuario: _crearUsuario(RolUsuario.ESTUDIANTE),
             error: null,
+            tokenTemporalPrimerLogin: null,
           ),
         );
       },
@@ -74,6 +76,7 @@ void main() {
         estaAutenticado: false,
         usuario: null,
         error: null,
+        tokenTemporalPrimerLogin: null,
       ),
       alIniciarSesion: (notifier,
           {required correo, required contrasena}) async {
@@ -83,6 +86,7 @@ void main() {
             estaAutenticado: false,
             usuario: null,
             error: 'Credenciales invalidas para esta institucion.',
+            tokenTemporalPrimerLogin: null,
           ),
         );
       },
@@ -126,6 +130,7 @@ void main() {
         estaAutenticado: true,
         usuario: _crearUsuario(RolUsuario.ADMINISTRADOR),
         error: null,
+        tokenTemporalPrimerLogin: null,
       ),
     );
 
@@ -198,6 +203,7 @@ class _AutenticacionEstadoPrueba extends AutenticacionEstado {
       estaAutenticado: false,
       usuario: null,
       error: null,
+      tokenTemporalPrimerLogin: null,
     );
   }
 

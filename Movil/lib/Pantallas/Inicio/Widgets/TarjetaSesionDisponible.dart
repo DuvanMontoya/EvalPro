@@ -30,24 +30,54 @@ class TarjetaSesionDisponible extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Dimensiones.espaciadoSm,
+                    vertical: Dimensiones.espaciadoXs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colores.verdeExito.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(Dimensiones.radioSm),
+                  ),
+                  child: Text(
+                    'SESION ACTIVA',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: Colores.verdeExito,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.play_circle_fill_rounded,
+                  color: Colores.azulPrimario.withValues(alpha: 0.7),
+                ),
+              ],
+            ),
+            const SizedBox(height: Dimensiones.espaciadoMd),
             Text(
               sesion.examen.titulo,
               style:
-                  textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                  textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: Dimensiones.espaciadoSm),
-            Text(
-              'Modalidad: ${sesion.examen.modalidad.name}',
-              style: textTheme.bodyMedium,
+            const SizedBox(height: Dimensiones.espaciadoMd),
+            _DatoSesion(
+              icono: Icons.grid_view_rounded,
+              etiqueta: 'Modalidad',
+              valor: sesion.examen.modalidad.name,
             ),
-            Text(
-              'Duracion: ${sesion.examen.duracionMinutos} min',
-              style: textTheme.bodyMedium,
+            _DatoSesion(
+              icono: Icons.timer_outlined,
+              etiqueta: 'Duracion',
+              valor: '${sesion.examen.duracionMinutos} min',
             ),
             if (sesion.examen.docente != null)
-              Text(
-                'Docente: ${sesion.examen.docente}',
-                style: textTheme.bodyMedium,
+              _DatoSesion(
+                icono: Icons.person_outline_rounded,
+                etiqueta: 'Docente',
+                valor: sesion.examen.docente!,
               ),
             const SizedBox(height: Dimensiones.espaciadoLg),
             SizedBox(
@@ -63,6 +93,47 @@ class TarjetaSesionDisponible extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DatoSesion extends StatelessWidget {
+  final IconData icono;
+  final String etiqueta;
+  final String valor;
+
+  const _DatoSesion({
+    required this.icono,
+    required this.etiqueta,
+    required this.valor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Dimensiones.espaciadoSm),
+      child: Row(
+        children: <Widget>[
+          Icon(icono, size: 18, color: Colores.textoSecundario),
+          const SizedBox(width: Dimensiones.espaciadoSm),
+          Text(
+            '$etiqueta: ',
+            style: textTheme.bodyMedium?.copyWith(
+              color: Colores.textoSecundario,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              valor,
+              style: textTheme.bodyMedium?.copyWith(
+                color: Colores.textoPrincipal,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

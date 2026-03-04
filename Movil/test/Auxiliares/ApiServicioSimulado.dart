@@ -34,6 +34,7 @@ class ApiServicioSimulado extends ApiServicio {
     String ruta,
     T Function(Object? valor) mapear, {
     Object? cuerpo,
+    Map<String, dynamic>? encabezados,
   }) async {
     if (_alPublicar == null) {
       throw UnsupportedError('No se definio manejador simulado para POST');

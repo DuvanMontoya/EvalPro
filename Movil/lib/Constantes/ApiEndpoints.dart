@@ -8,6 +8,8 @@
 abstract class ApiEndpoints {
   static const autenticacionIniciarSesion = '/autenticacion/iniciar-sesion';
   static const autenticacionRefrescar = '/autenticacion/refrescar-tokens';
+  static const autenticacionCambiarContrasena =
+      '/autenticacion/cambiar-contrasena';
   static const autenticacionCerrarSesion = '/autenticacion/cerrar-sesion';
 
   static const sesiones = '/sesiones';

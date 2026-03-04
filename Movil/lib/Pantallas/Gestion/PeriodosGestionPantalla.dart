@@ -8,9 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../Constantes/Textos.dart';
+import '../../Modelos/Enums/EstadoInstitucion.dart';
 import '../../Modelos/Enums/RolUsuario.dart';
+import '../../Modelos/InstitucionGestion.dart';
 import '../../Modelos/PeriodoGestion.dart';
 import '../../Providers/AutenticacionProvider.dart';
+import '../../Servicios/InstitucionServicio.dart';
 import '../../Servicios/PeriodoGestionServicio.dart';
 import '../../Utilidades/FormateadorFecha.dart';
 import '../../Utilidades/MapeadorErroresNegocio.dart';
@@ -44,7 +47,26 @@ class _PeriodosGestionPantallaState
 
   Future<void> _mostrarCrearPeriodo(bool esSuperadmin) async {
     final nombreControlador = TextEditingController();
-    final institucionControlador = TextEditingController();
+    List<InstitucionGestion> instituciones = <InstitucionGestion>[];
+    InstitucionGestion? institucionSeleccionada;
+    if (esSuperadmin) {
+      try {
+        instituciones =
+            await InstitucionServicio(ref.read(apiServicioProvider)).listar();
+        instituciones = instituciones
+            .where(
+                (institucion) => institucion.estado == EstadoInstitucion.ACTIVA)
+            .toList();
+        institucionSeleccionada =
+            instituciones.isNotEmpty ? instituciones.first : null;
+      } catch (error) {
+        _mostrarError(MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorGestion,
+        ));
+        return;
+      }
+    }
     DateTime? fechaInicio;
     DateTime? fechaFin;
     bool activo = true;
@@ -65,10 +87,31 @@ class _PeriodosGestionPantallaState
                       decoration: const InputDecoration(labelText: 'Nombre'),
                     ),
                     if (esSuperadmin)
-                      TextField(
-                        controller: institucionControlador,
+                      DropdownButtonFormField<String>(
+                        initialValue: institucionSeleccionada?.id,
+                        items: instituciones
+                            .map(
+                              (institucion) => DropdownMenuItem<String>(
+                                value: institucion.id,
+                                child: Text(institucion.nombre),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (valor) {
+                          if (valor == null) {
+                            return;
+                          }
+                          final seleccion = instituciones.firstWhere(
+                            (institucion) => institucion.id == valor,
+                            orElse: () =>
+                                institucionSeleccionada ?? instituciones.first,
+                          );
+                          setEstado(() {
+                            institucionSeleccionada = seleccion;
+                          });
+                        },
                         decoration: const InputDecoration(
-                          labelText: 'ID institucion',
+                          labelText: 'Institucion destino',
                         ),
                       ),
                     const SizedBox(height: 10),
@@ -163,7 +206,7 @@ class _PeriodosGestionPantallaState
     if (nombreControlador.text.trim().isEmpty ||
         fechaInicio == null ||
         fechaFin == null ||
-        (esSuperadmin && institucionControlador.text.trim().isEmpty)) {
+        (esSuperadmin && institucionSeleccionada == null)) {
       _mostrarError(Textos.errorFormularioInvalido);
       return;
     }
@@ -174,7 +217,7 @@ class _PeriodosGestionPantallaState
         fechaInicio: fechaInicio!,
         fechaFin: fechaFin!,
         activo: activo,
-        idInstitucion: esSuperadmin ? institucionControlador.text.trim() : null,
+        idInstitucion: esSuperadmin ? institucionSeleccionada?.id : null,
       );
       if (!mounted) {
         return;

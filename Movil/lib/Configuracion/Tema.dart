@@ -59,7 +59,7 @@ abstract class Tema {
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         foregroundColor: Colores.textoPrincipal,
-        backgroundColor: Colores.grisFondo,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -102,7 +102,7 @@ abstract class Tema {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFF7F9FC),
+        fillColor: Colores.blanco,
         hintStyle: baseTextTheme.bodyMedium?.copyWith(
           color: Colores.textoTerciario,
         ),
@@ -112,11 +112,11 @@ abstract class Tema {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(Dimensiones.radioLg),
-          borderSide: const BorderSide(color: Colores.grisBorde),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(Dimensiones.radioLg),
-          borderSide: const BorderSide(color: Colores.grisBorde),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(Dimensiones.radioLg),
@@ -136,13 +136,13 @@ abstract class Tema {
         ),
       ),
       cardTheme: CardThemeData(
-        elevation: 0,
+        elevation: 2,
+        shadowColor: Colores.sombra,
         surfaceTintColor: Colors.transparent,
         color: Colores.blanco,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Dimensiones.radioXl),
-          side: const BorderSide(color: Colores.grisBorde, width: 1),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -165,6 +165,17 @@ abstract class Tema {
           color: Colores.textoSecundario,
           fontWeight: FontWeight.w600,
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colores.blanco,
+        indicatorColor: Colores.azulPrimario.withValues(alpha: 0.12),
+        labelTextStyle: WidgetStateProperty.resolveWith((estados) {
+          final seleccionado = estados.contains(WidgetState.selected);
+          return baseTextTheme.labelMedium?.copyWith(
+            color: seleccionado ? Colores.azulPrimario : Colores.textoTerciario,
+            fontWeight: seleccionado ? FontWeight.w700 : FontWeight.w500,
+          );
+        }),
       ),
     );
   }

@@ -1,11 +1,25 @@
 param(
-  [Parameter(Mandatory = $true)]
+  [Parameter(Mandatory = $false)]
   [string]$DeviceId
 )
 
 $adbPath = Join-Path $env:LOCALAPPDATA "Android\sdk\platform-tools\adb.exe"
 if (-not (Test-Path $adbPath)) {
   throw "No se encontro adb en: $adbPath"
+}
+
+if ([string]::IsNullOrWhiteSpace($DeviceId)) {
+  $lineas = & $adbPath devices
+  $dispositivos = @()
+  foreach ($linea in $lineas) {
+    if ($linea -match "^\s*([^\s]+)\s+device\s*$" -and $linea -notmatch "^List of devices attached") {
+      $dispositivos += $Matches[1]
+    }
+  }
+  if ($dispositivos.Count -eq 0) {
+    throw "No hay dispositivos Android conectados (estado 'device')."
+  }
+  $DeviceId = $dispositivos[0]
 }
 
 Write-Host "Configurando adb reverse para $DeviceId ..."

@@ -89,6 +89,8 @@ El archivo `.env` en la raíz del proyecto contiene **todas las variables necesa
   - `BCRYPT_RONDAS_HASH`
   - `ADMIN_CORREO_INICIAL`, `ADMIN_CONTRASENA_INICIAL`
   - `SUPERADMIN_CORREO_INICIAL`, `SUPERADMIN_CONTRASENA_INICIAL`
+  - `DOCENTE_CORREO_INICIAL`, `DOCENTE_CONTRASENA_INICIAL`
+  - `ESTUDIANTE_CORREO_INICIAL`, `ESTUDIANTE_CONTRASENA_INICIAL`
   - Variables de telemetría (por ejemplo `TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA`, etc.).
 
 - **Frontend (Next.js)**  
@@ -108,6 +110,51 @@ El archivo `.env` en la raíz del proyecto contiene **todas las variables necesa
    - `DATABASE_URL` apunte al host correcto (`localhost` si corres Postgres fuera de Docker, `postgres` si usas Docker Compose).
    - Los puertos `PUERTO_APP` y `PUERTO_FRONTEND` no estén ocupados.
    - Para el Frontend, `NEXT_PUBLIC_API_URL` y `NEXT_PUBLIC_WEBSOCKET_URL` apunten al Backend correcto.
+
+### 3.3. Credenciales iniciales de desarrollo (todos los perfiles)
+
+Después de ejecutar semillas (`npm run prisma:sembrar` en `Backend/`), quedan creadas cuentas iniciales listas para iniciar sesión en móvil/web:
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| SUPERADMINISTRADOR | `superadmin@evalpro.com` | `CambiarInmediatamente123!` |
+| ADMINISTRADOR | `admin@evalpro.com` | `CambiarInmediatamente123!` |
+| DOCENTE | `docente@evalpro.com` | `DocenteEvalPro123!` |
+| ESTUDIANTE | `estudiante@evalpro.com` | `EstudianteEvalPro123!` |
+
+Notas:
+- Estas cuentas son de desarrollo local.
+- Si ya habías sembrado antes, vuelve a ejecutar `npm run prisma:sembrar` para asegurar estos usuarios y datos demo mínimos (periodo/grupo/membresías).
+- Las credenciales se pueden sobreescribir por variables de entorno:
+  - `SUPERADMIN_CORREO_INICIAL`, `SUPERADMIN_CONTRASENA_INICIAL`
+  - `ADMIN_CORREO_INICIAL`, `ADMIN_CONTRASENA_INICIAL`
+  - `DOCENTE_CORREO_INICIAL`, `DOCENTE_CONTRASENA_INICIAL`
+  - `ESTUDIANTE_CORREO_INICIAL`, `ESTUDIANTE_CONTRASENA_INICIAL`
+
+### 3.4. Reparar acceso a PostgreSQL y resembrar (cuando Prisma falla por permisos)
+
+Si al ejecutar Prisma aparece `permission denied for schema public` u otros errores de permisos:
+
+1. Ejecuta el script SQL de reparación con usuario `postgres`:
+
+```bash
+psql -h localhost -p 5432 -U postgres -f Backend/prisma/sql/RepararAccesoEvalPro.sql
+```
+
+2. Reaplica esquema y semillas:
+
+```bash
+cd Backend
+npm run prisma:generar
+npx prisma db push --skip-generate
+npm run prisma:sembrar
+```
+
+3. Verifica salud del backend:
+
+```bash
+curl http://localhost:3001/api/v1/salud
+```
 
 ---
 
@@ -316,11 +363,12 @@ flutter test
 Los entornos se configuran con archivos JSON en `Movil/Entornos/`:
 
 - `dev.json`
+- `dev.adb.json`
 - `stage.json`
 - `prod.json`
 
-Cada archivo define las URLs del Backend y otras configuraciones para la app móvil.  
-Asegúrate de que el valor de la URL apunte al backend correcto (IP/puerto accesibles desde el emulador o dispositivo físico).
+`dev.json` viene configurado para `localhost:3001`.
+Para dispositivo físico usa IP LAN o `adb reverse` (ver 6.5.4).
 
 #### 6.5.3. Ejecutar en emulador Android (desarrollo local)
 
@@ -331,14 +379,34 @@ flutter run -d emulator-5554 --dart-define-from-file=Entornos/dev.json
 
 Reemplaza `emulator-5554` por el ID de tu emulador.
 
-#### 6.5.4. Ejecutar en dispositivo físico (misma red local)
+#### 6.5.4. Ejecutar en dispositivo físico (comando exacto recomendado)
 
-1. Edita `Movil/Entornos/dev.json` y reemplaza la URL del backend por tu **IP local** (ej. `http://192.168.0.10:3001`).
-2. Ejecuta:
+1. Obtén el ID exacto del dispositivo:
+
+```bash
+cd Movil
+flutter devices
+```
+
+2. Si usas red LAN, ajusta `Movil/Entornos/dev.json` a tu IP (ej. `http://192.168.0.10:3001`) y ejecuta:
 
 ```bash
 cd Movil
 flutter run -d <id-dispositivo> --dart-define-from-file=Entornos/dev.json
+```
+
+3. Si la LAN bloquea el backend (opción más estable), usa `adb reverse` y ejecuta:
+
+```bash
+cd Movil
+.\scripts\run_android_adb_reverse.ps1 -DeviceId <id-dispositivo>
+flutter run -d <id-dispositivo> --dart-define-from-file=Entornos/dev.adb.json
+```
+
+Ejemplo real de sintaxis:
+
+```bash
+flutter run -d R58N123ABC --dart-define-from-file=Entornos/dev.adb.json
 ```
 
 #### 6.5.5. Stage / Producción (móvil)

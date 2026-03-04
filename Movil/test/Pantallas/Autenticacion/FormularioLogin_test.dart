@@ -24,6 +24,7 @@ void main() {
             estaAutenticado: false,
             usuario: null,
             error: null,
+            tokenTemporalPrimerLogin: null,
           ),
           alIniciarSesion: ({required correo, required contrasena}) async {
             llamadas++;
@@ -49,6 +50,7 @@ void main() {
             estaAutenticado: false,
             usuario: null,
             error: null,
+            tokenTemporalPrimerLogin: null,
           ),
           alIniciarSesion: ({required correo, required contrasena}) async {},
         ),
@@ -88,6 +90,7 @@ void main() {
             estaAutenticado: false,
             usuario: null,
             error: null,
+            tokenTemporalPrimerLogin: null,
           ),
           alIniciarSesion: ({required correo, required contrasena}) async {
             correoEnviado = correo;

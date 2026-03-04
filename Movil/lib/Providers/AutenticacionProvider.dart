@@ -28,35 +28,44 @@ import '../Utilidades/MapeadorErroresNegocio.dart';
 part 'AutenticacionProvider.g.dart';
 
 class EstadoAutenticacion {
+  static const Object _sinCambios = Object();
+
   final bool inicializado;
   final bool estaAutenticado;
   final Usuario? usuario;
   final String? error;
+  final String? tokenTemporalPrimerLogin;
 
   const EstadoAutenticacion({
     required this.inicializado,
     required this.estaAutenticado,
     required this.usuario,
     required this.error,
+    required this.tokenTemporalPrimerLogin,
   });
 
   const EstadoAutenticacion.vacio()
       : inicializado = false,
         estaAutenticado = false,
         usuario = null,
-        error = null;
+        error = null,
+        tokenTemporalPrimerLogin = null;
 
   EstadoAutenticacion copyWith({
     bool? inicializado,
     bool? estaAutenticado,
     Usuario? usuario,
-    String? error,
+    Object? error = _sinCambios,
+    Object? tokenTemporalPrimerLogin = _sinCambios,
   }) {
     return EstadoAutenticacion(
       inicializado: inicializado ?? this.inicializado,
       estaAutenticado: estaAutenticado ?? this.estaAutenticado,
       usuario: usuario ?? this.usuario,
-      error: error,
+      error: identical(error, _sinCambios) ? this.error : error as String?,
+      tokenTemporalPrimerLogin: identical(tokenTemporalPrimerLogin, _sinCambios)
+          ? this.tokenTemporalPrimerLogin
+          : tokenTemporalPrimerLogin as String?,
     );
   }
 }
@@ -156,6 +165,7 @@ class AutenticacionEstado extends _$AutenticacionEstado {
       estaAutenticado: activa,
       usuario: usuario,
       error: null,
+      tokenTemporalPrimerLogin: null,
     );
   }
 
@@ -171,8 +181,19 @@ class AutenticacionEstado extends _$AutenticacionEstado {
         estaAutenticado: true,
         usuario: sesion.usuario,
         error: null,
+        tokenTemporalPrimerLogin: null,
       );
     } catch (error) {
+      if (error is RequiereCambioContrasenaException) {
+        state = state.copyWith(
+          inicializado: true,
+          estaAutenticado: false,
+          usuario: null,
+          error: null,
+          tokenTemporalPrimerLogin: error.tokenTemporal,
+        );
+        return;
+      }
       state = state.copyWith(
           inicializado: true,
           estaAutenticado: false,
@@ -180,7 +201,44 @@ class AutenticacionEstado extends _$AutenticacionEstado {
           error: MapeadorErroresNegocio.mapear(
             error,
             mensajePorDefecto: Textos.errorInicioSesion,
-          ));
+          ),
+          tokenTemporalPrimerLogin: null);
+    }
+  }
+
+  /// Completa primer login con cambio de contraseña y abre sesión normal.
+  Future<void> completarPrimerLogin({required String nuevaContrasena}) async {
+    final tokenTemporal = state.tokenTemporalPrimerLogin;
+    if (tokenTemporal == null || tokenTemporal.trim().isEmpty) {
+      state = state.copyWith(
+        error: Textos.errorInicioSesion,
+      );
+      return;
+    }
+
+    try {
+      final sesion =
+          await ref.read(autenticacionServicioProvider).completarPrimerLogin(
+                tokenTemporal: tokenTemporal,
+                nuevaContrasena: nuevaContrasena,
+              );
+      state = state.copyWith(
+        inicializado: true,
+        estaAutenticado: true,
+        usuario: sesion.usuario,
+        error: null,
+        tokenTemporalPrimerLogin: null,
+      );
+    } catch (error) {
+      state = state.copyWith(
+        inicializado: true,
+        estaAutenticado: false,
+        usuario: null,
+        error: MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorGestion,
+        ),
+      );
     }
   }
 
@@ -192,6 +250,7 @@ class AutenticacionEstado extends _$AutenticacionEstado {
       estaAutenticado: false,
       usuario: null,
       error: null,
+      tokenTemporalPrimerLogin: null,
     );
   }
 }

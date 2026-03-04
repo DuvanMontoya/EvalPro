@@ -1,36 +1,65 @@
 /**
  * @archivo   Semilla.ts
- * @descripcion Crea el usuario administrador inicial cuando aún no existe en la base de datos.
+ * @descripcion Crea cuentas iniciales de todos los perfiles y datos mínimos de operación.
  * @modulo    Semillas
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
-import { EstadoCuenta, EstadoInstitucion, PrismaClient, RolUsuario } from '@prisma/client';
+import { EstadoCuenta, EstadoGrupo, EstadoInstitucion, PrismaClient, RolUsuario, Usuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
 const NOMBRE_INSTITUCION_INICIAL = 'EvalPro Institución Inicial';
+const NOMBRE_PERIODO_INICIAL = '2026-1';
+const NOMBRE_GRUPO_INICIAL = 'Grupo Demo EvalPro';
+const MAX_INTENTOS_CODIGO_GRUPO = 10;
+
+interface DefinicionCuentaInicial {
+  correo: string;
+  contrasena: string;
+  rol: RolUsuario;
+  idInstitucion: string | null;
+  nombre: string;
+  apellidos: string;
+}
 
 /**
- * Inserta un administrador inicial basado en variables de entorno solo si no existe uno previo.
+ * Inserta cuentas iniciales y estructura mínima demo en la base de datos.
  */
 async function ejecutarSemilla(): Promise<void> {
-  const correo = process.env.ADMIN_CORREO_INICIAL;
-  const contrasenaPlano = process.env.ADMIN_CONTRASENA_INICIAL;
+  const correoAdministrador = process.env.ADMIN_CORREO_INICIAL;
+  const contrasenaAdministrador = process.env.ADMIN_CONTRASENA_INICIAL;
   const correoSuperadmin = process.env.SUPERADMIN_CORREO_INICIAL ?? 'superadmin@evalpro.com';
-  const contrasenaSuperadmin = process.env.SUPERADMIN_CONTRASENA_INICIAL ?? contrasenaPlano;
+  const contrasenaSuperadmin = process.env.SUPERADMIN_CONTRASENA_INICIAL ?? contrasenaAdministrador;
+  const correoDocente = process.env.DOCENTE_CORREO_INICIAL ?? 'docente@evalpro.com';
+  const contrasenaDocente = process.env.DOCENTE_CONTRASENA_INICIAL ?? 'DocenteEvalPro123!';
+  const correoEstudiante = process.env.ESTUDIANTE_CORREO_INICIAL ?? 'estudiante@evalpro.com';
+  const contrasenaEstudiante = process.env.ESTUDIANTE_CONTRASENA_INICIAL ?? 'EstudianteEvalPro123!';
   const rondasHash = Number(process.env.BCRYPT_RONDAS_HASH ?? '12');
 
-  if (!correo || !contrasenaPlano) {
+  if (!correoAdministrador || !contrasenaAdministrador) {
     throw new Error('Faltan ADMIN_CORREO_INICIAL o ADMIN_CONTRASENA_INICIAL en el entorno.');
   }
   if (!contrasenaSuperadmin) {
     throw new Error('No se pudo resolver SUPERADMIN_CONTRASENA_INICIAL.');
   }
-  const correoNormalizado = correo.trim().toLowerCase();
+  if (!contrasenaDocente || !contrasenaEstudiante) {
+    throw new Error('No se pudieron resolver contraseñas de DOCENTE/ESTUDIANTE inicial.');
+  }
+
+  const correoAdministradorNormalizado = correoAdministrador.trim().toLowerCase();
   const correoSuperadminNormalizado = correoSuperadmin.trim().toLowerCase();
-  if (correoSuperadminNormalizado === correoNormalizado) {
-    throw new Error('ADMIN_CORREO_INICIAL y SUPERADMIN_CORREO_INICIAL deben ser diferentes.');
+  const correoDocenteNormalizado = correoDocente.trim().toLowerCase();
+  const correoEstudianteNormalizado = correoEstudiante.trim().toLowerCase();
+  const correosIniciales = new Set<string>([
+    correoAdministradorNormalizado,
+    correoSuperadminNormalizado,
+    correoDocenteNormalizado,
+    correoEstudianteNormalizado,
+  ]);
+  if (correosIniciales.size < 4) {
+    throw new Error('Las cuentas iniciales ADMIN/SUPERADMIN/DOCENTE/ESTUDIANTE deben tener correos distintos.');
   }
 
   const institucion = await prisma.institucion.upsert({
@@ -43,103 +72,207 @@ async function ejecutarSemilla(): Promise<void> {
     },
   });
 
-  const superadminExistente = await prisma.usuario.findFirst({
-    where: {
-      correo: {
-        equals: correoSuperadminNormalizado,
-        mode: 'insensitive',
-      },
-    },
-  });
-
-  if (superadminExistente) {
-    const datosActualizacionSuperadmin: Record<string, unknown> = {
+  const cuentasIniciales: DefinicionCuentaInicial[] = [
+    {
       correo: correoSuperadminNormalizado,
+      contrasena: contrasenaSuperadmin,
       rol: RolUsuario.SUPERADMINISTRADOR,
       idInstitucion: null,
-      estadoCuenta: EstadoCuenta.ACTIVO,
-      primerLogin: false,
-      activo: true,
-      credencialTemporal: null,
-      credencialTemporalVence: null,
-    };
+      nombre: 'Superadministrador',
+      apellidos: 'Inicial',
+    },
+    {
+      correo: correoAdministradorNormalizado,
+      contrasena: contrasenaAdministrador,
+      rol: RolUsuario.ADMINISTRADOR,
+      idInstitucion: institucion.id,
+      nombre: 'Administrador',
+      apellidos: 'Inicial',
+    },
+    {
+      correo: correoDocenteNormalizado,
+      contrasena: contrasenaDocente,
+      rol: RolUsuario.DOCENTE,
+      idInstitucion: institucion.id,
+      nombre: 'Docente',
+      apellidos: 'Inicial',
+    },
+    {
+      correo: correoEstudianteNormalizado,
+      contrasena: contrasenaEstudiante,
+      rol: RolUsuario.ESTUDIANTE,
+      idInstitucion: institucion.id,
+      nombre: 'Estudiante',
+      apellidos: 'Inicial',
+    },
+  ];
 
-    if (superadminExistente.estadoCuenta !== EstadoCuenta.ACTIVO || superadminExistente.primerLogin) {
-      const contrasenaHash = await bcrypt.hash(contrasenaSuperadmin, Math.max(12, rondasHash));
-      datosActualizacionSuperadmin.contrasena = contrasenaHash;
+  let usuarioAdministrador: Usuario | null = null;
+  let usuarioDocente: Usuario | null = null;
+  let usuarioEstudiante: Usuario | null = null;
+
+  for (const definicion of cuentasIniciales) {
+    const usuario = await asegurarCuentaInicial(definicion, rondasHash);
+    console.log(`Cuenta inicial asegurada: ${definicion.rol} (${definicion.correo}) => ${usuario.id}`);
+    if (definicion.rol === RolUsuario.ADMINISTRADOR) {
+      usuarioAdministrador = usuario;
     }
-
-    const actualizado = await prisma.usuario.update({
-      where: { id: superadminExistente.id },
-      data: datosActualizacionSuperadmin,
-    });
-    console.log(`Superadministrador inicial actualizado: ${actualizado.id}`);
-  } else {
-    const contrasenaHash = await bcrypt.hash(contrasenaSuperadmin, Math.max(12, rondasHash));
-    const superadmin = await prisma.usuario.create({
-      data: {
-        nombre: 'Superadministrador',
-        apellidos: 'Inicial',
-        correo: correoSuperadminNormalizado,
-        contrasena: contrasenaHash,
-        rol: RolUsuario.SUPERADMINISTRADOR,
-        idInstitucion: null,
-        estadoCuenta: EstadoCuenta.ACTIVO,
-        primerLogin: false,
-      },
-    });
-    console.log(`Superadministrador creado con id: ${superadmin.id}`);
+    if (definicion.rol === RolUsuario.DOCENTE) {
+      usuarioDocente = usuario;
+    }
+    if (definicion.rol === RolUsuario.ESTUDIANTE) {
+      usuarioEstudiante = usuario;
+    }
   }
 
-  const administradorExistente = await prisma.usuario.findFirst({
+  if (!usuarioAdministrador || !usuarioDocente || !usuarioEstudiante) {
+    throw new Error('No se pudieron resolver cuentas iniciales obligatorias para datos demo.');
+  }
+
+  const periodoExistente = await prisma.periodoAcademico.findFirst({
+    where: {
+      idInstitucion: institucion.id,
+      nombre: NOMBRE_PERIODO_INICIAL,
+    },
+  });
+  const periodo = periodoExistente
+    ? await prisma.periodoAcademico.update({
+        where: { id: periodoExistente.id },
+        data: {
+          fechaInicio: new Date('2026-01-15T08:00:00.000Z'),
+          fechaFin: new Date('2026-12-15T18:00:00.000Z'),
+          activo: true,
+        },
+      })
+    : await prisma.periodoAcademico.create({
+        data: {
+          idInstitucion: institucion.id,
+          nombre: NOMBRE_PERIODO_INICIAL,
+          fechaInicio: new Date('2026-01-15T08:00:00.000Z'),
+          fechaFin: new Date('2026-12-15T18:00:00.000Z'),
+          activo: true,
+        },
+      });
+
+  const grupoExistente = await prisma.grupoAcademico.findFirst({
+    where: {
+      idInstitucion: institucion.id,
+      idPeriodo: periodo.id,
+      nombre: NOMBRE_GRUPO_INICIAL,
+    },
+  });
+
+  const grupo =
+    grupoExistente ??
+    (await prisma.grupoAcademico.create({
+      data: {
+        idInstitucion: institucion.id,
+        idPeriodo: periodo.id,
+        nombre: NOMBRE_GRUPO_INICIAL,
+        descripcion: 'Grupo de demostración inicial para validaciones móviles.',
+        estado: EstadoGrupo.BORRADOR,
+        codigoAcceso: await generarCodigoGrupoUnico(),
+      },
+    }));
+
+  await prisma.grupoDocente.upsert({
+    where: {
+      idGrupo_idDocente: {
+        idGrupo: grupo.id,
+        idDocente: usuarioDocente.id,
+      },
+    },
+    update: { activo: true, asignadoPor: usuarioAdministrador.id },
+    create: {
+      idGrupo: grupo.id,
+      idDocente: usuarioDocente.id,
+      asignadoPor: usuarioAdministrador.id,
+      activo: true,
+    },
+  });
+
+  await prisma.grupoEstudiante.upsert({
+    where: {
+      idGrupo_idEstudiante: {
+        idGrupo: grupo.id,
+        idEstudiante: usuarioEstudiante.id,
+      },
+    },
+    update: { activo: true, inscritoPor: usuarioAdministrador.id },
+    create: {
+      idGrupo: grupo.id,
+      idEstudiante: usuarioEstudiante.id,
+      inscritoPor: usuarioAdministrador.id,
+      activo: true,
+    },
+  });
+
+  console.log(`Periodo demo asegurado: ${periodo.id}`);
+  console.log(`Grupo demo asegurado: ${grupo.id}`);
+}
+
+async function asegurarCuentaInicial(
+  definicion: DefinicionCuentaInicial,
+  rondasHash: number,
+): Promise<Usuario> {
+  const existente = await prisma.usuario.findFirst({
     where: {
       correo: {
-        equals: correoNormalizado,
+        equals: definicion.correo,
         mode: 'insensitive',
       },
     },
   });
 
-  if (administradorExistente) {
-    const datosActualizacion: Record<string, unknown> = {
-      correo: correoNormalizado,
-      rol: RolUsuario.ADMINISTRADOR,
-      idInstitucion: institucion.id,
-      estadoCuenta: EstadoCuenta.ACTIVO,
-      primerLogin: false,
-      activo: true,
-      credencialTemporal: null,
-      credencialTemporalVence: null,
-    };
+  const contrasenaHash = await bcrypt.hash(definicion.contrasena, Math.max(12, rondasHash));
+  const datosComun = {
+    nombre: definicion.nombre,
+    apellidos: definicion.apellidos,
+    correo: definicion.correo,
+    contrasena: contrasenaHash,
+    rol: definicion.rol,
+    idInstitucion: definicion.idInstitucion,
+    estadoCuenta: EstadoCuenta.ACTIVO,
+    primerLogin: false,
+    activo: true,
+    credencialTemporal: null,
+    credencialTemporalVence: null,
+    tokenRefresh: null,
+    intentosFallidosLogin: 0,
+    bloqueadoHasta: null,
+  };
 
-    if (administradorExistente.estadoCuenta !== EstadoCuenta.ACTIVO || administradorExistente.primerLogin) {
-      const contrasena = await bcrypt.hash(contrasenaPlano, Math.max(12, rondasHash));
-      datosActualizacion.contrasena = contrasena;
-    }
-
-    const actualizado = await prisma.usuario.update({
-      where: { id: administradorExistente.id },
-      data: datosActualizacion,
+  if (existente) {
+    return prisma.usuario.update({
+      where: { id: existente.id },
+      data: datosComun,
     });
-    console.log(`Administrador inicial actualizado: ${actualizado.id}`);
-    return;
   }
 
-  const contrasena = await bcrypt.hash(contrasenaPlano, Math.max(12, rondasHash));
-  const administrador = await prisma.usuario.create({
-    data: {
-      nombre: 'Administrador',
-      apellidos: 'Inicial',
-      correo: correoNormalizado,
-      contrasena,
-      rol: RolUsuario.ADMINISTRADOR,
-      idInstitucion: institucion.id,
-      estadoCuenta: EstadoCuenta.ACTIVO,
-      primerLogin: false,
-    },
+  return prisma.usuario.create({
+    data: datosComun,
   });
+}
 
-  console.log(`Administrador creado con id: ${administrador.id}`);
+async function generarCodigoGrupoUnico(): Promise<string> {
+  for (let intento = 0; intento < MAX_INTENTOS_CODIGO_GRUPO; intento += 1) {
+    const codigo = randomBytes(8)
+      .toString('base64url')
+      .replace(/[^A-Za-z0-9]/g, '')
+      .slice(0, 8)
+      .toUpperCase();
+    if (codigo.length < 8) {
+      continue;
+    }
+    const existente = await prisma.grupoAcademico.findUnique({
+      where: { codigoAcceso: codigo },
+      select: { id: true },
+    });
+    if (!existente) {
+      return codigo;
+    }
+  }
+  throw new Error('No se pudo generar código único para el grupo inicial');
 }
 
 ejecutarSemilla()

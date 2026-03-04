@@ -15,6 +15,12 @@ import '../Modelos/SesionAutenticada.dart';
 import '../Modelos/Usuario.dart';
 import 'ApiServicio.dart';
 
+class RequiereCambioContrasenaException implements Exception {
+  final String tokenTemporal;
+
+  const RequiereCambioContrasenaException(this.tokenTemporal);
+}
+
 class AutenticacionServicio {
   final ApiServicio _apiServicio;
   final FlutterSecureStorage _almacenSeguro;
@@ -30,12 +36,52 @@ class AutenticacionServicio {
     required String correo,
     required String contrasena,
   }) async {
-    final sesion = await _apiServicio.publicar<SesionAutenticada>(
+    final respuesta = await _apiServicio.publicar<Map<String, dynamic>>(
       ApiEndpoints.autenticacionIniciarSesion,
-      (valor) => SesionAutenticada.fromJson(valor as Map<String, dynamic>),
+      (valor) => valor as Map<String, dynamic>,
       cuerpo: <String, dynamic>{
         'correo': correo,
         'contrasena': contrasena,
+      },
+    );
+    final requiereCambioContrasena =
+        (respuesta['requiereCambioContrasena'] as bool?) ?? false;
+    if (requiereCambioContrasena) {
+      final tokenTemporal = respuesta['tokenTemporal'] as String?;
+      if (tokenTemporal == null || tokenTemporal.trim().isEmpty) {
+        throw StateError(Textos.errorInicioSesion);
+      }
+      throw RequiereCambioContrasenaException(tokenTemporal);
+    }
+
+    final sesion = SesionAutenticada.fromJson(respuesta);
+    _validarAccesoMovil(sesion.usuario);
+
+    await _almacenSeguro.write(
+        key: ClavesAlmacen.tokenAcceso, value: sesion.tokenAcceso);
+    await _almacenSeguro.write(
+        key: ClavesAlmacen.tokenRefresh, value: sesion.tokenRefresh);
+    await _almacenSeguro.write(
+      key: ClavesAlmacen.usuarioActual,
+      value: jsonEncode(sesion.usuario.toJson()),
+    );
+
+    return sesion;
+  }
+
+  /// Completa primer login usando token temporal y registra sesión final.
+  Future<SesionAutenticada> completarPrimerLogin({
+    required String tokenTemporal,
+    required String nuevaContrasena,
+  }) async {
+    final sesion = await _apiServicio.publicar<SesionAutenticada>(
+      ApiEndpoints.autenticacionCambiarContrasena,
+      (valor) => SesionAutenticada.fromJson(valor as Map<String, dynamic>),
+      cuerpo: <String, dynamic>{
+        'nuevaContrasena': nuevaContrasena,
+      },
+      encabezados: <String, dynamic>{
+        'Authorization': 'Bearer ${tokenTemporal.trim()}',
       },
     );
     _validarAccesoMovil(sesion.usuario);

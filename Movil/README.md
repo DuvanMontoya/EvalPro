@@ -26,11 +26,36 @@ Cada archivo define al menos:
 - `DIAS_RETENCION_TELEMETRIA`
 - `VERSION_APP`
 
+`dev.json` viene preparado con `localhost:3001` para desarrollo local.
+En dispositivo físico usa IP LAN o `dev.adb.json` con `adb reverse`.
+
 La app intenta cargar `Entornos/dev.json` automáticamente al iniciar.
 Si pasas `--dart-define-from-file`, ese valor tiene prioridad.
 
 > **Regla:** Para desarrollo de escritorio es recomendable que `API_URL` y `WEBSOCKET_URL`
 > apunten a `localhost` (o a la IP donde tengas levantado el backend).
+
+---
+
+## 1.1 Credenciales iniciales de login (desarrollo)
+
+Después de ejecutar semillas del backend:
+
+```bash
+cd Backend
+npm run prisma:sembrar
+```
+
+Puedes iniciar sesión con estos perfiles:
+
+- `SUPERADMINISTRADOR`: `superadmin@evalpro.com` / `CambiarInmediatamente123!`
+- `ADMINISTRADOR`: `admin@evalpro.com` / `CambiarInmediatamente123!`
+- `DOCENTE`: `docente@evalpro.com` / `DocenteEvalPro123!`
+- `ESTUDIANTE`: `estudiante@evalpro.com` / `EstudianteEvalPro123!`
+
+Nota:
+- Para usuarios recién creados por gestión, el backend puede exigir cambio de contraseña en primer login.
+  La app móvil ya soporta ese flujo y te mostrará el formulario de cambio automáticamente.
 
 ---
 
@@ -114,6 +139,14 @@ cd Movil
 flutter run -d <id-dispositivo> --dart-define-from-file=Entornos/dev.json
 ```
 
+Comando exacto (obteniendo ID primero):
+
+```bash
+cd Movil
+flutter devices
+flutter run -d R58N123ABC --dart-define-from-file=Entornos/dev.json
+```
+
 3. También funciona sin `--dart-define` porque se usa `Entornos/dev.json` como fallback:
 
 ```bash
@@ -144,6 +177,12 @@ flutter run -d <id-dispositivo> --dart-define-from-file=Entornos/dev.adb.json
 
 ```powershell
 cd Movil
+.\scripts\run_android_adb_reverse.ps1
+```
+
+Si quieres forzar un dispositivo específico:
+
+```powershell
 .\scripts\run_android_adb_reverse.ps1 -DeviceId <id-dispositivo>
 ```
 

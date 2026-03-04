@@ -98,7 +98,12 @@ export class UsuariosController {
    * @param usuario - Usuario autenticado.
    */
   @Patch(':id')
-  @Roles(RolUsuario.ADMINISTRADOR, RolUsuario.DOCENTE, RolUsuario.ESTUDIANTE)
+  @Roles(
+    RolUsuario.SUPERADMINISTRADOR,
+    RolUsuario.ADMINISTRADOR,
+    RolUsuario.DOCENTE,
+    RolUsuario.ESTUDIANTE,
+  )
   @ApiOperation({ summary: 'Actualiza un usuario por id' })
   async actualizar(
     @Param('id', ParseUUIDPipe) id: string,

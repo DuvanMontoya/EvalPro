@@ -24,12 +24,11 @@ class InicioPantalla extends ConsumerWidget {
     final usuario = ref.watch(autenticacionEstadoProvider).usuario;
     final rol = usuario?.rol;
     final esEstudiante = rol == RolUsuario.ESTUDIANTE;
-    final puedeGestionarAcademico = rol == RolUsuario.DOCENTE ||
-        rol == RolUsuario.ADMINISTRADOR ||
-        rol == RolUsuario.SUPERADMINISTRADOR;
-    final puedeGestionarInstituciones = rol == RolUsuario.SUPERADMINISTRADOR ||
-        rol == RolUsuario.ADMINISTRADOR ||
-        rol == RolUsuario.DOCENTE;
+    final esSuperadmin = rol == RolUsuario.SUPERADMINISTRADOR;
+    final puedeGestionarAcademico =
+        rol == RolUsuario.DOCENTE || rol == RolUsuario.ADMINISTRADOR;
+    final puedeGestionarInstituciones =
+        rol == RolUsuario.SUPERADMINISTRADOR || rol == RolUsuario.ADMINISTRADOR;
     final puedeGestionarUsuarios =
         rol == RolUsuario.ADMINISTRADOR || rol == RolUsuario.SUPERADMINISTRADOR;
     final puedeGestionarGrupos = rol == RolUsuario.ADMINISTRADOR ||
@@ -64,7 +63,12 @@ class InicioPantalla extends ConsumerWidget {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(Dimensiones.espaciadoLg),
+          padding: const EdgeInsets.fromLTRB(
+            Dimensiones.espaciadoLg,
+            Dimensiones.espaciadoSm,
+            Dimensiones.espaciadoLg,
+            Dimensiones.espaciado2xl,
+          ),
           children: <Widget>[
             _TarjetaUsuario(
               nombre: usuario?.nombre ?? 'Usuario',
@@ -90,7 +94,7 @@ class InicioPantalla extends ConsumerWidget {
                   ),
                 ],
               ),
-            if (puedeGestionarAcademico) ...<Widget>[
+            if (puedeGestionarAcademico)
               _BloqueAcciones(
                 titulo: 'Gestion academica',
                 descripcion:
@@ -146,7 +150,40 @@ class InicioPantalla extends ConsumerWidget {
                     ),
                 ],
               ),
-            ],
+            if (esSuperadmin)
+              _BloqueAcciones(
+                titulo: 'Operacion global',
+                descripcion:
+                    'Gestiona instituciones y estructura base multi-tenant.',
+                acciones: <_AccionInicio>[
+                  _AccionInicio(
+                    etiqueta: Textos.gestionarInstituciones,
+                    icono: Icons.apartment_outlined,
+                    onPressed: () => context.go(Rutas.gestionInstituciones),
+                    esPrimaria: true,
+                  ),
+                  _AccionInicio(
+                    etiqueta: Textos.gestionarUsuarios,
+                    icono: Icons.manage_accounts_outlined,
+                    onPressed: () => context.go(Rutas.gestionUsuarios),
+                  ),
+                  _AccionInicio(
+                    etiqueta: Textos.gestionarPeriodos,
+                    icono: Icons.calendar_month_outlined,
+                    onPressed: () => context.go(Rutas.gestionPeriodos),
+                  ),
+                  _AccionInicio(
+                    etiqueta: Textos.gestionarGrupos,
+                    icono: Icons.groups_2_outlined,
+                    onPressed: () => context.go(Rutas.gestionGrupos),
+                  ),
+                  _AccionInicio(
+                    etiqueta: Textos.gestionarReclamos,
+                    icono: Icons.support_agent_outlined,
+                    onPressed: () => context.go(Rutas.gestionReclamos),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -169,43 +206,68 @@ class _TarjetaUsuario extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(Dimensiones.espaciadoLg),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colores.azulPrimario.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(Dimensiones.radioMd),
-              ),
-              child: const Icon(
-                Icons.account_circle_rounded,
-                color: Colores.azulPrimario,
-                size: 28,
-              ),
+        child: Container(
+          padding: const EdgeInsets.all(Dimensiones.espaciadoLg),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: <Color>[Colores.azulPrimario, Colores.azulSecundario],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(width: Dimensiones.espaciadoMd),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'Hola, $nombre',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: Dimensiones.espaciadoXs),
-                  Text(
-                    '${Textos.rolActual}: $rol',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: Colores.textoSecundario,
-                    ),
-                  ),
-                ],
+            borderRadius: BorderRadius.circular(Dimensiones.radioLg),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colores.blanco.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(Dimensiones.radioMd),
+                ),
+                child: const Icon(
+                  Icons.account_circle_rounded,
+                  color: Colores.blanco,
+                  size: 34,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: Dimensiones.espaciadoMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Hola, $nombre',
+                      style: textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: Colores.blanco,
+                      ),
+                    ),
+                    const SizedBox(height: Dimensiones.espaciadoXs),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Dimensiones.espaciadoSm,
+                        vertical: Dimensiones.espaciadoXs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colores.blanco.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(
+                          Dimensiones.radioSm,
+                        ),
+                      ),
+                      child: Text(
+                        '${Textos.rolActual}: $rol',
+                        style: textTheme.labelMedium?.copyWith(
+                          color: Colores.blanco,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -235,18 +297,30 @@ class _BloqueAcciones extends StatelessWidget {
             Text(
               titulo,
               style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: Dimensiones.espaciadoSm),
             Text(descripcion, style: textTheme.bodyMedium),
             const SizedBox(height: Dimensiones.espaciadoLg),
-            Wrap(
-              spacing: Dimensiones.espaciadoMd,
-              runSpacing: Dimensiones.espaciadoMd,
-              children: acciones
-                  .map((accion) => _BotonAccion(accion: accion))
-                  .toList(growable: false),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columnas = constraints.maxWidth > 520 ? 2 : 1;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: acciones.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columnas,
+                    mainAxisExtent: 68,
+                    crossAxisSpacing: Dimensiones.espaciadoMd,
+                    mainAxisSpacing: Dimensiones.espaciadoMd,
+                  ),
+                  itemBuilder: (context, indice) {
+                    return _BotonAccion(accion: acciones[indice]);
+                  },
+                );
+              },
             ),
           ],
         ),
@@ -262,29 +336,22 @@ class _BotonAccion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final estilo = accion.esPrimaria
-        ? FilledButton.styleFrom(
-            backgroundColor: Colores.azulPrimario,
-            foregroundColor: Colores.blanco,
-          )
-        : FilledButton.styleFrom(
-            backgroundColor: Colores.grisFondoSecundario,
-            foregroundColor: Colores.textoPrincipal,
-          );
-
-    return SizedBox(
-      width: 290,
-      child: FilledButton.icon(
-        style: estilo,
-        onPressed: accion.onPressed,
-        icon: Icon(accion.icono, size: 20),
-        label: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            accion.etiqueta,
-            overflow: TextOverflow.ellipsis,
-          ),
+    return FilledButton.icon(
+      style: FilledButton.styleFrom(
+        backgroundColor:
+            accion.esPrimaria ? Colores.azulPrimario : Colores.grisFondo,
+        foregroundColor:
+            accion.esPrimaria ? Colores.blanco : Colores.textoPrincipal,
+        alignment: Alignment.centerLeft,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Dimensiones.radioMd),
         ),
+      ),
+      onPressed: accion.onPressed,
+      icon: Icon(accion.icono, size: 20),
+      label: Text(
+        accion.etiqueta,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
