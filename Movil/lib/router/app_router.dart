@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_colors.dart';
+import '../presentation/pages/auth/change_password_page.dart';
 import '../presentation/pages/auth/login_page.dart';
 import '../presentation/pages/splash/splash_page.dart';
 import '../presentation/pages/student/assignments/my_exams_page.dart';
@@ -60,6 +61,22 @@ class AppRouter {
                   return true;
                 },
               ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/auth/change-password',
+          pageBuilder: (context, state) {
+            return _buildPageWithTransition(
+              state: state,
+              child: ChangePasswordPage(
+                onPasswordChanged: () {
+                  if (context.mounted) {
+                    context.go('/student/home');
+                  }
+                },
+              ),
+              transitionType: SharedAxisTransitionType.vertical,
             );
           },
         ),

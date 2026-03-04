@@ -25,11 +25,11 @@ final almacenamientoSeguroProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AlmacenamientoSeguroRef = AutoDisposeProviderRef<FlutterSecureStorage>;
-String _$baseDatosLocalHash() => r'd346a2b68258f60c21b986282bde7f608857a55d';
+String _$baseDatosLocalHash() => r'ed66ffe4ea5089faf770a28610c70dc24bad2978';
 
 /// See also [baseDatosLocal].
 @ProviderFor(baseDatosLocal)
-final baseDatosLocalProvider = AutoDisposeProvider<BaseDatosLocal>.internal(
+final baseDatosLocalProvider = Provider<BaseDatosLocal>.internal(
   baseDatosLocal,
   name: r'baseDatosLocalProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -41,7 +41,7 @@ final baseDatosLocalProvider = AutoDisposeProvider<BaseDatosLocal>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef BaseDatosLocalRef = AutoDisposeProviderRef<BaseDatosLocal>;
+typedef BaseDatosLocalRef = ProviderRef<BaseDatosLocal>;
 String _$examenDaoHash() => r'c746590d59dca2dd6efc4e03f9360f9c99e5d4f5';
 
 /// See also [examenDao].

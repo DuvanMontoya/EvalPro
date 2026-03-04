@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -9,7 +10,6 @@ import '../../../widgets/common/eval_badge.dart';
 import '../../../widgets/common/eval_button.dart';
 import '../../../widgets/common/eval_card.dart';
 import '../../../widgets/common/eval_text_field.dart';
-import 'exam_page.dart';
 
 class PreExamPage extends StatefulWidget {
   const PreExamPage({super.key});
@@ -58,9 +58,7 @@ class _PreExamPageState extends State<PreExamPage> {
     if (_status != SessionCodeStatus.valid) {
       return;
     }
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const ExamPage()));
+    context.push('/student/exam');
   }
 
   @override

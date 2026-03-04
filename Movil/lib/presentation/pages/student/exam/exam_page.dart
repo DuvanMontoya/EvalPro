@@ -28,6 +28,7 @@ class ExamPage extends StatefulWidget {
 class _ExamPageState extends State<ExamPage> with TickerProviderStateMixin {
   late final ExamProtectionService _protectionService;
   late final AnimationController _timerPulseController;
+  late final Animation<double> _timerScaleAnimation;
   late final List<ExamQuestion> _questions;
   late int _remainingSeconds;
 
@@ -59,10 +60,24 @@ class _ExamPageState extends State<ExamPage> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+    _timerScaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1, end: 1.08),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.08, end: 1),
+        weight: 1,
+      ),
+    ]).animate(
+      CurvedAnimation(
+        parent: _timerPulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     unawaited(_protectionService.activate());
     _startTimer();
-    _syncTimerPulse();
   }
 
   @override
@@ -91,7 +106,6 @@ class _ExamPageState extends State<ExamPage> with TickerProviderStateMixin {
       });
 
       _handleTimerAlerts(previous: previous, current: _remainingSeconds);
-      _syncTimerPulse();
 
       if (_remainingSeconds == 0) {
         timer.cancel();
@@ -101,7 +115,24 @@ class _ExamPageState extends State<ExamPage> with TickerProviderStateMixin {
   }
 
   void _handleTimerAlerts({required int previous, required int current}) {
-    if (current <= 60 && current > 0 && current % 30 == 0) {
+    if (current <= 0) {
+      return;
+    }
+
+    var shouldPulse = false;
+
+    if (current <= 300 && current > 60 && current % 60 == 0) {
+      shouldPulse = true;
+    }
+    if (current <= 60 && current % 10 == 0) {
+      shouldPulse = true;
+    }
+
+    if (shouldPulse) {
+      _triggerTimerPulse();
+    }
+
+    if (current <= 60 && current % 30 == 0) {
       HapticFeedback.mediumImpact();
     }
     if (current <= 300 &&
@@ -112,17 +143,8 @@ class _ExamPageState extends State<ExamPage> with TickerProviderStateMixin {
     }
   }
 
-  void _syncTimerPulse() {
-    if (_remainingSeconds <= 300 && _remainingSeconds > 0) {
-      if (!_timerPulseController.isAnimating) {
-        _timerPulseController.repeat(reverse: true);
-      }
-      return;
-    }
-    if (_timerPulseController.isAnimating) {
-      _timerPulseController.stop();
-      _timerPulseController.value = 0;
-    }
+  void _triggerTimerPulse() {
+    _timerPulseController.forward(from: 0);
   }
 
   Future<void> _handleAutoSubmit() async {
@@ -584,12 +606,7 @@ class _ExamPageState extends State<ExamPage> with TickerProviderStateMixin {
                               ),
                             ),
                             ScaleTransition(
-                              scale: Tween<double>(begin: 1, end: 1.08).animate(
-                                CurvedAnimation(
-                                  parent: _timerPulseController,
-                                  curve: Curves.easeInOut,
-                                ),
-                              ),
+                              scale: _timerScaleAnimation,
                               child: Text(
                                 _formattedTime(_remainingSeconds),
                                 style: Theme.of(context)
@@ -862,10 +879,14 @@ class _ExamOptionTile extends StatelessWidget {
       label: 'Opción $optionLabel: $optionText',
       child: GestureDetector(
         onTap: onTap,
-        child: AnimatedScale(
+        child: TweenAnimationBuilder<double>(
+          key: ValueKey<bool>(selected),
+          tween: Tween<double>(begin: selected ? 0.97 : 1, end: 1),
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOut,
-          scale: selected ? 1 : 0.98,
+          builder: (context, scale, child) {
+            return Transform.scale(scale: scale, child: child);
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             curve: Curves.easeOut,
@@ -944,7 +965,12 @@ class _ExamActionButtonState extends State<_ExamActionButton> {
         onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
         onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
         onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
-        onTap: enabled ? widget.onPressed : null,
+        onTap: enabled
+            ? () {
+                HapticFeedback.lightImpact();
+                widget.onPressed?.call();
+              }
+            : null,
         child: AnimatedScale(
           duration: const Duration(milliseconds: 100),
           curve: Curves.easeOut,

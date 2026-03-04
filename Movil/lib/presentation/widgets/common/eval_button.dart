@@ -60,7 +60,7 @@ class _EvalButtonState extends State<EvalButton> {
 
   TextStyle? _labelStyle(ThemeData theme, Color color) {
     final base = widget.size == EvalButtonSize.small
-        ? theme.textTheme.labelMedium
+        ? theme.textTheme.titleSmall
         : theme.textTheme.labelLarge;
     return base?.copyWith(color: color);
   }

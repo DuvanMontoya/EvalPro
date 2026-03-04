@@ -1,0 +1,24 @@
+group 'io.adaptant.labs.flutter_windowmanager'
+version '1.0'
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'io.adaptant.labs.flutter_windowmanager'
+    compileSdkVersion 34
+
+    defaultConfig {
+        minSdkVersion 16
+    }
+
+    lint {
+        disable 'InvalidPackage'
+    }
+}

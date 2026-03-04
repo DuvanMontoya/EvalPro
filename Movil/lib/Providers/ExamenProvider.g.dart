@@ -6,7 +6,7 @@ part of 'ExamenProvider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$examenActivoHash() => r'd799069bc9e6b10548272d8927dab976df9be522';
+String _$examenActivoHash() => r'79010fc830fdcb175dd6feeeffac58eed7ef3028';
 
 /// See also [ExamenActivo].
 @ProviderFor(ExamenActivo)

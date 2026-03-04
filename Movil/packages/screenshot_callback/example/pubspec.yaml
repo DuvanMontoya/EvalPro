@@ -1,0 +1,21 @@
+name: screenshot_callback_example
+description: Demonstrates how to use the screenshot_callback plugin.
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  screenshot_callback:
+    path: ../
+
+flutter:
+  uses-material-design: true

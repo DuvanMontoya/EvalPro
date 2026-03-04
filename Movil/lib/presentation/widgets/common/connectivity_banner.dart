@@ -20,32 +20,38 @@ class ConnectivityBanner extends StatelessWidget {
         ? const Duration(milliseconds: 250)
         : const Duration(milliseconds: 300);
 
-    return AnimatedContainer(
+    return AnimatedSize(
       duration: duration,
       curve: Curves.easeOut,
-      height: isConnected ? 0 : 36,
-      child: ClipRect(
-        child: Align(
-          alignment: Alignment.topCenter,
-          heightFactor: isConnected ? 0 : 1,
-          child: Container(
-            height: 36,
-            color: AppColors.error,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.wifi_off_rounded,
-                    size: 14, color: AppColors.surface),
-                const SizedBox(width: AppSpacing.sm),
-                Text(
-                  message,
-                  style: theme.textTheme.labelMedium?.copyWith(
+      child: SizedBox(
+        height: isConnected ? 0 : 36,
+        child: ClipRect(
+          child: AnimatedSlide(
+            offset: isConnected ? const Offset(0, -1) : Offset.zero,
+            duration: duration,
+            curve: Curves.easeOut,
+            child: Container(
+              height: 36,
+              color: AppColors.error,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.wifi_off_rounded,
+                    size: 14,
                     color: AppColors.surface,
-                    fontWeight: FontWeight.w600,
                   ),
-                ),
-              ],
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    message,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: AppColors.surface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

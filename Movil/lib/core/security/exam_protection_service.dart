@@ -54,6 +54,7 @@ class ExamProtectionService extends ChangeNotifier {
   int get backgroundExitCount => _backgroundExitCount;
   bool get reachedBackgroundExitLimit =>
       _backgroundExitCount >= maxBackgroundExits;
+  bool get shouldMarkAttemptForReview => reachedBackgroundExitLimit;
 
   Future<void> activate() async {
     if (_isActive) {
@@ -241,6 +242,7 @@ class ExamProtectionOverlay extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
+    final reachedLimit = exitCount >= limit;
 
     return Positioned.fill(
       child: ColoredBox(
@@ -261,15 +263,26 @@ class ExamProtectionOverlay extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Salida detectada',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: AppColors.examText,
-                      ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.warning_rounded,
+                          color: AppColors.warning,
+                          size: 22,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          'Salida detectada',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            color: AppColors.examText,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'Saliste de la aplicación durante el examen. Esta acción ha sido registrada.',
+                      'Saliste de la aplicación durante el examen. '
+                      'Esta acción ha sido registrada.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: AppColors.examTextSecondary,
                       ),
@@ -288,6 +301,27 @@ class ExamProtectionOverlay extends StatelessWidget {
                         color: AppColors.examTextSecondary,
                       ),
                     ),
+                    if (reachedLimit) ...[
+                      const SizedBox(height: AppSpacing.base),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.base),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorSurface.withValues(alpha: 0.12),
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusSm),
+                          border: Border.all(color: AppColors.errorBorder),
+                        ),
+                        child: Text(
+                          'Límite superado. Tu intento quedó marcado para '
+                          'revisión docente.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.xl),
                     EvalButton(
                       label: 'Entendido — Continuar examen',

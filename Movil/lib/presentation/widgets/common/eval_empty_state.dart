@@ -28,7 +28,7 @@ class _EvalEmptyStateState extends State<EvalEmptyState>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fade;
-  late final Animation<Offset> _slide;
+  late final Animation<double> _translateY;
 
   @override
   void initState() {
@@ -38,9 +38,9 @@ class _EvalEmptyStateState extends State<EvalEmptyState>
       duration: const Duration(milliseconds: 400),
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _slide = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
+    _translateY = Tween<double>(
+      begin: 16,
+      end: 0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     Future<void>.delayed(const Duration(milliseconds: 100), () {
@@ -62,8 +62,14 @@ class _EvalEmptyStateState extends State<EvalEmptyState>
 
     return FadeTransition(
       opacity: _fade,
-      child: SlideTransition(
-        position: _slide,
+      child: AnimatedBuilder(
+        animation: _translateY,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, _translateY.value),
+            child: child,
+          );
+        },
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xl),

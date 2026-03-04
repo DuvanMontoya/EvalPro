@@ -8,6 +8,8 @@ class EvalCard extends StatefulWidget {
     required this.child,
     this.onTap,
     this.padding = const EdgeInsets.all(AppSpacing.base),
+    this.backgroundColor,
+    this.borderColor,
     this.semanticLabel,
     super.key,
   });
@@ -15,6 +17,8 @@ class EvalCard extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
+  final Color? backgroundColor;
+  final Color? borderColor;
   final String? semanticLabel;
 
   @override
@@ -28,17 +32,19 @@ class _EvalCardState extends State<EvalCard> {
   @override
   Widget build(BuildContext context) {
     final card = AnimatedScale(
-      duration: const Duration(milliseconds: 50),
+      duration: const Duration(milliseconds: 100),
       scale: _isPressed ? 0.99 : 1,
       curve: Curves.easeOut,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: widget.backgroundColor ?? AppColors.surface,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           border: Border.all(
-            color: _isHovering ? AppColors.primaryBorder : AppColors.slate200,
+            color: _isHovering
+                ? AppColors.primaryBorder
+                : (widget.borderColor ?? AppColors.slate200),
             width: 1,
           ),
           boxShadow: AppSpacing.shadowSm,

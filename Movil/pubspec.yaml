@@ -21,9 +21,11 @@ dependencies:
   lottie: ^3.3.0
   cached_network_image: ^3.4.1
   google_fonts: ^6.2.1
-  flutter_windowmanager: ^0.2.0
+  flutter_windowmanager:
+    path: packages/flutter_windowmanager
   wakelock_plus: ^1.2.10
-  screenshot_callback: ^3.0.0
+  screenshot_callback:
+    path: packages/screenshot_callback
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
   logger: ^2.5.0

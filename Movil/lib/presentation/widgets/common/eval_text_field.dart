@@ -123,12 +123,17 @@ class _EvalTextFieldState extends State<EvalTextField> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isFocused = _focusNode.hasFocus;
+    final suffixIcon = _buildSuffixIcon();
     final borderColor = _hasError
         ? AppColors.error
-        : (_focusNode.hasFocus ? AppColors.primary : AppColors.slate200);
-    final borderWidth = _focusNode.hasFocus ? 2.0 : 1.5;
+        : (isFocused ? AppColors.primary : AppColors.slate200);
+    final borderWidth = isFocused ? 2.0 : 1.5;
     final fillColor = widget.enabled ? AppColors.surface : AppColors.slate50;
     final textColor = widget.enabled ? AppColors.slate900 : AppColors.slate300;
+    final effectiveBorderColor = widget.enabled
+        ? borderColor
+        : (_hasError ? AppColors.error : AppColors.slate100);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +147,8 @@ class _EvalTextFieldState extends State<EvalTextField> {
             decoration: BoxDecoration(
               color: fillColor,
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              border: Border.all(color: borderColor, width: borderWidth),
+              border:
+                  Border.all(color: effectiveBorderColor, width: borderWidth),
             ),
             child: TextField(
               controller: widget.controller,
@@ -164,9 +170,7 @@ class _EvalTextFieldState extends State<EvalTextField> {
                 labelStyle: theme.textTheme.bodyMedium?.copyWith(
                   color: _hasError
                       ? AppColors.error
-                      : (_focusNode.hasFocus
-                          ? AppColors.primary
-                          : AppColors.slate500),
+                      : (isFocused ? AppColors.primary : AppColors.slate500),
                 ),
                 hintStyle: theme.textTheme.titleMedium?.copyWith(
                   color: AppColors.slate400,
@@ -183,9 +187,9 @@ class _EvalTextFieldState extends State<EvalTextField> {
                   horizontal: 16,
                   vertical: 14,
                 ),
-                suffixIcon: _buildSuffixIcon() == null
+                suffixIcon: suffixIcon == null
                     ? null
-                    : SizedBox(width: 48, child: _buildSuffixIcon()),
+                    : SizedBox(width: 48, child: suffixIcon),
               ),
             ),
           ),
