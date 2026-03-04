@@ -9,6 +9,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
+    "runtime:reparar": "powershell -ExecutionPolicy Bypass -File scripts/reparar-backend-runtime.ps1",
     "pruebas:e2e": "jest --config ./test/ConfiguracionPruebasE2e.cjs --runInBand",
     "pruebas:e2e:ci": "npm run pruebas:e2e -- --ci",
     "datos:limpiar:qa": "ts-node scripts/limpiar-datos-qa.ts --apply",
