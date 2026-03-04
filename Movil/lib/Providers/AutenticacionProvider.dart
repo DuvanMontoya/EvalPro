@@ -54,14 +54,15 @@ class EstadoAutenticacion {
   EstadoAutenticacion copyWith({
     bool? inicializado,
     bool? estaAutenticado,
-    Usuario? usuario,
+    Object? usuario = _sinCambios,
     Object? error = _sinCambios,
     Object? tokenTemporalPrimerLogin = _sinCambios,
   }) {
     return EstadoAutenticacion(
       inicializado: inicializado ?? this.inicializado,
       estaAutenticado: estaAutenticado ?? this.estaAutenticado,
-      usuario: usuario ?? this.usuario,
+      usuario:
+          identical(usuario, _sinCambios) ? this.usuario : usuario as Usuario?,
       error: identical(error, _sinCambios) ? this.error : error as String?,
       tokenTemporalPrimerLogin: identical(tokenTemporalPrimerLogin, _sinCambios)
           ? this.tokenTemporalPrimerLogin
@@ -153,6 +154,9 @@ class AutenticacionEstado extends _$AutenticacionEstado {
     _cargarSesion();
     return const EstadoAutenticacion.vacio();
   }
+
+  /// Expone snapshot actual de autenticación para capas de presentación.
+  EstadoAutenticacion obtenerEstadoActual() => state;
 
   /// Lee credenciales guardadas y actualiza estado de sesion.
   Future<void> _cargarSesion() async {

@@ -48,7 +48,7 @@ class _FormularioLoginState extends ConsumerState<FormularioLogin> {
       contrasena: _contrasena.text,
     );
     if (mounted) {
-      final estado = gestorAutenticacion.state;
+      final estado = gestorAutenticacion.obtenerEstadoActual();
       if (!estado.estaAutenticado &&
           estado.tokenTemporalPrimerLogin != null &&
           estado.tokenTemporalPrimerLogin!.trim().isNotEmpty) {
@@ -150,7 +150,8 @@ class _FormularioLoginState extends ConsumerState<FormularioLogin> {
                           await gestorAutenticacion.completarPrimerLogin(
                             nuevaContrasena: nuevaContrasena.text,
                           );
-                          final estado = gestorAutenticacion.state;
+                          final estado =
+                              gestorAutenticacion.obtenerEstadoActual();
                           if (!mounted) {
                             return;
                           }

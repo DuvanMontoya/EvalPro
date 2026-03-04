@@ -57,6 +57,15 @@ Nota:
 - Para usuarios recién creados por gestión, el backend puede exigir cambio de contraseña en primer login.
   La app móvil ya soporta ese flujo y te mostrará el formulario de cambio automáticamente.
 
+Si la app se ve vacía o sin datos de gestión:
+
+```bash
+docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml up --build
+```
+
+Ese reinicio recrea la base de datos del stack Docker y vuelve a ejecutar semillas.
+
 ---
 
 ## 2. Flujo recomendado de desarrollo con Flutter Desktop (Windows)
