@@ -5,7 +5,9 @@ param(
   [bool]$AutoIniciarBackend = $true,
   [int]$TimeoutEmuladorSegundos = 90,
   [switch]$SoloPreparar,
-  [switch]$NoResident
+  [switch]$NoResident,
+  [bool]$RequerirKioscoEstricto = $true,
+  [bool]$AutoConfigurarDeviceOwner = $true
 )
 
 $ErrorActionPreference = 'Stop'
@@ -228,6 +230,77 @@ function Resolver-UrlsParaEmulador {
   throw "No hay conectividad desde emulador al backend (ni por 10.0.2.2 ni por adb reverse) en puerto $Puerto."
 }
 
+function Testear-DeviceOwnerEvalPro {
+  param(
+    [string]$RutaAdb,
+    [string]$IdDispositivo
+  )
+
+  try {
+    $salida = & $RutaAdb -s $IdDispositivo shell dpm list-owners 2>$null
+    $texto = ($salida | Out-String)
+    if ($texto -match 'com\.evalpro\.movil/.EvalProDeviceAdminReceiver') {
+      return $true
+    }
+    if ($texto -match 'admin=com\.evalpro\.movil/.EvalProDeviceAdminReceiver') {
+      return $true
+    }
+    return $false
+  } catch {
+    return $false
+  }
+}
+
+function Testear-PaqueteEvalProInstalado {
+  param(
+    [string]$RutaAdb,
+    [string]$IdDispositivo
+  )
+
+  try {
+    $salida = & $RutaAdb -s $IdDispositivo shell pm list packages com.evalpro.movil 2>$null
+    return (($salida -join "`n") -match 'package:com\.evalpro\.movil')
+  } catch {
+    return $false
+  }
+}
+
+function Configurar-DeviceOwnerEvalPro {
+  param(
+    [string]$RutaAdb,
+    [string]$IdDispositivo
+  )
+
+  if (-not (Testear-PaqueteEvalProInstalado -RutaAdb $RutaAdb -IdDispositivo $IdDispositivo)) {
+    return @{
+      Exito = $false
+      Mensaje = 'No se pudo configurar Device Owner: la app com.evalpro.movil aun no está instalada en el emulador.'
+    }
+  }
+
+  $salida = & $RutaAdb -s $IdDispositivo shell dpm set-device-owner com.evalpro.movil/.EvalProDeviceAdminReceiver 2>&1
+  $texto = ($salida | ForEach-Object { "$_" }) -join "`n"
+
+  if ($texto -match 'Success: Device owner set') {
+    return @{
+      Exito = $true
+      Mensaje = 'Device Owner configurado correctamente para EvalPro.'
+    }
+  }
+
+  if (Testear-DeviceOwnerEvalPro -RutaAdb $RutaAdb -IdDispositivo $IdDispositivo) {
+    return @{
+      Exito = $true
+      Mensaje = 'Device Owner ya estaba configurado para EvalPro.'
+    }
+  }
+
+  return @{
+    Exito = $false
+    Mensaje = "No se pudo configurar Device Owner automáticamente. Salida dpm: $texto"
+  }
+}
+
 if ([string]::IsNullOrWhiteSpace($DeviceId)) {
   $DeviceId = Obtener-DispositivoEmuladorActivo
 }
@@ -300,14 +373,33 @@ if (-not (Esperar-DispositivoListo -RutaAdb $rutaAdb -IdDispositivo $DeviceId -T
   throw "El emulador '$DeviceId' no alcanzó estado listo (boot completo)."
 }
 
+$deviceOwnerActivo = Testear-DeviceOwnerEvalPro -RutaAdb $rutaAdb -IdDispositivo $DeviceId
+if (-not $deviceOwnerActivo -and $AutoConfigurarDeviceOwner) {
+  Write-Host 'Intentando configurar Device Owner para bloqueo estricto...'
+  $resultadoOwner = Configurar-DeviceOwnerEvalPro -RutaAdb $rutaAdb -IdDispositivo $DeviceId
+  Write-Host $resultadoOwner.Mensaje
+  $deviceOwnerActivo = Testear-DeviceOwnerEvalPro -RutaAdb $rutaAdb -IdDispositivo $DeviceId
+}
+
+if ($RequerirKioscoEstricto -and -not $deviceOwnerActivo) {
+  if ($SoloPreparar) {
+    Write-Host 'Advertencia: bloqueo estricto requerido, pero Device Owner no está activo aún.'
+  } else {
+    throw 'Bloqueo estricto requerido: no se detectó Device Owner para EvalPro. No se iniciará la app sin esta condición.'
+  }
+}
+
 $conectividad = Resolver-UrlsParaEmulador -RutaAdb $rutaAdb -IdDispositivo $DeviceId -Puerto $ApiPort
 $apiUrl = $conectividad.ApiUrl
 $socketUrl = $conectividad.SocketUrl
+$kioscoEstrictoDefine = if ($RequerirKioscoEstricto) { 'true' } else { 'false' }
 
 Write-Host "Emulador: $DeviceId"
 Write-Host "Modo conexión: $($conectividad.Modo)"
 Write-Host "API_URL: $apiUrl"
 Write-Host "WEBSOCKET_URL: $socketUrl"
+Write-Host "Device Owner EvalPro: $deviceOwnerActivo"
+Write-Host "KIOSCO_ESTRICTO_REQUERIDO: $kioscoEstrictoDefine"
 
 if ($SoloPreparar) {
   Write-Host 'Preparación completada (sin flutter run por -SoloPreparar).'
@@ -319,6 +411,7 @@ if ($NoResident) {
   flutter run -d $DeviceId `
     --dart-define="API_URL=$apiUrl" `
     --dart-define="WEBSOCKET_URL=$socketUrl" `
+    --dart-define="KIOSCO_ESTRICTO_REQUERIDO=$kioscoEstrictoDefine" `
     --dart-define="DIAS_RETENCION_TELEMETRIA=7" `
     --dart-define="VERSION_APP=1.0.0-dev" `
     --no-resident
@@ -326,6 +419,7 @@ if ($NoResident) {
   flutter run -d $DeviceId `
     --dart-define="API_URL=$apiUrl" `
     --dart-define="WEBSOCKET_URL=$socketUrl" `
+    --dart-define="KIOSCO_ESTRICTO_REQUERIDO=$kioscoEstrictoDefine" `
     --dart-define="DIAS_RETENCION_TELEMETRIA=7" `
     --dart-define="VERSION_APP=1.0.0-dev"
 }

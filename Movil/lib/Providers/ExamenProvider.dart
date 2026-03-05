@@ -41,6 +41,9 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
     if (idEstudiante == null) {
       throw StateError('No hay estudiante autenticado');
     }
+    final modo = ref.read(modoExamenServicioProvider);
+    await modo.validarDisponibilidadBloqueoEstricto();
+
     final intento = await ref
         .read(intentoServicioProvider)
         .iniciar(sesion.id, sesion.codigoAcceso);
@@ -68,8 +71,17 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
           idIntento: intento.id,
           fechaDescarga: DateTime.now().millisecondsSinceEpoch,
         );
-    final modo = ref.read(modoExamenServicioProvider);
     modo.iniciarMonitoreo(intento.id);
+    try {
+      final bloqueoActivo = await modo.activarModoKiosco();
+      if (!bloqueoActivo) {
+        throw StateError(Textos.errorActivacionModoExamen);
+      }
+    } catch (_) {
+      modo.detenerMonitoreo();
+      await modo.desactivarModoKiosco();
+      rethrow;
+    }
     final ahora = DateTime.now();
     state = ExamenActivoEstado(
       examen: examenAleatorizado,
@@ -196,8 +208,7 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
 
   void _iniciarTemporizadorPresencia() {
     _detenerTemporizadorPresencia();
-    _temporizadorPresencia =
-        Timer.periodic(const Duration(seconds: 15), (_) {
+    _temporizadorPresencia = Timer.periodic(const Duration(seconds: 15), (_) {
       final actual = state;
       if (actual == null) {
         _detenerTemporizadorPresencia();
@@ -223,7 +234,9 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
   List<int> _obtenerIndicesRespondidos(ExamenActivoEstado estado) {
     final idsRespondidas = estado.respuestasLocales.keys.toSet();
     final indices = <int>[];
-    for (var indice = 0; indice < estado.preguntasAleatorizadas.length; indice++) {
+    for (var indice = 0;
+        indice < estado.preguntasAleatorizadas.length;
+        indice++) {
       final idPregunta = estado.preguntasAleatorizadas[indice].id;
       if (idsRespondidas.contains(idPregunta)) {
         indices.add(indice + 1);

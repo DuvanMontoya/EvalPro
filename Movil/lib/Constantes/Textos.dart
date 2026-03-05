@@ -54,6 +54,10 @@ abstract class Textos {
       'No fue posible buscar la sesion. Intenta nuevamente.';
   static const errorEnvioExamen =
       'No fue posible enviar el examen. Se conservaron los datos locales.';
+  static const errorBloqueoEstrictoNoDisponible =
+      'No se puede iniciar el examen sin bloqueo estricto del dispositivo. Contacta al administrador para habilitar modo kiosco dedicado (Device Owner).';
+  static const errorActivacionModoExamen =
+      'No fue posible activar el modo de examen seguro.';
   static const errorSincronizacion =
       'No fue posible sincronizar respuestas pendientes.';
   static const errorUsuarioInactivo =

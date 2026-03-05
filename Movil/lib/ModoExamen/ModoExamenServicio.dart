@@ -12,12 +12,75 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../Constantes/Textos.dart';
 import '../Modelos/Enums/TipoEventoTelemetria.dart';
 import '../Servicios/SocketServicio.dart';
 import '../Servicios/TelemetriaServicio.dart';
 
+class EstadoModoKiosco {
+  final bool activo;
+  final bool lockTaskActivo;
+  final bool lockTaskPermitido;
+  final bool dispositivoPropietario;
+  final bool bloqueoEstrictoDisponible;
+  final bool bloqueoEstrictoActivo;
+  final String modo;
+
+  const EstadoModoKiosco({
+    required this.activo,
+    required this.lockTaskActivo,
+    required this.lockTaskPermitido,
+    required this.dispositivoPropietario,
+    required this.bloqueoEstrictoDisponible,
+    required this.bloqueoEstrictoActivo,
+    required this.modo,
+  });
+
+  factory EstadoModoKiosco.desconocido() => const EstadoModoKiosco(
+        activo: false,
+        lockTaskActivo: false,
+        lockTaskPermitido: false,
+        dispositivoPropietario: false,
+        bloqueoEstrictoDisponible: false,
+        bloqueoEstrictoActivo: false,
+        modo: 'INACTIVO',
+      );
+
+  factory EstadoModoKiosco.desdeMapa(Object? origen) {
+    if (origen is! Map) {
+      return EstadoModoKiosco.desconocido();
+    }
+
+    bool leerBool(String clave) {
+      final valor = origen[clave];
+      return valor is bool ? valor : false;
+    }
+
+    String leerTexto(String clave) {
+      final valor = origen[clave];
+      return valor is String && valor.trim().isNotEmpty
+          ? valor.trim()
+          : 'INACTIVO';
+    }
+
+    return EstadoModoKiosco(
+      activo: leerBool('activo'),
+      lockTaskActivo: leerBool('lockTaskActivo'),
+      lockTaskPermitido: leerBool('lockTaskPermitido'),
+      dispositivoPropietario: leerBool('dispositivoPropietario'),
+      bloqueoEstrictoDisponible: leerBool('bloqueoEstrictoDisponible'),
+      bloqueoEstrictoActivo: leerBool('bloqueoEstrictoActivo'),
+      modo: leerTexto('modo'),
+    );
+  }
+}
+
 class ModoExamenServicio with WidgetsBindingObserver {
   static const _canal = MethodChannel('com.evalPro.movil/modoKiosco');
+  static const bool _requerirBloqueoEstricto = bool.fromEnvironment(
+    'KIOSCO_ESTRICTO_REQUERIDO',
+    defaultValue: true,
+  );
 
   final TelemetriaServicio _telemetriaServicio;
   final SocketServicio _socketServicio;
@@ -44,20 +107,64 @@ class ModoExamenServicio with WidgetsBindingObserver {
     _idIntentoActivo = null;
   }
 
+  /// Verifica antes de iniciar el intento que existe capacidad de bloqueo estricto.
+  Future<void> validarDisponibilidadBloqueoEstricto() async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+    if (!_requerirBloqueoEstricto) {
+      return;
+    }
+
+    try {
+      final estado = await obtenerEstadoKiosco();
+      if (!estado.bloqueoEstrictoDisponible) {
+        throw StateError(Textos.errorBloqueoEstrictoNoDisponible);
+      }
+    } on PlatformException catch (_) {
+      throw StateError(Textos.errorBloqueoEstrictoNoDisponible);
+    }
+  }
+
+  /// Consulta capacidades nativas de kiosco en el dispositivo actual.
+  Future<EstadoModoKiosco> obtenerEstadoKiosco() async {
+    final respuesta = await _canal.invokeMethod<Object?>('estado');
+    return EstadoModoKiosco.desdeMapa(respuesta);
+  }
+
   /// Activa el modo kiosco. Retorna true si se activo exitosamente.
   /// Lanza PlatformException si el SO rechaza el bloqueo.
   Future<bool> activarModoKiosco() async {
     await _activarProteccionVisual();
+    if (!Platform.isAndroid) {
+      return _proteccionVisualActiva;
+    }
     try {
-      final resultado = await _canal.invokeMethod<bool>('activar');
-      return resultado ?? true;
+      final respuesta = await _canal.invokeMethod<Object?>(
+        'activar',
+        <String, dynamic>{'requerirBloqueoEstricto': _requerirBloqueoEstricto},
+      );
+      final estado = EstadoModoKiosco.desdeMapa(respuesta);
+
+      if (_requerirBloqueoEstricto && !estado.bloqueoEstrictoActivo) {
+        throw StateError(Textos.errorBloqueoEstrictoNoDisponible);
+      }
+
+      if (!estado.activo) {
+        throw StateError(Textos.errorActivacionModoExamen);
+      }
+
+      return true;
     } on PlatformException catch (error) {
+      if (error.code == 'BLOQUEO_ESTRICTO_NO_DISPONIBLE') {
+        throw StateError(Textos.errorBloqueoEstrictoNoDisponible);
+      }
       await _telemetriaServicio.registrarError(
         'MODO_KIOSCO_FALLO',
         error.message,
         idIntento: _idIntentoActivo,
       );
-      return _proteccionVisualActiva;
+      throw StateError(Textos.errorActivacionModoExamen);
     }
   }
 
@@ -97,6 +204,7 @@ class ModoExamenServicio with WidgetsBindingObserver {
 
     if (estado == AppLifecycleState.resumed) {
       unawaited(_activarProteccionVisual());
+      unawaited(_reforzarInmersionNativa());
     }
   }
 
@@ -125,6 +233,17 @@ class ModoExamenServicio with WidgetsBindingObserver {
       }
     }
     _proteccionVisualActiva = true;
+  }
+
+  Future<void> _reforzarInmersionNativa() async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+    try {
+      await _canal.invokeMethod<void>('reforzarInmersion');
+    } catch (_) {
+      // Ignorar en plataformas sin canal o versiones antiguas.
+    }
   }
 
   Future<void> _desactivarProteccionVisual() async {

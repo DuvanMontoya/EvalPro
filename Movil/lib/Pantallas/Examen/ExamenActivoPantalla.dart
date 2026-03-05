@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../Constantes/Rutas.dart';
 import '../../Providers/ExamenProvider.dart';
-import '../../Providers/ModoExamenProvider.dart';
 import 'Widgets/IndicadorConexion.dart';
 import 'Widgets/MapaProgreso.dart';
 import 'Widgets/NavegadorPreguntas.dart';
@@ -26,14 +25,6 @@ class ExamenActivoPantalla extends ConsumerStatefulWidget {
 }
 
 class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
-  @override
-  void initState() {
-    super.initState();
-    Future<void>.microtask(() async {
-      await ref.read(modoExamenServicioProvider).activarModoKiosco();
-    });
-  }
-
   /// Construye la experiencia de examen digital completo.
   @override
   Widget build(BuildContext context) {
