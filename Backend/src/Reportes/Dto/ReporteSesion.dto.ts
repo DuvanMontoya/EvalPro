@@ -29,6 +29,9 @@ class DificultadPreguntaDto {
 
 class EstudianteSesionDto {
   @ApiProperty()
+  idIntento!: string;
+
+  @ApiProperty()
   nombre!: string;
 
   @ApiProperty()

@@ -196,6 +196,8 @@ export function useReporteSesion(idSesion: string) {
   return useQuery({
     queryKey: ['reportes', 'sesion', idSesion],
     queryFn: () => obtenerReporteSesion(idSesion),
+    staleTime: 2000,
+    refetchInterval: 3000,
     enabled: Boolean(idSesion),
   });
 }

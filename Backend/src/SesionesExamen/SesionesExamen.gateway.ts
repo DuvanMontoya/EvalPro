@@ -41,6 +41,11 @@ interface UnionSalaPayload {
 interface ProgresoPayload {
   idIntento: string;
   preguntasRespondidas: number;
+  totalPreguntas?: number;
+  nombreCompleto?: string;
+  modoKioscoActivo?: boolean;
+  eventosFraude?: number;
+  estadoIntento?: string;
 }
 
 interface FraudePayload {
@@ -179,6 +184,15 @@ export class SesionesExamenGateway implements OnGatewayConnection {
    */
   emitirFraude(idSesion: string, payload: FraudePayload): void {
     this.servidor.to(this.obtenerNombreSala(idSesion)).emit(EVENTO_ESTUDIANTE_FRAUDE, payload);
+  }
+
+  /**
+   * Emite progreso de intento hacia la sala de la sesión indicada.
+   * @param idSesion - UUID de sesión destino.
+   * @param payload - Datos de progreso del intento.
+   */
+  emitirProgreso(idSesion: string, payload: ProgresoPayload): void {
+    this.servidor.to(this.obtenerNombreSala(idSesion)).emit(EVENTO_ESTUDIANTE_PROGRESO, payload);
   }
 
   /**

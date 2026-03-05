@@ -27,6 +27,12 @@ interface PropiedadesMonitorTiempoReal {
   idSesion: string;
   totalPreguntas: number;
   intentosRegistrados?: number;
+  estudiantesReporte?: {
+    idIntento?: string;
+    nombre: string;
+    apellidos: string;
+    estado: EstadoIntento;
+  }[];
 }
 
 const MAPA_EVENTOS: Record<string, string> = {
@@ -42,6 +48,7 @@ export function MonitorTiempoReal({
   idSesion,
   totalPreguntas,
   intentosRegistrados = 0,
+  estudiantesReporte = [],
 }: PropiedadesMonitorTiempoReal) {
   const router = useRouter();
   const [modalFinalizarAbierto, setModalFinalizarAbierto] = useState(false);
@@ -68,12 +75,50 @@ export function MonitorTiempoReal({
   }, [alertasFraude]);
 
   const estudiantesNormalizados = useMemo(
-    () =>
-      listaEstudiantes.map((estudiante) => ({
-        ...estudiante,
-        totalPreguntas,
-      })),
-    [listaEstudiantes, totalPreguntas],
+    () => {
+      const porIntento = new Map<
+        string,
+        {
+          idIntento: string;
+          preguntasRespondidas: number;
+          totalPreguntas: number;
+          nombreCompleto: string;
+          modoKioscoActivo: boolean;
+          eventosFraude: number;
+          estadoIntento: string;
+        }
+      >();
+
+      for (const estudiante of listaEstudiantes) {
+        porIntento.set(estudiante.idIntento, {
+          ...estudiante,
+          totalPreguntas,
+        });
+      }
+
+      for (const [indice, estudiante] of estudiantesReporte.entries()) {
+        const esActivo =
+          estudiante.estado === EstadoIntento.EN_PROGRESO ||
+          estudiante.estado === EstadoIntento.SINCRONIZACION_PENDIENTE;
+        const idIntento = estudiante.idIntento?.trim() || `reporte-${indice}-${estudiante.nombre}-${estudiante.apellidos}`;
+        if (!esActivo || porIntento.has(idIntento)) {
+          continue;
+        }
+
+        porIntento.set(idIntento, {
+          idIntento,
+          preguntasRespondidas: 0,
+          totalPreguntas,
+          nombreCompleto: `${estudiante.nombre} ${estudiante.apellidos}`.trim(),
+          modoKioscoActivo: true,
+          eventosFraude: 0,
+          estadoIntento: estudiante.estado,
+        });
+      }
+
+      return Array.from(porIntento.values());
+    },
+    [estudiantesReporte, listaEstudiantes, totalPreguntas],
   );
 
   return (

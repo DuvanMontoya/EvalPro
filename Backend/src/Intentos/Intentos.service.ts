@@ -12,12 +12,16 @@ import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { aleatorizarConSemilla } from '../Comun/Utilidades/AleatorizadorPreguntas.util';
 import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { IniciarIntentoDto } from './Dto/IniciarIntento.dto';
+import { SesionesExamenGateway } from '../SesionesExamen/SesionesExamen.gateway';
 
 const LIMITE_SEMILLA_PERSONAL = 999999;
 
 @Injectable()
 export class IntentosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sesionesGateway: SesionesExamenGateway,
+  ) {}
 
   /**
    * Inicia un intento para un estudiante en una sesión activa evitando duplicados.
@@ -114,7 +118,7 @@ export class IntentosService {
       })),
     }));
 
-    return this.prisma.intentoExamen.create({
+    const intentoCreado = await this.prisma.intentoExamen.create({
       data: {
         idInstitucion: idInstitucion ?? null,
         semillaPersonal,
@@ -131,7 +135,27 @@ export class IntentosService {
         sistemaOperativo: dto.sistemaOperativo,
         versionApp: dto.versionApp,
       },
+      include: {
+        estudiante: {
+          select: {
+            nombre: true,
+            apellidos: true,
+          },
+        },
+      },
     });
+
+    this.sesionesGateway.emitirProgreso(dto.idSesion, {
+      idIntento: intentoCreado.id,
+      preguntasRespondidas: 0,
+      totalPreguntas: sesion.examen.totalPreguntas,
+      nombreCompleto: `${intentoCreado.estudiante.nombre} ${intentoCreado.estudiante.apellidos}`.trim(),
+      modoKioscoActivo: true,
+      eventosFraude: 0,
+      estadoIntento: EstadoIntento.EN_PROGRESO,
+    });
+
+    return intentoCreado;
   }
 
   /**

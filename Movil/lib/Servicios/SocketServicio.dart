@@ -17,6 +17,8 @@ class SocketServicio {
 
   final FlutterSecureStorage _almacenSeguro;
   io.Socket? _socket;
+  String? _idSesionActiva;
+  String? _rolActivo;
   final List<Map<String, Object?>> _eventosPendientes = <Map<String, Object?>>[];
 
   SocketServicio({required FlutterSecureStorage almacenSeguro})
@@ -45,17 +47,25 @@ class SocketServicio {
     required String idSesion,
     required String rol,
   }) async {
-    if (_socket != null && _socket!.connected) {
-      return true;
-    }
-
     final tokenAcceso =
         await _almacenSeguro.read(key: ClavesAlmacen.tokenAcceso);
     if (tokenAcceso == null || tokenAcceso.isEmpty) {
       return false;
     }
 
+    _idSesionActiva = idSesion;
+    _rolActivo = rol;
+
+    if (_socket != null && _socket!.connected) {
+      _actualizarCredencialesSocket(tokenAcceso);
+      _unirseASalaActual();
+      _drenarEventosPendientes();
+      return true;
+    }
+
     desconectar();
+    _idSesionActiva = idSesion;
+    _rolActivo = rol;
     _socket = io.io(
       construirUrlNamespaceSesiones(Entorno.websocketUrl),
       io.OptionBuilder()
@@ -69,12 +79,26 @@ class SocketServicio {
     );
 
     _socket!.onConnect((_) {
-      _socket!.emit(EventosSocket.unirseSalaSesion, <String, dynamic>{
-        'idSesion': idSesion,
-        'rol': rol,
-      });
+      _unirseASalaActual();
       _drenarEventosPendientes();
     });
+
+    _socket!.on('connect_error', (_) async {
+      final tokenActualizado =
+          await _almacenSeguro.read(key: ClavesAlmacen.tokenAcceso);
+      if (tokenActualizado != null && tokenActualizado.isNotEmpty) {
+        _actualizarCredencialesSocket(tokenActualizado);
+      }
+    });
+
+    _socket!.on('reconnect_attempt', (_) async {
+      final tokenActualizado =
+          await _almacenSeguro.read(key: ClavesAlmacen.tokenAcceso);
+      if (tokenActualizado != null && tokenActualizado.isNotEmpty) {
+        _actualizarCredencialesSocket(tokenActualizado);
+      }
+    });
+
     _socket!.connect();
     return true;
   }
@@ -82,6 +106,8 @@ class SocketServicio {
   /// Desconecta la sesion websocket activa.
   void desconectar() {
     _eventosPendientes.clear();
+    _idSesionActiva = null;
+    _rolActivo = null;
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
@@ -138,5 +164,31 @@ class SocketServicio {
       socket.emit(nombreEvento, payload);
     }
     _eventosPendientes.clear();
+  }
+
+  void _unirseASalaActual() {
+    final socket = _socket;
+    final idSesion = _idSesionActiva;
+    final rol = _rolActivo;
+    if (socket == null || !socket.connected || idSesion == null || rol == null) {
+      return;
+    }
+
+    socket.emit(EventosSocket.unirseSalaSesion, <String, dynamic>{
+      'idSesion': idSesion,
+      'rol': rol,
+    });
+  }
+
+  void _actualizarCredencialesSocket(String tokenAcceso) {
+    final socket = _socket;
+    if (socket == null) {
+      return;
+    }
+
+    socket.io.options?['auth'] = construirAutenticacionHandshake(tokenAcceso);
+    socket.io.options?['extraHeaders'] = <String, dynamic>{
+      'Authorization': 'Bearer $tokenAcceso',
+    };
   }
 }

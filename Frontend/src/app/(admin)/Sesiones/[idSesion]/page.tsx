@@ -143,6 +143,7 @@ export default function PaginaDetalleSesion() {
           idSesion={idSesion}
           totalPreguntas={sesion.examen?.totalPreguntas ?? 0}
           intentosRegistrados={consultaReporteSesion.data?.totalEstudiantes ?? 0}
+          estudiantesReporte={consultaReporteSesion.data?.listaEstudiantes ?? []}
         />
       ) : (
         <EstadoVacio

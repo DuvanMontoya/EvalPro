@@ -20,6 +20,7 @@ import { CalificacionRespuestasService } from './CalificacionRespuestas.service'
 import { CalificarRespuestaManualDto } from './Dto/CalificarRespuestaManual.dto';
 import { SincronizarRespuestasDto } from './Dto/SincronizarRespuestas.dto';
 import { ResultadoFinalDto } from './Dto/ResultadoFinal.dto';
+import { SesionesExamenGateway } from '../SesionesExamen/SesionesExamen.gateway';
 
 @Injectable()
 export class RespuestasService {
@@ -28,6 +29,8 @@ export class RespuestasService {
     private readonly calificacionRespuestasService: CalificacionRespuestasService,
     @Inject(forwardRef(() => TelemetriaService))
     private readonly telemetriaService: TelemetriaService,
+    @Inject(forwardRef(() => SesionesExamenGateway))
+    private readonly sesionesGateway: SesionesExamenGateway,
   ) {}
 
   /**
@@ -39,6 +42,12 @@ export class RespuestasService {
     const intento = await this.prisma.intentoExamen.findUnique({
       where: { id: dto.idIntento },
       include: {
+        estudiante: {
+          select: {
+            nombre: true,
+            apellidos: true,
+          },
+        },
         sesion: {
           include: {
             examen: {
@@ -100,6 +109,20 @@ export class RespuestasService {
       });
     });
 
+    const preguntasRespondidas = await this.prisma.respuesta.count({
+      where: { intentoId: dto.idIntento },
+    });
+
+    this.sesionesGateway.emitirProgreso(intento.sesionId, {
+      idIntento: dto.idIntento,
+      preguntasRespondidas,
+      totalPreguntas: intento.sesion.examen.preguntas.length,
+      nombreCompleto: `${intento.estudiante.nombre} ${intento.estudiante.apellidos}`.trim(),
+      modoKioscoActivo: true,
+      eventosFraude: 0,
+      estadoIntento: intento.estado,
+    });
+
     return { sincronizadas: dto.respuestas.length };
   }
 
@@ -113,6 +136,12 @@ export class RespuestasService {
       where: { id: idIntento },
       include: {
         respuestas: true,
+        estudiante: {
+          select: {
+            nombre: true,
+            apellidos: true,
+          },
+        },
         sesion: {
           include: {
             examen: {
@@ -142,6 +171,16 @@ export class RespuestasService {
     const { puntajeObtenido, porcentaje } = await this.calificacionRespuestasService.calificarIntento(intento.id);
     await this.telemetriaService.detectarAnomalias(intento.id);
     const mostrarPuntaje = intento.sesion.examen.mostrarPuntaje;
+    this.sesionesGateway.emitirProgreso(intento.sesionId, {
+      idIntento,
+      preguntasRespondidas: intento.respuestas.length,
+      totalPreguntas: intento.sesion.examen.preguntas.length,
+      nombreCompleto: `${intento.estudiante.nombre} ${intento.estudiante.apellidos}`.trim(),
+      modoKioscoActivo: true,
+      eventosFraude: 0,
+      estadoIntento: EstadoIntento.ENVIADO,
+    });
+
     return {
       idIntento,
       mostrarPuntaje,

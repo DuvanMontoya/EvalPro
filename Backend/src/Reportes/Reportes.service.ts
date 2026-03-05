@@ -78,6 +78,7 @@ export class ReportesService {
       distribucionPuntajes,
       dificultadPorPregunta,
       listaEstudiantes: sesion.intentos.map((intento) => ({
+        idIntento: intento.id,
         nombre: intento.estudiante.nombre,
         apellidos: intento.estudiante.apellidos,
         puntaje: intento.puntajeObtenido,

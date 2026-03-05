@@ -18,6 +18,7 @@ interface SesionResumen {
 }
 
 interface EstudianteReporteSesion {
+  idIntento?: string;
   nombre: string;
   apellidos: string;
   puntaje: number | null;
