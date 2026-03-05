@@ -4,18 +4,46 @@
 /// @autor     EvalPro
 /// @fecha     2026-03-02
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../Constantes/Rutas.dart';
+import '../../Modelos/Enums/TipoEventoTelemetria.dart';
+import '../../Providers/AutenticacionProvider.dart';
 import '../../Providers/ExamenProvider.dart';
 import 'Widgets/CuadriculaOMR.dart';
 import 'Widgets/IndicadorConexion.dart';
 import 'Widgets/MapaProgreso.dart';
+import 'Widgets/TemporizadorExamen.dart';
 
 class HojaRespuestasPantalla extends ConsumerWidget {
   const HojaRespuestasPantalla({super.key});
+
+  void _manejarIntentoSalir(WidgetRef ref, BuildContext context) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No puedes salir durante la evaluacion en curso.'),
+      ),
+    );
+
+    final estadoActual = ref.read(examenActivoProvider);
+    final idIntento = estadoActual?.idIntento;
+    if (idIntento == null) {
+      return;
+    }
+    unawaited(
+      ref.read(telemetriaServicioProvider).registrarEvento(
+            idIntento: idIntento,
+            tipo: TipoEventoTelemetria.PANTALLA_ABANDONADA,
+            descripcion: 'Intento de retroceso bloqueado desde hoja OMR',
+          ),
+    );
+  }
 
   /// Construye la pantalla OMR con retroceso del SO bloqueado.
   @override
@@ -39,9 +67,38 @@ class HojaRespuestasPantalla extends ConsumerWidget {
 
     return PopScope(
       canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          return;
+        }
+        _manejarIntentoSalir(ref, context);
+      },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Hoja de respuestas'),
+          automaticallyImplyLeading: false,
+          centerTitle: false,
+          titleSpacing: 16,
+          title: TemporizadorExamen(
+            duracionMinutos: estado.examen.duracionMinutos,
+            alFinalizar: () async {
+              final resultado = await ref
+                  .read(examenActivoProvider.notifier)
+                  .finalizarYEnviar();
+              final estadoPosterior = ref.read(examenActivoProvider);
+              if (!context.mounted) {
+                return;
+              }
+              if (estadoPosterior != null) {
+                final mensaje = estadoPosterior.errorEnvio ??
+                    'No fue posible enviar el examen automaticamente. Intenta de nuevo.';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(mensaje)),
+                );
+                return;
+              }
+              context.go(Rutas.examenEnviado, extra: resultado);
+            },
+          ),
           actions: const <Widget>[
             Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),

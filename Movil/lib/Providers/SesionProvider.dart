@@ -14,6 +14,8 @@ import 'AutenticacionProvider.dart';
 part 'SesionProvider.g.dart';
 
 class EstadoSesionBusqueda {
+  static const Object _sinCambios = Object();
+
   final bool cargando;
   final SesionExamen? sesion;
   final String? error;
@@ -31,13 +33,15 @@ class EstadoSesionBusqueda {
 
   EstadoSesionBusqueda copyWith({
     bool? cargando,
-    SesionExamen? sesion,
-    String? error,
+    Object? sesion = _sinCambios,
+    Object? error = _sinCambios,
   }) {
     return EstadoSesionBusqueda(
       cargando: cargando ?? this.cargando,
-      sesion: sesion ?? this.sesion,
-      error: error,
+      sesion: identical(sesion, _sinCambios)
+          ? this.sesion
+          : sesion as SesionExamen?,
+      error: identical(error, _sinCambios) ? this.error : error as String?,
     );
   }
 }

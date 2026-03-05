@@ -88,9 +88,12 @@ class _AplicacionState extends ConsumerState<Aplicacion> {
 
         final enPantallaLogin = estado.matchedLocation == Rutas.iniciarSesion;
         final esRutaExamen = estado.matchedLocation.startsWith('/examen/');
-        final esRutaResultadosEstudiante =
-            estado.matchedLocation == Rutas.resultadosEstudiante;
-        final esRutaExamenFlujo = esRutaExamen && !esRutaResultadosEstudiante;
+        final esRutaExamenEnviado =
+            estado.matchedLocation == Rutas.examenEnviado;
+        final esRutaExamenConIntentoObligatorio =
+            estado.matchedLocation == Rutas.examenActivo ||
+                estado.matchedLocation == Rutas.hojaRespuestas ||
+                estado.matchedLocation == Rutas.resumenExamen;
         final esRutaGestion = estado.matchedLocation.startsWith('/gestion/');
 
         if (!estadoAutenticacion.estaAutenticado) {
@@ -102,10 +105,14 @@ class _AplicacionState extends ConsumerState<Aplicacion> {
         }
 
         if (esEstudiante &&
-            esRutaExamenFlujo &&
-            examenActivo == null &&
-            estado.matchedLocation != Rutas.unirseExamen) {
+            esRutaExamenConIntentoObligatorio &&
+            examenActivo == null) {
           return Rutas.unirseExamen;
+        }
+
+        // El comprobante final de envio no requiere intento activo en memoria.
+        if (esEstudiante && esRutaExamenEnviado) {
+          return null;
         }
 
         if (!esEstudiante && esRutaExamen) {

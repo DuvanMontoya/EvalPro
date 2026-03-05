@@ -131,6 +131,13 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
                 ? <String>[valor]
                 : <String>[];
     final texto = esAbierta && valor is String ? valor : null;
+    final respuestaPrevia = actual.respuestasLocales[idPregunta];
+    if (respuestaPrevia != null &&
+        respuestaPrevia.valorTexto == texto &&
+        _listasIguales(respuestaPrevia.opcionesSeleccionadas, opciones)) {
+      return;
+    }
+
     final respuesta = RespuestaLocal(
       id: '${actual.idIntento}_$idPregunta',
       idIntento: actual.idIntento,
@@ -243,5 +250,17 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
       }
     }
     return indices;
+  }
+
+  bool _listasIguales(List<String> izquierda, List<String> derecha) {
+    if (izquierda.length != derecha.length) {
+      return false;
+    }
+    for (var indice = 0; indice < izquierda.length; indice++) {
+      if (izquierda[indice] != derecha[indice]) {
+        return false;
+      }
+    }
+    return true;
   }
 }

@@ -30,6 +30,18 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
   final _controladorCodigo = TextEditingController();
   bool _uniendo = false;
 
+  String _normalizarCodigo(String valor) {
+    return valor.trim().toUpperCase();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(
+      () => ref.read(sesionActualProvider.notifier).limpiar(),
+    );
+  }
+
   @override
   void dispose() {
     _controladorCodigo.dispose();
@@ -37,17 +49,44 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
   }
 
   Future<void> _buscarSesion() async {
-    final codigo = _controladorCodigo.text.trim();
-    if (codigo.isEmpty) {
+    final codigo = _normalizarCodigo(_controladorCodigo.text);
+    if (codigo.length < 4) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingresa un codigo valido para buscar.')),
+      );
       return;
     }
+    FocusManager.instance.primaryFocus?.unfocus();
     await ref.read(sesionActualProvider.notifier).buscarPorCodigo(codigo);
   }
 
   Future<void> _unirse() async {
-    final sesion = ref.read(sesionActualProvider).sesion;
+    var sesion = ref.read(sesionActualProvider).sesion;
     if (sesion == null) {
       return;
+    }
+
+    final codigoIngresado = _normalizarCodigo(_controladorCodigo.text);
+    final codigoSesion = _normalizarCodigo(sesion.codigoAcceso);
+    if (codigoIngresado != codigoSesion) {
+      await _buscarSesion();
+      sesion = ref.read(sesionActualProvider).sesion;
+      if (sesion == null ||
+          _normalizarCodigo(sesion.codigoAcceso) != codigoIngresado) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'El codigo cambio. Confirma la sesion nuevamente antes de unirte.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
     }
 
     setState(() => _uniendo = true);
@@ -61,6 +100,8 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
         return;
       }
 
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      HapticFeedback.mediumImpact();
       if (sesion.examen.modalidad == ModalidadExamen.HOJA_RESPUESTAS) {
         context.go(Rutas.hojaRespuestas);
         return;
@@ -138,12 +179,23 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
             controller: _controladorCodigo,
             maxLength: 9,
             textCapitalization: TextCapitalization.characters,
+            textInputAction: TextInputAction.search,
             inputFormatters: <TextInputFormatter>[
               FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9-]')),
               TextInputFormatter.withFunction((anterior, nuevo) {
                 return nuevo.copyWith(text: nuevo.text.toUpperCase());
               }),
             ],
+            onChanged: (valor) {
+              final codigoActual = _normalizarCodigo(valor);
+              final sesionActual = ref.read(sesionActualProvider).sesion;
+              if (sesionActual != null &&
+                  _normalizarCodigo(sesionActual.codigoAcceso) !=
+                      codigoActual) {
+                ref.read(sesionActualProvider.notifier).limpiar();
+              }
+              setState(() {});
+            },
             decoration: const InputDecoration(
               labelText: Textos.codigoSesion,
               hintText: 'MATE-7823',
@@ -155,7 +207,10 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: estado.cargando ? null : _buscarSesion,
+              onPressed: estado.cargando ||
+                      _normalizarCodigo(_controladorCodigo.text).length < 4
+                  ? null
+                  : _buscarSesion,
               icon: estado.cargando
                   ? const SizedBox(
                       width: 18,
@@ -197,13 +252,9 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
             const SizedBox(height: 14),
             TarjetaSesionDisponible(
               sesion: sesion,
-              alUnirse: _uniendo ? () {} : _unirse,
+              alUnirse: _unirse,
+              cargando: _uniendo,
             ),
-            if (_uniendo)
-              const Padding(
-                padding: EdgeInsets.only(top: 10),
-                child: Center(child: CircularProgressIndicator()),
-              ),
           ],
         ],
       ),

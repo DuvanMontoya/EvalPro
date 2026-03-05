@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../Constantes/Colores.dart';
-import '../../../Constantes/Textos.dart';
 import '../../../Providers/ConectividadProvider.dart';
 
 class IndicadorConexion extends ConsumerWidget {
@@ -37,7 +36,7 @@ class IndicadorConexion extends ConsumerWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            conectado ? Textos.enLinea : Textos.sinConexion,
+            conectado ? 'En linea' : 'Sin red',
             style: const TextStyle(fontSize: 12),
           ),
         ],

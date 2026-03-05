@@ -5,6 +5,7 @@
 /// @fecha     2026-03-02
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -87,6 +88,37 @@ class ResumenExamenPantalla extends ConsumerWidget {
               onPressed: estado.estaEnviando
                   ? null
                   : () async {
+                      if (pendientes > 0) {
+                        final confirmar = await showDialog<bool>(
+                          context: context,
+                          builder: (contextoDialogo) {
+                            return AlertDialog(
+                              title:
+                                  const Text('Aun tienes preguntas pendientes'),
+                              content: Text(
+                                'Tienes $pendientes pregunta(s) sin responder. '
+                                'Si envias ahora, no podras modificarlas despues.',
+                              ),
+                              actions: <Widget>[
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(contextoDialogo).pop(false),
+                                  child: const Text('Revisar'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () =>
+                                      Navigator.of(contextoDialogo).pop(true),
+                                  child: const Text('Enviar de todos modos'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                        if (confirmar != true) {
+                          return;
+                        }
+                      }
+
                       final resultado = await ref
                           .read(examenActivoProvider.notifier)
                           .finalizarYEnviar();
@@ -100,6 +132,7 @@ class ResumenExamenPantalla extends ConsumerWidget {
                           );
                           return;
                         }
+                        HapticFeedback.mediumImpact();
                         context.go(Rutas.examenEnviado, extra: resultado);
                       }
                     },

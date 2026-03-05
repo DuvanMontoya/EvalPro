@@ -5,6 +5,7 @@
 /// @fecha     2026-03-02
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../Modelos/Enums/TipoPregunta.dart';
 import '../../../Modelos/Pregunta.dart';
@@ -89,6 +90,7 @@ class TarjetaPregunta extends StatelessWidget {
         return _opcionesMultiples();
       case TipoPregunta.RESPUESTA_ABIERTA:
         return CampoPreguntaAbierta(
+          key: ValueKey<String>('campo-abierto-${pregunta.id}'),
           valorInicial: respuesta?.valorTexto,
           alCambiar: (texto) => alResponder(texto),
         );
@@ -108,7 +110,7 @@ class TarjetaPregunta extends StatelessWidget {
           contenido: opcion.contenido,
           seleccionada: opcion.letra == seleccionada,
           seleccionMultiple: false,
-          alPresionar: () => alResponder(opcion.letra),
+          alPresionar: () => _responderConFeedback(opcion.letra),
         );
       }).toList(),
     );
@@ -131,7 +133,7 @@ class TarjetaPregunta extends StatelessWidget {
             } else {
               nuevas.add(opcion.letra);
             }
-            alResponder(nuevas);
+            _responderConFeedback(nuevas);
           },
         );
       }).toList(),
@@ -161,7 +163,7 @@ class TarjetaPregunta extends StatelessWidget {
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 6),
             child: ElevatedButton(
-              onPressed: () => alResponder(opcion['letra']!),
+              onPressed: () => _responderConFeedback(opcion['letra']!),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(0, 52),
                 backgroundColor:
@@ -173,5 +175,10 @@ class TarjetaPregunta extends StatelessWidget {
         );
       }).toList(),
     );
+  }
+
+  void _responderConFeedback(Object respuesta) {
+    HapticFeedback.selectionClick();
+    alResponder(respuesta);
   }
 }

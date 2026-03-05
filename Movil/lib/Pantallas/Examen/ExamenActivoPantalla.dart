@@ -4,11 +4,16 @@
 /// @autor     EvalPro
 /// @fecha     2026-03-02
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../Constantes/Rutas.dart';
+import '../../Modelos/Enums/TipoEventoTelemetria.dart';
+import '../../Providers/AutenticacionProvider.dart';
 import '../../Providers/ExamenProvider.dart';
 import 'Widgets/IndicadorConexion.dart';
 import 'Widgets/MapaProgreso.dart';
@@ -25,6 +30,29 @@ class ExamenActivoPantalla extends ConsumerStatefulWidget {
 }
 
 class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
+  void _manejarIntentoSalir() {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No puedes salir durante la evaluacion en curso.'),
+      ),
+    );
+
+    final estadoActual = ref.read(examenActivoProvider);
+    final idIntento = estadoActual?.idIntento;
+    if (idIntento == null) {
+      return;
+    }
+
+    unawaited(
+      ref.read(telemetriaServicioProvider).registrarEvento(
+            idIntento: idIntento,
+            tipo: TipoEventoTelemetria.PANTALLA_ABANDONADA,
+            descripcion: 'Intento de retroceso bloqueado desde examen activo',
+          ),
+    );
+  }
+
   /// Construye la experiencia de examen digital completo.
   @override
   Widget build(BuildContext context) {
@@ -42,8 +70,16 @@ class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
 
     final esUltima =
         estado.indicePreguntaActual == estado.preguntasAleatorizadas.length - 1;
+    final puedeRetroceder =
+        estado.examen.permitirNavegacion && estado.indicePreguntaActual > 0;
     return PopScope(
       canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          return;
+        }
+        _manejarIntentoSalir();
+      },
       child: Scaffold(
         backgroundColor: const Color(0xFFF3F5FA),
         appBar: AppBar(
@@ -76,48 +112,54 @@ class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
                 child: IndicadorConexion())
           ],
         ),
-        body: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-          child: Column(
-            children: <Widget>[
-              MapaProgreso(
-                totalPreguntas: estado.preguntasAleatorizadas.length,
-                indiceActual: estado.indicePreguntaActual,
-                respondidas: respondidas,
-                permitirNavegacion: estado.examen.permitirNavegacion,
-                alSeleccionar: (indice) {
-                  ref.read(examenActivoProvider.notifier).irAPregunta(indice);
-                },
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: TarjetaPregunta(
-                  pregunta: pregunta,
-                  respuesta: estado.respuestasLocales[pregunta.id],
-                  indiceActual: estado.indicePreguntaActual + 1,
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            child: Column(
+              children: <Widget>[
+                MapaProgreso(
                   totalPreguntas: estado.preguntasAleatorizadas.length,
-                  alResponder: (valor) async {
-                    await ref
-                        .read(examenActivoProvider.notifier)
-                        .registrarRespuesta(pregunta.id, valor);
+                  indiceActual: estado.indicePreguntaActual,
+                  respondidas: respondidas,
+                  permitirNavegacion: estado.examen.permitirNavegacion,
+                  alSeleccionar: (indice) {
+                    ref.read(examenActivoProvider.notifier).irAPregunta(indice);
                   },
                 ),
-              ),
-              NavegadorPreguntas(
-                mostrarAnterior: estado.examen.permitirNavegacion,
-                alAnterior: () => ref
-                    .read(examenActivoProvider.notifier)
-                    .retrocederPregunta(),
-                esUltima: esUltima,
-                alSiguiente: () {
-                  if (esUltima) {
-                    context.go(Rutas.resumenExamen);
-                  } else {
-                    ref.read(examenActivoProvider.notifier).avanzarPregunta();
-                  }
-                },
-              ),
-            ],
+                const SizedBox(height: 8),
+                Expanded(
+                  child: TarjetaPregunta(
+                    pregunta: pregunta,
+                    respuesta: estado.respuestasLocales[pregunta.id],
+                    indiceActual: estado.indicePreguntaActual + 1,
+                    totalPreguntas: estado.preguntasAleatorizadas.length,
+                    alResponder: (valor) async {
+                      await ref
+                          .read(examenActivoProvider.notifier)
+                          .registrarRespuesta(pregunta.id, valor);
+                    },
+                  ),
+                ),
+                NavegadorPreguntas(
+                  mostrarAnterior: estado.examen.permitirNavegacion,
+                  alAnterior: puedeRetroceder
+                      ? () => ref
+                          .read(examenActivoProvider.notifier)
+                          .retrocederPregunta()
+                      : null,
+                  esUltima: esUltima,
+                  alSiguiente: () {
+                    if (esUltima) {
+                      context.go(Rutas.resumenExamen);
+                    } else {
+                      ref.read(examenActivoProvider.notifier).avanzarPregunta();
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -13,11 +13,13 @@ import '../../../Modelos/SesionExamen.dart';
 class TarjetaSesionDisponible extends StatelessWidget {
   final SesionExamen sesion;
   final VoidCallback alUnirse;
+  final bool cargando;
 
   const TarjetaSesionDisponible({
     super.key,
     required this.sesion,
     required this.alUnirse,
+    this.cargando = false,
   });
 
   /// Construye tarjeta compacta con datos de la sesion activa.
@@ -83,12 +85,18 @@ class TarjetaSesionDisponible extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: alUnirse,
-                icon: const Icon(Icons.login_rounded),
+                onPressed: cargando ? null : alUnirse,
+                icon: cargando
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.login_rounded),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colores.azulPrimario,
                 ),
-                label: const Text('Unirse'),
+                label: Text(cargando ? 'Preparando...' : 'Unirse'),
               ),
             ),
           ],

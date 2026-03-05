@@ -5,6 +5,7 @@
 /// @fecha     2026-03-02
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class NavegadorPreguntas extends StatelessWidget {
   final bool mostrarAnterior;
@@ -28,7 +29,12 @@ class NavegadorPreguntas extends StatelessWidget {
         if (mostrarAnterior)
           Expanded(
             child: OutlinedButton(
-              onPressed: alAnterior,
+              onPressed: alAnterior == null
+                  ? null
+                  : () {
+                      HapticFeedback.selectionClick();
+                      alAnterior!.call();
+                    },
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(0, 54),
                 shape: RoundedRectangleBorder(
@@ -41,7 +47,10 @@ class NavegadorPreguntas extends StatelessWidget {
         if (mostrarAnterior) const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: alSiguiente,
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              alSiguiente();
+            },
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(0, 54),
               shape: RoundedRectangleBorder(
