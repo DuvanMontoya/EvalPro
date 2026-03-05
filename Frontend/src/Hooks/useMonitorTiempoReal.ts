@@ -15,12 +15,16 @@ import { establecerTokenAcceso, obtenerTokenAcceso } from '@/Servicios/ApiClient
 
 interface ProgresoEstudiante {
   idIntento: string;
+  idEstudiante?: string;
   preguntasRespondidas: number;
+  preguntasRespondidasIndices: number[];
+  indicePreguntaActual?: number;
   totalPreguntas: number;
   nombreCompleto: string;
   modoKioscoActivo: boolean;
   eventosFraude: number;
   estadoIntento: string;
+  ultimaActualizacionMs: number;
 }
 
 interface AlertaFraude {
@@ -33,7 +37,10 @@ interface AlertaFraude {
 
 interface PayloadProgreso {
   idIntento: string;
+  idEstudiante?: string;
   preguntasRespondidas: number;
+  preguntasRespondidasIndices?: number[];
+  indicePreguntaActual?: number;
   totalPreguntas?: number;
   nombreCompleto?: string;
   modoKioscoActivo?: boolean;
@@ -48,8 +55,27 @@ interface PayloadFraude {
   fecha?: string;
 }
 
+const UMBRAL_INACTIVIDAD_MONITOR_MS = 45_000;
+
 function obtenerNombreFallback(idIntento: string): string {
   return `Intento ${idIntento.slice(0, 8)}`;
+}
+
+function normalizarIndices(indices: number[] | undefined, totalPreguntas: number): number[] {
+  if (!Array.isArray(indices)) {
+    return [];
+  }
+
+  const normalizados = indices.filter((indice) => {
+    if (!Number.isInteger(indice) || indice <= 0) {
+      return false;
+    }
+    if (totalPreguntas <= 0) {
+      return true;
+    }
+    return indice <= totalPreguntas;
+  });
+  return [...new Set(normalizados)].sort((a, b) => a - b);
 }
 
 async function resolverTokenSocket(): Promise<string | null> {
@@ -95,6 +121,10 @@ export function useMonitorTiempoReal(idSesion: string) {
     if (!idSesion) {
       return;
     }
+
+    setProgresoEstudiantes({});
+    setAlertasFraude([]);
+    setSesionFinalizada(false);
 
     let cancelado = false;
     let socketSesion: Socket | null = null;
@@ -151,18 +181,40 @@ export function useMonitorTiempoReal(idSesion: string) {
       });
 
       socketSesion.on(API.EVENTOS_SOCKET.ESTUDIANTE_PROGRESO, (payload: PayloadProgreso) => {
+        if (payload.estadoIntento === 'ENVIADO' || payload.estadoIntento === 'ANULADO') {
+          setProgresoEstudiantes((previo) => {
+            if (!previo[payload.idIntento]) {
+              return previo;
+            }
+
+            const siguiente = { ...previo };
+            delete siguiente[payload.idIntento];
+            return siguiente;
+          });
+          return;
+        }
+
+        const marcaTiempo = Date.now();
         setProgresoEstudiantes((previo) => {
           const actual = previo[payload.idIntento];
+          const totalPreguntas = payload.totalPreguntas ?? actual?.totalPreguntas ?? 0;
+          const preguntasRespondidasIndices = payload.preguntasRespondidasIndices
+            ? normalizarIndices(payload.preguntasRespondidasIndices, totalPreguntas)
+            : (actual?.preguntasRespondidasIndices ?? []);
           return {
             ...previo,
             [payload.idIntento]: {
               idIntento: payload.idIntento,
+              idEstudiante: payload.idEstudiante ?? actual?.idEstudiante,
               preguntasRespondidas: payload.preguntasRespondidas,
-              totalPreguntas: payload.totalPreguntas ?? actual?.totalPreguntas ?? 0,
+              preguntasRespondidasIndices,
+              indicePreguntaActual: payload.indicePreguntaActual ?? actual?.indicePreguntaActual,
+              totalPreguntas,
               nombreCompleto: payload.nombreCompleto ?? actual?.nombreCompleto ?? obtenerNombreFallback(payload.idIntento),
               modoKioscoActivo: payload.modoKioscoActivo ?? actual?.modoKioscoActivo ?? true,
               eventosFraude: payload.eventosFraude ?? actual?.eventosFraude ?? 0,
               estadoIntento: payload.estadoIntento ?? actual?.estadoIntento ?? 'EN_PROGRESO',
+              ultimaActualizacionMs: marcaTiempo,
             },
           };
         });
@@ -182,12 +234,16 @@ export function useMonitorTiempoReal(idSesion: string) {
           const actual = previo[payload.idIntento];
           const base = actual ?? {
             idIntento: payload.idIntento,
+            idEstudiante: undefined,
             preguntasRespondidas: 0,
+            preguntasRespondidasIndices: [],
+            indicePreguntaActual: undefined,
             totalPreguntas: 0,
             nombreCompleto: payload.nombreEstudiante ?? obtenerNombreFallback(payload.idIntento),
             modoKioscoActivo: false,
             eventosFraude: 0,
             estadoIntento: 'EN_PROGRESO',
+            ultimaActualizacionMs: Date.now(),
           };
 
           return {
@@ -196,6 +252,7 @@ export function useMonitorTiempoReal(idSesion: string) {
               ...base,
               eventosFraude: base.eventosFraude + 1,
               modoKioscoActivo: false,
+              ultimaActualizacionMs: Date.now(),
             },
           };
         });
@@ -216,6 +273,27 @@ export function useMonitorTiempoReal(idSesion: string) {
       setConexionActiva(false);
     };
   }, [idSesion]);
+
+  useEffect(() => {
+    const temporizador = globalThis.setInterval(() => {
+      const ahora = Date.now();
+      setProgresoEstudiantes((previo) => {
+        const entradas = Object.entries(previo).filter(([, progreso]) => {
+          return ahora - progreso.ultimaActualizacionMs <= UMBRAL_INACTIVIDAD_MONITOR_MS;
+        });
+
+        if (entradas.length === Object.keys(previo).length) {
+          return previo;
+        }
+
+        return Object.fromEntries(entradas);
+      });
+    }, 5000);
+
+    return () => {
+      globalThis.clearInterval(temporizador);
+    };
+  }, []);
 
   const listaEstudiantes = useMemo(() => Object.values(progresoEstudiantes), [progresoEstudiantes]);
 

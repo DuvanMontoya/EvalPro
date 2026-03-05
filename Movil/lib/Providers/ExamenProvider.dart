@@ -3,6 +3,7 @@
 /// @modulo    Providers
 /// @autor     EvalPro
 /// @fecha     2026-03-02
+import 'dart:async';
 import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../Constantes/Textos.dart';
@@ -24,8 +25,15 @@ part 'ExamenProvider.g.dart';
 
 @Riverpod(keepAlive: true)
 class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
+  Timer? _temporizadorPresencia;
+
   @override
-  ExamenActivoEstado? build() => null;
+  ExamenActivoEstado? build() {
+    ref.onDispose(() {
+      _detenerTemporizadorPresencia();
+    });
+    return null;
+  }
 
   /// Inicia examen: crea intento, descarga examen, aleatoriza, guarda y activa kiosco.
   Future<void> iniciarExamen(SesionExamen sesion) async {
@@ -81,9 +89,13 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
     // Pulso inicial para que el monitor docente refleje presencia en tiempo real.
     ref.read(socketServicioProvider).emitirProgreso(
           idIntento: intento.id,
+          idEstudiante: idEstudiante,
           respondidas: 0,
           total: preguntasMezcladas.length,
+          preguntasRespondidasIndices: const <int>[],
+          indicePreguntaActual: 1,
         );
+    _iniciarTemporizadorPresencia();
     await ref.read(telemetriaServicioProvider).registrarEvento(
           idIntento: intento.id,
           tipo: TipoEventoTelemetria.INICIO_EXAMEN,
@@ -138,8 +150,13 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
     }
     ref.read(socketServicioProvider).emitirProgreso(
           idIntento: actual.idIntento,
+          idEstudiante: ref.read(autenticacionEstadoProvider).usuario?.id,
           respondidas: nuevas.length,
           total: actual.preguntasAleatorizadas.length,
+          preguntasRespondidasIndices: _obtenerIndicesRespondidos(
+            actual.copyWith(respuestasLocales: nuevas),
+          ),
+          indicePreguntaActual: actual.indicePreguntaActual + 1,
         );
   }
 
@@ -157,6 +174,7 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
       await ref.read(modoExamenServicioProvider).desactivarModoKiosco();
       ref.read(modoExamenServicioProvider).detenerMonitoreo();
       ref.read(socketServicioProvider).desconectar();
+      _detenerTemporizadorPresencia();
       await ref.read(examenDaoProvider).eliminarPorIntento(actual.idIntento);
       await ref.read(telemetriaServicioProvider).registrarEvento(
             idIntento: actual.idIntento,
@@ -174,5 +192,43 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
       );
       return null;
     }
+  }
+
+  void _iniciarTemporizadorPresencia() {
+    _detenerTemporizadorPresencia();
+    _temporizadorPresencia =
+        Timer.periodic(const Duration(seconds: 15), (_) {
+      final actual = state;
+      if (actual == null) {
+        _detenerTemporizadorPresencia();
+        return;
+      }
+
+      ref.read(socketServicioProvider).emitirProgreso(
+            idIntento: actual.idIntento,
+            idEstudiante: ref.read(autenticacionEstadoProvider).usuario?.id,
+            respondidas: actual.respuestasLocales.length,
+            total: actual.preguntasAleatorizadas.length,
+            preguntasRespondidasIndices: _obtenerIndicesRespondidos(actual),
+            indicePreguntaActual: actual.indicePreguntaActual + 1,
+          );
+    });
+  }
+
+  void _detenerTemporizadorPresencia() {
+    _temporizadorPresencia?.cancel();
+    _temporizadorPresencia = null;
+  }
+
+  List<int> _obtenerIndicesRespondidos(ExamenActivoEstado estado) {
+    final idsRespondidas = estado.respuestasLocales.keys.toSet();
+    final indices = <int>[];
+    for (var indice = 0; indice < estado.preguntasAleatorizadas.length; indice++) {
+      final idPregunta = estado.preguntasAleatorizadas[indice].id;
+      if (idsRespondidas.contains(idPregunta)) {
+        indices.add(indice + 1);
+      }
+    }
+    return indices;
   }
 }

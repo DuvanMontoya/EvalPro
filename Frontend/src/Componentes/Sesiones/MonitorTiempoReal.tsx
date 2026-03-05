@@ -29,10 +29,21 @@ interface PropiedadesMonitorTiempoReal {
   intentosRegistrados?: number;
   estudiantesReporte?: {
     idIntento?: string;
+    idEstudiante?: string;
     nombre: string;
     apellidos: string;
     estado: EstadoIntento;
+    ultimaSincronizacion?: string | null;
+    fechaInicio?: string;
+    preguntasRespondidas?: number;
+    preguntasRespondidasIndices?: number[];
   }[];
+}
+
+const UMBRAL_PULSO_CONECTADO_MS = 45_000;
+
+function esEstadoIntentoActivo(estado: string): boolean {
+  return estado === EstadoIntento.EN_PROGRESO || estado === EstadoIntento.SINCRONIZACION_PENDIENTE;
 }
 
 const MAPA_EVENTOS: Record<string, string> = {
@@ -76,47 +87,84 @@ export function MonitorTiempoReal({
 
   const estudiantesNormalizados = useMemo(
     () => {
-      const porIntento = new Map<
+      const porEstudiante = new Map<
         string,
         {
           idIntento: string;
+          idEstudiante: string;
           preguntasRespondidas: number;
+          preguntasRespondidasIndices: number[];
+          indicePreguntaActual?: number;
           totalPreguntas: number;
           nombreCompleto: string;
           modoKioscoActivo: boolean;
           eventosFraude: number;
           estadoIntento: string;
+          marcaActividadMs: number;
         }
       >();
 
       for (const estudiante of listaEstudiantes) {
-        porIntento.set(estudiante.idIntento, {
+        if (!esEstadoIntentoActivo(estudiante.estadoIntento)) {
+          continue;
+        }
+
+        const claveEstudiante = estudiante.idEstudiante?.trim() || `socket-${estudiante.idIntento}`;
+        const existente = porEstudiante.get(claveEstudiante);
+        if (existente && existente.marcaActividadMs >= estudiante.ultimaActualizacionMs) {
+          continue;
+        }
+
+        porEstudiante.set(claveEstudiante, {
           ...estudiante,
+          idEstudiante: estudiante.idEstudiante?.trim() || claveEstudiante,
           totalPreguntas,
+          marcaActividadMs: estudiante.ultimaActualizacionMs,
         });
       }
 
       for (const [indice, estudiante] of estudiantesReporte.entries()) {
-        const esActivo =
-          estudiante.estado === EstadoIntento.EN_PROGRESO ||
-          estudiante.estado === EstadoIntento.SINCRONIZACION_PENDIENTE;
+        const esActivo = esEstadoIntentoActivo(estudiante.estado);
+
+        const ultimaSincronizacion = estudiante.ultimaSincronizacion ? new Date(estudiante.ultimaSincronizacion) : null;
+        const tienePulsoReciente =
+          ultimaSincronizacion instanceof Date &&
+          !Number.isNaN(ultimaSincronizacion.getTime()) &&
+          Date.now() - ultimaSincronizacion.getTime() <= UMBRAL_PULSO_CONECTADO_MS;
+
         const idIntento = estudiante.idIntento?.trim() || `reporte-${indice}-${estudiante.nombre}-${estudiante.apellidos}`;
-        if (!esActivo || porIntento.has(idIntento)) {
+        const marcaActividadMs = ultimaSincronizacion?.getTime() ?? 0;
+        const claveEstudiante =
+          estudiante.idEstudiante?.trim() ||
+          `${estudiante.nombre.trim().toLowerCase()}-${estudiante.apellidos.trim().toLowerCase()}` ||
+          `reporte-${indice}`;
+
+        if (!esActivo || !tienePulsoReciente) {
           continue;
         }
 
-        porIntento.set(idIntento, {
+        const existente = porEstudiante.get(claveEstudiante);
+        if (existente && existente.marcaActividadMs >= marcaActividadMs) {
+          continue;
+        }
+
+        porEstudiante.set(claveEstudiante, {
           idIntento,
-          preguntasRespondidas: 0,
+          idEstudiante: estudiante.idEstudiante?.trim() || claveEstudiante,
+          preguntasRespondidas: estudiante.preguntasRespondidas ?? estudiante.preguntasRespondidasIndices?.length ?? 0,
+          preguntasRespondidasIndices: estudiante.preguntasRespondidasIndices ?? [],
           totalPreguntas,
           nombreCompleto: `${estudiante.nombre} ${estudiante.apellidos}`.trim(),
           modoKioscoActivo: true,
           eventosFraude: 0,
           estadoIntento: estudiante.estado,
+          marcaActividadMs,
         });
       }
 
-      return Array.from(porIntento.values());
+      return Array.from(porEstudiante.values())
+        .sort((a, b) => b.marcaActividadMs - a.marcaActividadMs)
+        .map(({ marcaActividadMs: _marcaActividadMs, ...estudiante }) => estudiante);
     },
     [estudiantesReporte, listaEstudiantes, totalPreguntas],
   );
@@ -125,7 +173,9 @@ export function MonitorTiempoReal({
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Monitor en tiempo real</h2>
-        <p className="texto-muted text-sm">Intentos registrados: {intentosRegistrados}</p>
+        <p className="texto-muted text-sm">
+          Conectados en vivo: {estudiantesNormalizados.length} · Intentos históricos: {intentosRegistrados}
+        </p>
         {puedeFinalizar ? (
           <Boton variante="peligro" onClick={() => setModalFinalizarAbierto(true)}>
             Finalizar Sesión para Todos
@@ -152,13 +202,15 @@ export function MonitorTiempoReal({
         <div className="grid gap-4 lg:grid-cols-2">
           {estudiantesNormalizados.map((estudiante) => (
             <TarjetaEstudianteMonitor
-              key={estudiante.idIntento}
+              key={`${estudiante.idEstudiante}-${estudiante.idIntento}`}
               nombreCompleto={estudiante.nombreCompleto}
               preguntasRespondidas={estudiante.preguntasRespondidas}
               totalPreguntas={estudiante.totalPreguntas}
               modoKioscoActivo={estudiante.modoKioscoActivo}
               eventosFraude={estudiante.eventosFraude}
               estadoIntento={estudiante.estadoIntento as EstadoIntento}
+              preguntasRespondidasIndices={estudiante.preguntasRespondidasIndices}
+              indicePreguntaActual={estudiante.indicePreguntaActual}
             />
           ))}
         </div>

@@ -147,7 +147,10 @@ export class IntentosService {
 
     this.sesionesGateway.emitirProgreso(dto.idSesion, {
       idIntento: intentoCreado.id,
+      idEstudiante,
       preguntasRespondidas: 0,
+      preguntasRespondidasIndices: [],
+      indicePreguntaActual: 1,
       totalPreguntas: sesion.examen.totalPreguntas,
       nombreCompleto: `${intentoCreado.estudiante.nombre} ${intentoCreado.estudiante.apellidos}`.trim(),
       modoKioscoActivo: true,

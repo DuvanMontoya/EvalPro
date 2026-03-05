@@ -130,12 +130,25 @@ class SocketServicio {
     required String idIntento,
     required int respondidas,
     required int total,
+    String? idEstudiante,
+    List<int>? preguntasRespondidasIndices,
+    int? indicePreguntaActual,
   }) {
-    _emitirConCola(EventosSocket.progresoActualizado, <String, dynamic>{
+    final payload = <String, dynamic>{
       'idIntento': idIntento,
       'preguntasRespondidas': respondidas,
       'totalPreguntas': total,
-    });
+    };
+    if (idEstudiante != null && idEstudiante.isNotEmpty) {
+      payload['idEstudiante'] = idEstudiante;
+    }
+    if (preguntasRespondidasIndices != null) {
+      payload['preguntasRespondidasIndices'] = preguntasRespondidasIndices;
+    }
+    if (indicePreguntaActual != null && indicePreguntaActual > 0) {
+      payload['indicePreguntaActual'] = indicePreguntaActual;
+    }
+    _emitirConCola(EventosSocket.progresoActualizado, payload);
   }
 
   void _emitirConCola(String evento, Map<String, dynamic> payload) {

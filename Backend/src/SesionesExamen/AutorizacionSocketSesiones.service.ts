@@ -11,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { EstadoCuenta, EstadoInstitucion, EstadoIntento, RolUsuario } from '@prisma/client';
 import { Socket } from 'socket.io';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
+import { calcularIndicesPreguntasRespondidas } from '../Comun/Utilidades/ProgresoPreguntas.util';
 
 const EMISOR_JWT_DEFECTO = 'evalpro-backend';
 const AUDIENCIA_JWT_DEFECTO = 'evalpro-cliente';
@@ -141,7 +142,14 @@ export class AutorizacionSocketSesionesService {
   async obtenerIntentoActivoSesionEstudiante(
     idSesion: string,
     idEstudiante: string,
-  ): Promise<{ idIntento: string; nombreCompleto: string } | null> {
+  ): Promise<{
+    idIntento: string;
+    idEstudiante: string;
+    nombreCompleto: string;
+    preguntasRespondidas: number;
+    preguntasRespondidasIndices: number[];
+    totalPreguntas: number;
+  } | null> {
     const intento = await this.prisma.intentoExamen.findFirst({
       where: {
         sesionId: idSesion,
@@ -155,15 +163,46 @@ export class AutorizacionSocketSesionesService {
             apellidos: true,
           },
         },
+        sesion: {
+          select: {
+            examen: {
+              select: {
+                totalPreguntas: true,
+                preguntas: { select: { id: true } },
+              },
+            },
+          },
+        },
+        respuestas: {
+          select: {
+            preguntaId: true,
+          },
+        },
+        _count: {
+          select: {
+            respuestas: true,
+          },
+        },
       },
       orderBy: { fechaInicio: 'desc' },
     });
     if (!intento) {
       return null;
     }
+
+    const preguntasRespondidasIndices = calcularIndicesPreguntasRespondidas(
+      intento.ordenPreguntasAplicado,
+      intento.respuestas.map((respuesta) => respuesta.preguntaId),
+      intento.sesion.examen.preguntas.map((pregunta) => pregunta.id),
+    );
+
     return {
       idIntento: intento.id,
+      idEstudiante: intento.estudianteId,
       nombreCompleto: `${intento.estudiante.nombre} ${intento.estudiante.apellidos}`.trim(),
+      preguntasRespondidas: intento._count.respuestas,
+      preguntasRespondidasIndices,
+      totalPreguntas: intento.sesion.examen.totalPreguntas,
     };
   }
 

@@ -90,7 +90,16 @@ class ResumenExamenPantalla extends ConsumerWidget {
                       final resultado = await ref
                           .read(examenActivoProvider.notifier)
                           .finalizarYEnviar();
+                      final estadoPosterior = ref.read(examenActivoProvider);
                       if (context.mounted) {
+                        if (estadoPosterior != null) {
+                          final mensaje = estadoPosterior.errorEnvio ??
+                              'No fue posible enviar el examen. Revisa la conexion e intenta nuevamente.';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(mensaje)),
+                          );
+                          return;
+                        }
                         context.go(Rutas.examenEnviado, extra: resultado);
                       }
                     },

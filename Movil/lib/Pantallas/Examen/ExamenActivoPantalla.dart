@@ -65,7 +65,16 @@ class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
               final resultado = await ref
                   .read(examenActivoProvider.notifier)
                   .finalizarYEnviar();
+              final estadoPosterior = ref.read(examenActivoProvider);
               if (context.mounted) {
+                if (estadoPosterior != null) {
+                  final mensaje = estadoPosterior.errorEnvio ??
+                      'No fue posible enviar el examen automaticamente. Intenta de nuevo.';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(mensaje)),
+                  );
+                  return;
+                }
                 context.go(Rutas.examenEnviado, extra: resultado);
               }
             },

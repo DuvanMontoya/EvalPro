@@ -32,6 +32,9 @@ class EstudianteSesionDto {
   idIntento!: string;
 
   @ApiProperty()
+  idEstudiante!: string;
+
+  @ApiProperty()
   nombre!: string;
 
   @ApiProperty()
@@ -45,6 +48,18 @@ class EstudianteSesionDto {
 
   @ApiProperty({ enum: EstadoIntento })
   estado!: EstadoIntento;
+
+  @ApiProperty({ nullable: true })
+  ultimaSincronizacion!: Date | null;
+
+  @ApiProperty()
+  fechaInicio!: Date;
+
+  @ApiProperty()
+  preguntasRespondidas!: number;
+
+  @ApiProperty({ type: [Number] })
+  preguntasRespondidasIndices!: number[];
 
   @ApiProperty()
   esSospechoso!: boolean;

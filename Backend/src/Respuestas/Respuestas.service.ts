@@ -21,6 +21,7 @@ import { CalificarRespuestaManualDto } from './Dto/CalificarRespuestaManual.dto'
 import { SincronizarRespuestasDto } from './Dto/SincronizarRespuestas.dto';
 import { ResultadoFinalDto } from './Dto/ResultadoFinal.dto';
 import { SesionesExamenGateway } from '../SesionesExamen/SesionesExamen.gateway';
+import { calcularIndicesPreguntasRespondidas } from '../Comun/Utilidades/ProgresoPreguntas.util';
 
 @Injectable()
 export class RespuestasService {
@@ -112,10 +113,22 @@ export class RespuestasService {
     const preguntasRespondidas = await this.prisma.respuesta.count({
       where: { intentoId: dto.idIntento },
     });
+    const respuestasGuardadas = await this.prisma.respuesta.findMany({
+      where: { intentoId: dto.idIntento },
+      select: { preguntaId: true },
+    });
+    const idsPreguntasRespondidas = respuestasGuardadas.map((respuesta) => respuesta.preguntaId);
+    const preguntasRespondidasIndices = calcularIndicesPreguntasRespondidas(
+      intento.ordenPreguntasAplicado,
+      idsPreguntasRespondidas,
+      intento.sesion.examen.preguntas.map((pregunta) => pregunta.id),
+    );
 
     this.sesionesGateway.emitirProgreso(intento.sesionId, {
       idIntento: dto.idIntento,
+      idEstudiante: intento.estudianteId,
       preguntasRespondidas,
+      preguntasRespondidasIndices,
       totalPreguntas: intento.sesion.examen.preguntas.length,
       nombreCompleto: `${intento.estudiante.nombre} ${intento.estudiante.apellidos}`.trim(),
       modoKioscoActivo: true,
@@ -171,9 +184,16 @@ export class RespuestasService {
     const { puntajeObtenido, porcentaje } = await this.calificacionRespuestasService.calificarIntento(intento.id);
     await this.telemetriaService.detectarAnomalias(intento.id);
     const mostrarPuntaje = intento.sesion.examen.mostrarPuntaje;
+    const preguntasRespondidasIndices = calcularIndicesPreguntasRespondidas(
+      intento.ordenPreguntasAplicado,
+      intento.respuestas.map((respuesta) => respuesta.preguntaId),
+      intento.sesion.examen.preguntas.map((pregunta) => pregunta.id),
+    );
     this.sesionesGateway.emitirProgreso(intento.sesionId, {
       idIntento,
+      idEstudiante: intento.estudianteId,
       preguntasRespondidas: intento.respuestas.length,
+      preguntasRespondidasIndices,
       totalPreguntas: intento.sesion.examen.preguntas.length,
       nombreCompleto: `${intento.estudiante.nombre} ${intento.estudiante.apellidos}`.trim(),
       modoKioscoActivo: true,

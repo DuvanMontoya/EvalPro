@@ -8,10 +8,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoIntento, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
+import { ReconciliacionIntentosService } from '../Respuestas/ReconciliacionIntentos.service';
+import { calcularIndicesPreguntasRespondidas } from '../Comun/Utilidades/ProgresoPreguntas.util';
 
 @Injectable()
 export class ReportesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reconciliacionIntentosService: ReconciliacionIntentosService,
+  ) {}
 
   /**
    * Obtiene el reporte completo de una sesión con métricas de rendimiento y riesgo.
@@ -20,6 +25,8 @@ export class ReportesService {
    * @param idUsuario - UUID del solicitante.
    */
   async obtenerReporteSesion(idSesion: string, rol: RolUsuario, idUsuario: string, idInstitucion: string | null) {
+    await this.reconciliacionIntentosService.conciliarSesion(idSesion);
+
     const sesion = await this.prisma.sesionExamen.findUnique({
       where: { id: idSesion },
       include: {
@@ -77,15 +84,28 @@ export class ReportesService {
       puntajeMinimo,
       distribucionPuntajes,
       dificultadPorPregunta,
-      listaEstudiantes: sesion.intentos.map((intento) => ({
-        idIntento: intento.id,
-        nombre: intento.estudiante.nombre,
-        apellidos: intento.estudiante.apellidos,
-        puntaje: intento.puntajeObtenido,
-        porcentaje: intento.porcentaje,
-        estado: intento.estado,
-        esSospechoso: intento.esSospechoso,
-      })),
+      listaEstudiantes: sesion.intentos.map((intento) => {
+        const preguntasRespondidasIndices = calcularIndicesPreguntasRespondidas(
+          intento.ordenPreguntasAplicado,
+          intento.respuestas.map((respuesta) => respuesta.preguntaId),
+          sesion.examen.preguntas.map((pregunta) => pregunta.id),
+        );
+
+        return {
+          idIntento: intento.id,
+          idEstudiante: intento.estudianteId,
+          nombre: intento.estudiante.nombre,
+          apellidos: intento.estudiante.apellidos,
+          puntaje: intento.puntajeObtenido,
+          porcentaje: intento.porcentaje,
+          estado: intento.estado,
+          ultimaSincronizacion: intento.ultimaSincronizacion,
+          fechaInicio: intento.fechaInicio,
+          preguntasRespondidas: intento.respuestas.length,
+          preguntasRespondidasIndices,
+          esSospechoso: intento.esSospechoso,
+        };
+      }),
     };
   }
 

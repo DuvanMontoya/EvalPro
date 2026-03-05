@@ -24,6 +24,7 @@ mixin ExamenNavegacionMixin on Notifier<ExamenActivoEstado?> {
       indicePreguntaActual: actual.indicePreguntaActual + 1,
       tiempoInicioPreguntaActual: DateTime.now(),
     );
+    _emitirPulsoNavegacion(state);
     await ref.read(telemetriaServicioProvider).registrarEvento(
           idIntento: actual.idIntento,
           tipo: TipoEventoTelemetria.CAMBIO_PREGUNTA,
@@ -39,6 +40,7 @@ mixin ExamenNavegacionMixin on Notifier<ExamenActivoEstado?> {
       indicePreguntaActual: actual.indicePreguntaActual - 1,
       tiempoInicioPreguntaActual: DateTime.now(),
     );
+    _emitirPulsoNavegacion(state);
   }
 
   /// Permite ir a una pregunta especifica si la navegacion esta habilitada.
@@ -54,5 +56,31 @@ mixin ExamenNavegacionMixin on Notifier<ExamenActivoEstado?> {
       indicePreguntaActual: indicePregunta,
       tiempoInicioPreguntaActual: DateTime.now(),
     );
+    _emitirPulsoNavegacion(state);
+  }
+
+  void _emitirPulsoNavegacion(ExamenActivoEstado? estadoActualizado) {
+    final estado = estadoActualizado;
+    if (estado == null) {
+      return;
+    }
+
+    final idsRespondidas = estado.respuestasLocales.keys.toSet();
+    final indicesRespondidos = <int>[];
+    for (var indice = 0; indice < estado.preguntasAleatorizadas.length; indice++) {
+      final idPregunta = estado.preguntasAleatorizadas[indice].id;
+      if (idsRespondidas.contains(idPregunta)) {
+        indicesRespondidos.add(indice + 1);
+      }
+    }
+
+    ref.read(socketServicioProvider).emitirProgreso(
+          idIntento: estado.idIntento,
+          idEstudiante: ref.read(autenticacionEstadoProvider).usuario?.id,
+          respondidas: indicesRespondidos.length,
+          total: estado.preguntasAleatorizadas.length,
+          preguntasRespondidasIndices: indicesRespondidos,
+          indicePreguntaActual: estado.indicePreguntaActual + 1,
+        );
   }
 }

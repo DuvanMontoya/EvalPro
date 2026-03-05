@@ -19,11 +19,16 @@ interface SesionResumen {
 
 interface EstudianteReporteSesion {
   idIntento?: string;
+  idEstudiante: string;
   nombre: string;
   apellidos: string;
   puntaje: number | null;
   porcentaje: number | null;
   estado: EstadoIntento;
+  ultimaSincronizacion?: string | null;
+  fechaInicio: string;
+  preguntasRespondidas: number;
+  preguntasRespondidasIndices: number[];
   esSospechoso: boolean;
 }
 

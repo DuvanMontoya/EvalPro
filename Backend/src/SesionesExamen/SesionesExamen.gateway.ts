@@ -28,6 +28,7 @@ import {
   EVENTO_UNIRSE_SALA,
 } from '../Comun/Constantes/Eventos.constantes';
 import { AutorizacionSocketSesionesService, UsuarioSocket } from './AutorizacionSocketSesiones.service';
+import { PrismaService } from '../Configuracion/BaseDatos.config';
 
 const ORIGENES_SOCKET = (process.env.CORS_ORIGENES_PERMITIDOS ?? 'http://localhost:3000')
   .split(',')
@@ -40,7 +41,10 @@ interface UnionSalaPayload {
 
 interface ProgresoPayload {
   idIntento: string;
+  idEstudiante?: string;
   preguntasRespondidas: number;
+  preguntasRespondidasIndices?: number[];
+  indicePreguntaActual?: number;
   totalPreguntas?: number;
   nombreCompleto?: string;
   modoKioscoActivo?: boolean;
@@ -70,7 +74,10 @@ export class SesionesExamenGateway implements OnGatewayConnection {
   @WebSocketServer()
   servidor!: Server;
 
-  constructor(private readonly autorizacionSocketService: AutorizacionSocketSesionesService) {}
+  constructor(
+    private readonly autorizacionSocketService: AutorizacionSocketSesionesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Autentica el socket por JWT de acceso durante el handshake inicial.
@@ -110,10 +117,16 @@ export class SesionesExamenGateway implements OnGatewayConnection {
         usuario.id,
       );
       if (intentoActivo) {
+        await this.prisma.intentoExamen.updateMany({
+          where: { id: intentoActivo.idIntento },
+          data: { ultimaSincronizacion: new Date() },
+        });
         this.servidor.to(this.obtenerNombreSala(payload.idSesion)).emit(EVENTO_ESTUDIANTE_PROGRESO, {
           idIntento: intentoActivo.idIntento,
-          preguntasRespondidas: 0,
-          totalPreguntas: 0,
+          idEstudiante: intentoActivo.idEstudiante,
+          preguntasRespondidas: intentoActivo.preguntasRespondidas,
+          preguntasRespondidasIndices: intentoActivo.preguntasRespondidasIndices,
+          totalPreguntas: intentoActivo.totalPreguntas,
           nombreCompleto: intentoActivo.nombreCompleto,
           modoKioscoActivo: true,
           eventosFraude: 0,
@@ -141,7 +154,17 @@ export class SesionesExamenGateway implements OnGatewayConnection {
     if (!idSesion) {
       throw new WsException('No tiene permisos sobre este intento');
     }
-    this.servidor.to(this.obtenerNombreSala(idSesion)).emit(EVENTO_ESTUDIANTE_PROGRESO, payload);
+    await this.prisma.intentoExamen.updateMany({
+      where: { id: payload.idIntento },
+      data: { ultimaSincronizacion: new Date() },
+    });
+    const payloadNormalizado: ProgresoPayload = {
+      ...payload,
+      idEstudiante: usuario.rol === RolUsuario.ESTUDIANTE ? usuario.id : payload.idEstudiante,
+      preguntasRespondidasIndices: this.normalizarIndices(payload.preguntasRespondidasIndices),
+      indicePreguntaActual: this.normalizarIndicePregunta(payload.indicePreguntaActual),
+    };
+    this.servidor.to(this.obtenerNombreSala(idSesion)).emit(EVENTO_ESTUDIANTE_PROGRESO, payloadNormalizado);
   }
 
   /**
@@ -215,5 +238,28 @@ export class SesionesExamenGateway implements OnGatewayConnection {
 
     cliente.data.usuario = usuario;
     return usuario;
+  }
+
+  private normalizarIndices(indices?: number[]): number[] | undefined {
+    if (!Array.isArray(indices)) {
+      return undefined;
+    }
+
+    const normalizados = [...new Set(indices.filter((indice) => Number.isInteger(indice) && indice > 0))];
+    normalizados.sort((a, b) => a - b);
+    return normalizados;
+  }
+
+  private normalizarIndicePregunta(indice?: number): number | undefined {
+    if (!Number.isInteger(indice)) {
+      return undefined;
+    }
+
+    const indiceNumerico = indice as number;
+    if (indiceNumerico <= 0) {
+      return undefined;
+    }
+
+    return indiceNumerico;
   }
 }

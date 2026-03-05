@@ -41,6 +41,7 @@
   ],
   "exclude": [
     "node_modules",
+    ".next/dev/types/**/*.ts",
     "vitest.config.ts",
     "src/Pruebas/**",
     "**/*.prueba.ts",
