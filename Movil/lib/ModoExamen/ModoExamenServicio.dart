@@ -75,6 +75,157 @@ class EstadoModoKiosco {
   }
 }
 
+class ReporteIntegridadDispositivo {
+  final String plataforma;
+  final bool rootDetectado;
+  final bool appDepurable;
+  final bool opcionesDesarrolladorActivas;
+  final bool adbActivo;
+  final bool emuladorDetectado;
+  final bool lockTaskPermitido;
+  final bool lockTaskActivo;
+  final bool dispositivoPropietario;
+  final bool bloqueoEstrictoDisponible;
+  final bool bloqueoEstrictoActivo;
+  final int puntajeIntegridad;
+  final List<String> razonesRiesgo;
+  final String timestamp;
+
+  const ReporteIntegridadDispositivo({
+    required this.plataforma,
+    required this.rootDetectado,
+    required this.appDepurable,
+    required this.opcionesDesarrolladorActivas,
+    required this.adbActivo,
+    required this.emuladorDetectado,
+    required this.lockTaskPermitido,
+    required this.lockTaskActivo,
+    required this.dispositivoPropietario,
+    required this.bloqueoEstrictoDisponible,
+    required this.bloqueoEstrictoActivo,
+    required this.puntajeIntegridad,
+    required this.razonesRiesgo,
+    required this.timestamp,
+  });
+
+  factory ReporteIntegridadDispositivo.desdeMapa(
+    Object? origen, {
+    required EstadoModoKiosco estadoFallback,
+    required String plataformaFallback,
+  }) {
+    if (origen is! Map) {
+      return ReporteIntegridadDispositivo.desdeEstado(
+        estadoFallback,
+        plataforma: plataformaFallback,
+        razonesRiesgo: const <String>['REPORTE_INTEGRIDAD_INDISPONIBLE'],
+      );
+    }
+
+    bool leerBool(String clave, bool valorPorDefecto) {
+      final valor = origen[clave];
+      return valor is bool ? valor : valorPorDefecto;
+    }
+
+    int leerInt(String clave, int valorPorDefecto) {
+      final valor = origen[clave];
+      if (valor is int) {
+        return valor.clamp(0, 100);
+      }
+      if (valor is num) {
+        return valor.toInt().clamp(0, 100);
+      }
+      return valorPorDefecto.clamp(0, 100);
+    }
+
+    String leerTexto(String clave, String valorPorDefecto) {
+      final valor = origen[clave];
+      if (valor is String && valor.trim().isNotEmpty) {
+        return valor.trim();
+      }
+      return valorPorDefecto;
+    }
+
+    List<String> leerListaTexto(String clave) {
+      final valor = origen[clave];
+      if (valor is! List) {
+        return const <String>[];
+      }
+      return valor
+          .whereType<String>()
+          .map((dato) => dato.trim())
+          .where((dato) => dato.isNotEmpty)
+          .toList(growable: false);
+    }
+
+    return ReporteIntegridadDispositivo(
+      plataforma: leerTexto('plataforma', plataformaFallback).toUpperCase(),
+      rootDetectado: leerBool('rootDetectado', false),
+      appDepurable: leerBool('appDepurable', false),
+      opcionesDesarrolladorActivas:
+          leerBool('opcionesDesarrolladorActivas', false),
+      adbActivo: leerBool('adbActivo', false),
+      emuladorDetectado: leerBool('emuladorDetectado', false),
+      lockTaskPermitido:
+          leerBool('lockTaskPermitido', estadoFallback.lockTaskPermitido),
+      lockTaskActivo: leerBool('lockTaskActivo', estadoFallback.lockTaskActivo),
+      dispositivoPropietario: leerBool(
+          'dispositivoPropietario', estadoFallback.dispositivoPropietario),
+      bloqueoEstrictoDisponible: leerBool(
+        'bloqueoEstrictoDisponible',
+        estadoFallback.bloqueoEstrictoDisponible,
+      ),
+      bloqueoEstrictoActivo: leerBool(
+          'bloqueoEstrictoActivo', estadoFallback.bloqueoEstrictoActivo),
+      puntajeIntegridad: leerInt('puntajeIntegridad', 0),
+      razonesRiesgo: leerListaTexto('razonesRiesgo'),
+      timestamp:
+          leerTexto('timestamp', DateTime.now().toUtc().toIso8601String()),
+    );
+  }
+
+  factory ReporteIntegridadDispositivo.desdeEstado(
+    EstadoModoKiosco estado, {
+    required String plataforma,
+    List<String> razonesRiesgo = const <String>[],
+  }) {
+    return ReporteIntegridadDispositivo(
+      plataforma: plataforma.toUpperCase(),
+      rootDetectado: false,
+      appDepurable: false,
+      opcionesDesarrolladorActivas: false,
+      adbActivo: false,
+      emuladorDetectado: false,
+      lockTaskPermitido: estado.lockTaskPermitido,
+      lockTaskActivo: estado.lockTaskActivo,
+      dispositivoPropietario: estado.dispositivoPropietario,
+      bloqueoEstrictoDisponible: estado.bloqueoEstrictoDisponible,
+      bloqueoEstrictoActivo: estado.bloqueoEstrictoActivo,
+      puntajeIntegridad: 0,
+      razonesRiesgo: List<String>.from(razonesRiesgo),
+      timestamp: DateTime.now().toUtc().toIso8601String(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'plataforma': plataforma,
+      'rootDetectado': rootDetectado,
+      'appDepurable': appDepurable,
+      'opcionesDesarrolladorActivas': opcionesDesarrolladorActivas,
+      'adbActivo': adbActivo,
+      'emuladorDetectado': emuladorDetectado,
+      'lockTaskPermitido': lockTaskPermitido,
+      'lockTaskActivo': lockTaskActivo,
+      'dispositivoPropietario': dispositivoPropietario,
+      'bloqueoEstrictoDisponible': bloqueoEstrictoDisponible,
+      'bloqueoEstrictoActivo': bloqueoEstrictoActivo,
+      'puntajeIntegridad': puntajeIntegridad,
+      'razonesRiesgo': razonesRiesgo,
+      'timestamp': timestamp,
+    };
+  }
+}
+
 class ModoExamenServicio with WidgetsBindingObserver {
   static const _canal = MethodChannel('com.evalPro.movil/modoKiosco');
   static const bool _requerirBloqueoEstricto = bool.fromEnvironment(
@@ -130,6 +281,40 @@ class ModoExamenServicio with WidgetsBindingObserver {
   Future<EstadoModoKiosco> obtenerEstadoKiosco() async {
     final respuesta = await _canal.invokeMethod<Object?>('estado');
     return EstadoModoKiosco.desdeMapa(respuesta);
+  }
+
+  /// Obtiene un reporte de integridad del dispositivo para auditar inicio de intento.
+  Future<ReporteIntegridadDispositivo>
+      obtenerReporteIntegridadDispositivo() async {
+    final plataforma = Platform.isAndroid
+        ? 'ANDROID'
+        : Platform.isIOS
+            ? 'IOS'
+            : 'DESCONOCIDA';
+    final estadoFallback = await _obtenerEstadoKioscoSeguro();
+
+    if (!Platform.isAndroid) {
+      return ReporteIntegridadDispositivo.desdeEstado(
+        estadoFallback,
+        plataforma: plataforma,
+      );
+    }
+
+    try {
+      final respuesta =
+          await _canal.invokeMethod<Object?>('integridadDispositivo');
+      return ReporteIntegridadDispositivo.desdeMapa(
+        respuesta,
+        estadoFallback: estadoFallback,
+        plataformaFallback: plataforma,
+      );
+    } on PlatformException catch (_) {
+      return ReporteIntegridadDispositivo.desdeEstado(
+        estadoFallback,
+        plataforma: plataforma,
+        razonesRiesgo: const <String>['REPORTE_INTEGRIDAD_INDISPONIBLE'],
+      );
+    }
   }
 
   /// Activa el modo kiosco. Retorna true si se activo exitosamente.
@@ -233,6 +418,17 @@ class ModoExamenServicio with WidgetsBindingObserver {
       }
     }
     _proteccionVisualActiva = true;
+  }
+
+  Future<EstadoModoKiosco> _obtenerEstadoKioscoSeguro() async {
+    if (!Platform.isAndroid) {
+      return EstadoModoKiosco.desconocido();
+    }
+    try {
+      return await obtenerEstadoKiosco();
+    } catch (_) {
+      return EstadoModoKiosco.desconocido();
+    }
   }
 
   Future<void> _reforzarInmersionNativa() async {

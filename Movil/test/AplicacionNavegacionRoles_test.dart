@@ -162,6 +162,38 @@ void main() {
     expect(find.text('Tu espacio de evaluacion'), findsNothing);
   });
 
+  testWidgets(
+      'estudiante puede abrir comprobante de examen enviado sin intento activo en memoria',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          apiServicioProvider.overrideWith(_construirApiSimulada),
+          autenticacionEstadoProvider.overrideWith(
+            () => _AutenticacionEstadoFalso(
+              EstadoAutenticacion(
+                inicializado: true,
+                estaAutenticado: true,
+                usuario: _crearUsuario(RolUsuario.ESTUDIANTE),
+                error: null,
+                tokenTemporalPrimerLogin: null,
+              ),
+            ),
+          ),
+        ],
+        child: const Aplicacion(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final contexto = tester.element(find.text('Unirse a una sesion'));
+    GoRouter.of(contexto).go(Rutas.examenEnviado);
+    await tester.pumpAndSettle();
+
+    expect(find.text(Textos.examenEnviado), findsWidgets);
+    expect(find.text('Tu examen fue enviado correctamente'), findsOneWidget);
+  });
+
   testWidgets('administrador accede a botones de gestion', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

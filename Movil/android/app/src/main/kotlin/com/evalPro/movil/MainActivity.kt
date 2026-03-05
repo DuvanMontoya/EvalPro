@@ -14,7 +14,9 @@ import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.Build
+import android.provider.Settings
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowInsets
@@ -23,6 +25,11 @@ import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 private const val ERROR_BLOQUEO_ESTRICTO_NO_DISPONIBLE = "BLOQUEO_ESTRICTO_NO_DISPONIBLE"
 private const val CANAL_KIOSCO = "com.evalPro.movil/modoKiosco"
@@ -57,6 +64,10 @@ class MainActivity : FlutterActivity() {
 
                 "estado" -> {
                     resultado.success(construirEstadoKiosco())
+                }
+
+                "integridadDispositivo" -> {
+                    resultado.success(construirReporteIntegridadDispositivo())
                 }
 
                 "reforzarInmersion" -> {
@@ -275,6 +286,133 @@ class MainActivity : FlutterActivity() {
             "bloqueoEstrictoActivo" to bloqueoEstrictoActivo,
             "modo" to modo
         )
+    }
+
+    private fun construirReporteIntegridadDispositivo(): Map<String, Any> {
+        val estadoKiosco = construirEstadoKiosco()
+        val lockTaskPermitido = obtenerBooleanoMapa(estadoKiosco, "lockTaskPermitido")
+        val lockTaskActivo = obtenerBooleanoMapa(estadoKiosco, "lockTaskActivo")
+        val dispositivoPropietario = obtenerBooleanoMapa(estadoKiosco, "dispositivoPropietario")
+        val bloqueoEstrictoDisponible = obtenerBooleanoMapa(estadoKiosco, "bloqueoEstrictoDisponible")
+        val bloqueoEstrictoActivo = obtenerBooleanoMapa(estadoKiosco, "bloqueoEstrictoActivo")
+
+        val rootDetectado = detectarRootBasico()
+        val appDepurable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        val opcionesDesarrolladorActivas =
+            (leerAjusteGlobal(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED) ?: 0) == 1
+        val adbActivo = (leerAjusteGlobal(Settings.Global.ADB_ENABLED) ?: 0) == 1
+        val emuladorDetectado = detectarEmulador()
+
+        val razonesRiesgo = mutableListOf<String>()
+        var puntajeIntegridad = 0
+
+        if (rootDetectado) {
+            puntajeIntegridad += 45
+            razonesRiesgo.add("ROOT_O_JAILBREAK_DETECTADO")
+        }
+        if (appDepurable) {
+            puntajeIntegridad += 15
+            razonesRiesgo.add("APP_DEPURABLE")
+        }
+        if (opcionesDesarrolladorActivas) {
+            puntajeIntegridad += 10
+            razonesRiesgo.add("OPCIONES_DESARROLLADOR_ACTIVAS")
+        }
+        if (adbActivo) {
+            puntajeIntegridad += 10
+            razonesRiesgo.add("ADB_ACTIVO")
+        }
+        if (emuladorDetectado) {
+            puntajeIntegridad += 10
+            razonesRiesgo.add("EMULADOR_DETECTADO")
+        }
+        if (!bloqueoEstrictoDisponible) {
+            puntajeIntegridad += 20
+            razonesRiesgo.add("BLOQUEO_ESTRICTO_NO_DISPONIBLE")
+        }
+        if (!bloqueoEstrictoActivo) {
+            puntajeIntegridad += 30
+            razonesRiesgo.add("BLOQUEO_ESTRICTO_NO_ACTIVO")
+        }
+        if (!lockTaskActivo) {
+            puntajeIntegridad += 10
+            razonesRiesgo.add("LOCK_TASK_INACTIVO")
+        }
+
+        puntajeIntegridad = puntajeIntegridad.coerceIn(0, 100)
+
+        return mapOf(
+            "plataforma" to "ANDROID",
+            "rootDetectado" to rootDetectado,
+            "appDepurable" to appDepurable,
+            "opcionesDesarrolladorActivas" to opcionesDesarrolladorActivas,
+            "adbActivo" to adbActivo,
+            "emuladorDetectado" to emuladorDetectado,
+            "lockTaskPermitido" to lockTaskPermitido,
+            "lockTaskActivo" to lockTaskActivo,
+            "dispositivoPropietario" to dispositivoPropietario,
+            "bloqueoEstrictoDisponible" to bloqueoEstrictoDisponible,
+            "bloqueoEstrictoActivo" to bloqueoEstrictoActivo,
+            "puntajeIntegridad" to puntajeIntegridad,
+            "razonesRiesgo" to razonesRiesgo,
+            "timestamp" to generarTimestampUtcIso8601()
+        )
+    }
+
+    private fun detectarRootBasico(): Boolean {
+        val etiquetasCompilacion = Build.TAGS ?: ""
+        if (etiquetasCompilacion.contains("test-keys", ignoreCase = true)) {
+            return true
+        }
+
+        val rutasBinariosRoot = listOf(
+            "/system/bin/su",
+            "/system/xbin/su",
+            "/sbin/su",
+            "/su/bin/su",
+            "/system/app/Superuser.apk",
+            "/system/app/Magisk.apk"
+        )
+        return rutasBinariosRoot.any { ruta -> File(ruta).exists() }
+    }
+
+    private fun detectarEmulador(): Boolean {
+        val fingerprint = Build.FINGERPRINT.lowercase()
+        val modelo = Build.MODEL.lowercase()
+        val marca = Build.BRAND.lowercase()
+        val dispositivo = Build.DEVICE.lowercase()
+        val producto = Build.PRODUCT.lowercase()
+        val fabricante = Build.MANUFACTURER.lowercase()
+        val hardware = Build.HARDWARE.lowercase()
+
+        return fingerprint.contains("generic") ||
+            fingerprint.contains("emulator") ||
+            modelo.contains("emulator") ||
+            modelo.contains("android sdk built for x86") ||
+            marca.startsWith("generic") ||
+            dispositivo.startsWith("generic") ||
+            producto.contains("sdk") ||
+            fabricante.contains("genymotion") ||
+            hardware.contains("goldfish") ||
+            hardware.contains("ranchu")
+    }
+
+    private fun leerAjusteGlobal(clave: String): Int? {
+        return try {
+            Settings.Global.getInt(contentResolver, clave)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun obtenerBooleanoMapa(origen: Map<String, Any>, clave: String): Boolean {
+        return origen[clave] as? Boolean ?: false
+    }
+
+    private fun generarTimestampUtcIso8601(): String {
+        val formato = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        formato.timeZone = TimeZone.getTimeZone("UTC")
+        return formato.format(Date())
     }
 
     private fun aplicarProteccionVisualNativa() {

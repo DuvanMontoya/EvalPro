@@ -14,7 +14,56 @@ import 'package:movil/Servicios/IntentoServicio.dart';
 import '../Auxiliares/ApiServicioSimulado.dart';
 
 void main() {
-  test('iniciar retorna intento existente cuando backend responde INTENTO_DUPLICADO con datos', () async {
+  test(
+      'iniciar envia reporte de integridad cuando se suministra en el flujo de union',
+      () async {
+    Map<String, dynamic>? cuerpoCapturado;
+    final servicio = IntentoServicio(
+      ApiServicioSimulado(
+        alPublicar: (ruta, cuerpo) async {
+          expect(ruta, ApiEndpoints.intentos);
+          cuerpoCapturado = cuerpo as Map<String, dynamic>;
+          return <String, dynamic>{
+            'id': 'intento-1',
+            'estado': 'EN_PROGRESO',
+            'semillaPersonal': 11,
+            'sesionId': 'sesion-1',
+          };
+        },
+      ),
+    );
+
+    const integridad = <String, dynamic>{
+      'plataforma': 'ANDROID',
+      'rootDetectado': false,
+      'bloqueoEstrictoDisponible': true,
+      'bloqueoEstrictoActivo': true,
+      'lockTaskActivo': true,
+      'dispositivoPropietario': true,
+      'puntajeIntegridad': 0,
+      'razonesRiesgo': <String>[],
+      'timestamp': '2026-03-05T00:00:00.000Z',
+    };
+
+    await servicio.iniciar(
+      'sesion-1',
+      'ABCD-1234',
+      integridadDispositivo: integridad,
+    );
+
+    expect(cuerpoCapturado, isNotNull);
+    expect(cuerpoCapturado?['idSesion'], 'sesion-1');
+    expect(cuerpoCapturado?['codigoAcceso'], 'ABCD-1234');
+    expect(cuerpoCapturado?['sistemaOperativo'], isA<String>());
+    expect(
+      cuerpoCapturado?['integridadDispositivo'],
+      equals(integridad),
+    );
+  });
+
+  test(
+      'iniciar retorna intento existente cuando backend responde INTENTO_DUPLICADO con datos',
+      () async {
     final servicio = IntentoServicio(
       ApiServicioSimulado(
         alPublicar: (ruta, _) async {
@@ -49,7 +98,9 @@ void main() {
     expect(intento.sesionId, 'sesion-1');
   });
 
-  test('iniciar relanza error cuando INTENTO_DUPLICADO no incluye intentoExistente', () async {
+  test(
+      'iniciar relanza error cuando INTENTO_DUPLICADO no incluye intentoExistente',
+      () async {
     final servicio = IntentoServicio(
       ApiServicioSimulado(
         alPublicar: (ruta, _) async {

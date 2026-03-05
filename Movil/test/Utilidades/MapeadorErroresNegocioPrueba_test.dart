@@ -43,6 +43,22 @@ void main() {
     expect(mensaje, Textos.errorIntentosAgotados);
   });
 
+  test('mapea codigo DISPOSITIVO_NO_SEGURO al mensaje esperado', () {
+    final error = DioException(
+      requestOptions: RequestOptions(path: '/intentos'),
+      response: Response<dynamic>(
+        requestOptions: RequestOptions(path: '/intentos'),
+        statusCode: 403,
+        data: <String, dynamic>{
+          'codigoError': 'DISPOSITIVO_NO_SEGURO',
+        },
+      ),
+    );
+
+    final mensaje = MapeadorErroresNegocio.mapear(error);
+    expect(mensaje, Textos.errorDispositivoNoSeguro);
+  });
+
   test('usa mensaje API detallado cuando codigo es SIN_PERMISOS', () {
     final error = DioException(
       requestOptions: RequestOptions(path: '/sesiones/buscar'),
@@ -51,7 +67,8 @@ void main() {
         statusCode: 403,
         data: <String, dynamic>{
           'codigoError': 'SIN_PERMISOS',
-          'mensaje': 'El estudiante no pertenece activamente al grupo de la asignacion',
+          'mensaje':
+              'El estudiante no pertenece activamente al grupo de la asignacion',
         },
       ),
     );

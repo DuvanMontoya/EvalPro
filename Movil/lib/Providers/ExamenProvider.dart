@@ -42,76 +42,91 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
       throw StateError('No hay estudiante autenticado');
     }
     final modo = ref.read(modoExamenServicioProvider);
-    await modo.validarDisponibilidadBloqueoEstricto();
+    var kioscoActivado = false;
+    var inicioCompleto = false;
 
-    final intento = await ref
-        .read(intentoServicioProvider)
-        .iniciar(sesion.id, sesion.codigoAcceso);
-    final examenBase =
-        await ref.read(examenServicioProvider).obtenerParaIntento(intento.id);
-    final semillaPersonal =
-        calcularSemillaPersonal(sesion.semillaGrupo, idEstudiante);
-    final preguntasMezcladas = AleatorizadorLocal(semillaPersonal)
-        .aleatorizar<Pregunta>(examenBase.preguntas)
-        .asMap()
-        .entries
-        .map((entrada) {
-      final orden = entrada.key + 1;
-      final pregunta = entrada.value;
-      final opcionesMezcladas = AleatorizadorLocal(semillaPersonal + orden)
-          .aleatorizar(pregunta.opciones);
-      return pregunta.copyWith(opciones: opcionesMezcladas);
-    }).toList();
-    final examenAleatorizado =
-        examenBase.copyWith(preguntas: preguntasMezcladas);
-    await ref.read(examenDaoProvider).guardarExamen(
-          id: examenAleatorizado.id,
-          contenidoJson: jsonEncode(examenAleatorizado.toJson()),
-          idSesion: sesion.id,
-          idIntento: intento.id,
-          fechaDescarga: DateTime.now().millisecondsSinceEpoch,
-        );
-    modo.iniciarMonitoreo(intento.id);
     try {
       final bloqueoActivo = await modo.activarModoKiosco();
       if (!bloqueoActivo) {
         throw StateError(Textos.errorActivacionModoExamen);
       }
+      kioscoActivado = true;
+
+      final reporteIntegridad =
+          await modo.obtenerReporteIntegridadDispositivo();
+      final intento = await ref.read(intentoServicioProvider).iniciar(
+            sesion.id,
+            sesion.codigoAcceso,
+            integridadDispositivo: reporteIntegridad.toJson(),
+          );
+
+      modo.iniciarMonitoreo(intento.id);
+      final examenBase =
+          await ref.read(examenServicioProvider).obtenerParaIntento(intento.id);
+      final semillaPersonal =
+          calcularSemillaPersonal(sesion.semillaGrupo, idEstudiante);
+      final preguntasMezcladas = AleatorizadorLocal(semillaPersonal)
+          .aleatorizar<Pregunta>(examenBase.preguntas)
+          .asMap()
+          .entries
+          .map((entrada) {
+        final orden = entrada.key + 1;
+        final pregunta = entrada.value;
+        final opcionesMezcladas = AleatorizadorLocal(semillaPersonal + orden)
+            .aleatorizar(pregunta.opciones);
+        return pregunta.copyWith(opciones: opcionesMezcladas);
+      }).toList();
+      final examenAleatorizado =
+          examenBase.copyWith(preguntas: preguntasMezcladas);
+      await ref.read(examenDaoProvider).guardarExamen(
+            id: examenAleatorizado.id,
+            contenidoJson: jsonEncode(examenAleatorizado.toJson()),
+            idSesion: sesion.id,
+            idIntento: intento.id,
+            fechaDescarga: DateTime.now().millisecondsSinceEpoch,
+          );
+
+      final ahora = DateTime.now();
+      state = ExamenActivoEstado(
+        examen: examenAleatorizado,
+        preguntasAleatorizadas: preguntasMezcladas,
+        indicePreguntaActual: 0,
+        respuestasLocales: <String, RespuestaLocal>{},
+        tiempoInicioExamen: ahora,
+        tiempoInicioPreguntaActual: ahora,
+        estaEnviando: false,
+        errorEnvio: null,
+        idIntento: intento.id,
+      );
+      await ref.read(socketServicioProvider).conectar(
+            idSesion: sesion.id,
+            rol: RolUsuario.ESTUDIANTE.name,
+          );
+      // Pulso inicial para que el monitor docente refleje presencia en tiempo real.
+      ref.read(socketServicioProvider).emitirProgreso(
+            idIntento: intento.id,
+            idEstudiante: idEstudiante,
+            respondidas: 0,
+            total: preguntasMezcladas.length,
+            preguntasRespondidasIndices: const <int>[],
+            indicePreguntaActual: 1,
+          );
+      _iniciarTemporizadorPresencia();
+      await ref.read(telemetriaServicioProvider).registrarEvento(
+            idIntento: intento.id,
+            tipo: TipoEventoTelemetria.INICIO_EXAMEN,
+          );
+
+      inicioCompleto = true;
     } catch (_) {
-      modo.detenerMonitoreo();
-      await modo.desactivarModoKiosco();
+      if (!inicioCompleto) {
+        modo.detenerMonitoreo();
+        if (kioscoActivado) {
+          await modo.desactivarModoKiosco();
+        }
+      }
       rethrow;
     }
-    final ahora = DateTime.now();
-    state = ExamenActivoEstado(
-      examen: examenAleatorizado,
-      preguntasAleatorizadas: preguntasMezcladas,
-      indicePreguntaActual: 0,
-      respuestasLocales: <String, RespuestaLocal>{},
-      tiempoInicioExamen: ahora,
-      tiempoInicioPreguntaActual: ahora,
-      estaEnviando: false,
-      errorEnvio: null,
-      idIntento: intento.id,
-    );
-    await ref.read(socketServicioProvider).conectar(
-          idSesion: sesion.id,
-          rol: RolUsuario.ESTUDIANTE.name,
-        );
-    // Pulso inicial para que el monitor docente refleje presencia en tiempo real.
-    ref.read(socketServicioProvider).emitirProgreso(
-          idIntento: intento.id,
-          idEstudiante: idEstudiante,
-          respondidas: 0,
-          total: preguntasMezcladas.length,
-          preguntasRespondidasIndices: const <int>[],
-          indicePreguntaActual: 1,
-        );
-    _iniciarTemporizadorPresencia();
-    await ref.read(telemetriaServicioProvider).registrarEvento(
-          idIntento: intento.id,
-          tipo: TipoEventoTelemetria.INICIO_EXAMEN,
-        );
   }
 
   /// Guarda una respuesta local y sincroniza inmediato si hay internet.

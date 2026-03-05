@@ -100,6 +100,94 @@ describe('Respuestas (e2e)', () => {
     expect(segundoIntento.body?.datos?.intentoExistente?.id).toBe(primerIntento.body?.datos?.id);
   });
 
+  it('bloquea inicio de intento cuando el reporte de integridad marca riesgo crítico', async () => {
+    const docente = await crearUsuarioPrueba(RolUsuario.DOCENTE, true);
+    const estudiante = await crearUsuarioPrueba(RolUsuario.ESTUDIANTE, true);
+    const sesionDocente = await iniciarSesionE2e(aplicacion, docente.correo, docente.contrasena);
+    const sesionEstudiante = await iniciarSesionE2e(aplicacion, estudiante.correo, estudiante.contrasena);
+
+    const examen = await request(aplicacion.getHttpServer())
+      .post('/api/v1/examenes')
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({
+        titulo: 'Examen integridad',
+        descripcion: 'Control de bloqueo por riesgo',
+        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        duracionMinutos: 20,
+        permitirNavegacion: true,
+        mostrarPuntaje: true,
+      });
+    const datosExamen = examen.body?.datos ?? examen.body;
+    const idExamen = datosExamen?.id;
+    expect(examen.status).toBe(201);
+
+    const pregunta = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/examenes/${idExamen}/preguntas`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({
+        enunciado: 'Integridad 1 + 1',
+        tipo: TipoPregunta.OPCION_MULTIPLE,
+        puntaje: 1,
+        opciones: [
+          { letra: 'A', contenido: '1', esCorrecta: false, orden: 1 },
+          { letra: 'B', contenido: '2', esCorrecta: true, orden: 2 },
+        ],
+      });
+    expect(pregunta.status).toBe(201);
+
+    const publicacion = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/examenes/${idExamen}/publicar`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
+    expect(publicacion.status).toBe(201);
+
+    const sesion = await request(aplicacion.getHttpServer())
+      .post('/api/v1/sesiones')
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({ idExamen });
+    const datosSesion = sesion.body?.datos ?? sesion.body;
+    const idSesion = datosSesion?.id;
+    expect(sesion.status).toBe(201);
+
+    const activacion = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/sesiones/${idSesion}/activar`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
+    expect(activacion.status).toBe(201);
+    const datosActivacion = activacion.body?.datos ?? activacion.body;
+    const codigoAcceso = datosActivacion?.codigoAcceso as string;
+
+    const intentoBloqueado = await request(aplicacion.getHttpServer())
+      .post('/api/v1/intentos')
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
+      .send({
+        idSesion,
+        codigoAcceso,
+        integridadDispositivo: {
+          plataforma: 'ANDROID',
+          rootDetectado: true,
+          bloqueoEstrictoDisponible: true,
+          bloqueoEstrictoActivo: true,
+          lockTaskActivo: true,
+          lockTaskPermitido: true,
+          dispositivoPropietario: true,
+          puntajeIntegridad: 10,
+          razonesRiesgo: ['ROOT_O_JAILBREAK_DETECTADO'],
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+    expect(intentoBloqueado.status).toBe(403);
+    expect(intentoBloqueado.body?.codigoError).toBe('DISPOSITIVO_NO_SEGURO');
+    expect(intentoBloqueado.body?.datos?.razonesRiesgo).toContain('ROOT_O_JAILBREAK_DETECTADO');
+
+    const intentosPersistidos = await prisma.intentoExamen.count({
+      where: {
+        sesionId: idSesion,
+        estudianteId: estudiante.id,
+      },
+    });
+    expect(intentosPersistidos).toBe(0);
+  });
+
   it('mantiene búsqueda disponible con intento en progreso y agota intentos solo tras envío', async () => {
     const admin = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
     const docente = await crearUsuarioPrueba(RolUsuario.DOCENTE, true);

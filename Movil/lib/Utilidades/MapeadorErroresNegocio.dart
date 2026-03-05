@@ -18,6 +18,7 @@ class MapeadorErroresNegocio {
   static const _codigoIntentoDuplicado = 'INTENTO_DUPLICADO';
   static const _codigoIntentosAgotados = 'INTENTOS_AGOTADOS';
   static const _codigoCodigoSesionInvalido = 'CODIGO_SESION_INVALIDO';
+  static const _codigoDispositivoNoSeguro = 'DISPOSITIVO_NO_SEGURO';
 
   /// Retorna un mensaje funcional en espanol para mostrar al usuario final.
   static String mapear(
@@ -37,7 +38,8 @@ class MapeadorErroresNegocio {
         final codigo = datos['codigoError'] as String?;
         final mensajeApi = datos['mensaje'] as String?;
         if (codigo != null) {
-          if ((codigo == _codigoSinPermisos || codigo == _codigoValidacionFallida) &&
+          if ((codigo == _codigoSinPermisos ||
+                  codigo == _codigoValidacionFallida) &&
               mensajeApi != null &&
               mensajeApi.trim().isNotEmpty) {
             return mensajeApi.trim();
@@ -80,6 +82,8 @@ class MapeadorErroresNegocio {
         return Textos.errorIntentosAgotados;
       case _codigoCodigoSesionInvalido:
         return Textos.errorCodigoSesionInvalido;
+      case _codigoDispositivoNoSeguro:
+        return Textos.errorDispositivoNoSeguro;
       default:
         return mensajePorDefecto;
     }

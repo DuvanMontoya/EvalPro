@@ -7,6 +7,7 @@
 import '../Configuracion/Entorno.dart';
 import '../Constantes/ApiEndpoints.dart';
 import '../Modelos/IntentoExamen.dart';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'ApiServicio.dart';
 
@@ -16,8 +17,13 @@ class IntentoServicio {
   IntentoServicio(this._apiServicio);
 
   /// Crea un intento en backend para la sesion indicada.
-  Future<IntentoExamen> iniciar(String idSesion, String codigoAcceso) async {
+  Future<IntentoExamen> iniciar(
+    String idSesion,
+    String codigoAcceso, {
+    Map<String, dynamic>? integridadDispositivo,
+  }) async {
     try {
+      final sistemaOperativo = _obtenerSistemaOperativo();
       return await _apiServicio.publicar<IntentoExamen>(
         ApiEndpoints.intentos,
         (valor) => IntentoExamen.fromJson(valor as Map<String, dynamic>),
@@ -25,6 +31,9 @@ class IntentoServicio {
           'idSesion': idSesion,
           'codigoAcceso': codigoAcceso,
           'versionApp': Entorno.versionApp,
+          'sistemaOperativo': sistemaOperativo,
+          if (integridadDispositivo != null)
+            'integridadDispositivo': integridadDispositivo,
         },
       );
     } on DioException catch (error) {
@@ -41,5 +50,24 @@ class IntentoServicio {
       }
       rethrow;
     }
+  }
+
+  String _obtenerSistemaOperativo() {
+    if (Platform.isAndroid) {
+      return 'ANDROID';
+    }
+    if (Platform.isIOS) {
+      return 'IOS';
+    }
+    if (Platform.isMacOS) {
+      return 'MACOS';
+    }
+    if (Platform.isWindows) {
+      return 'WINDOWS';
+    }
+    if (Platform.isLinux) {
+      return 'LINUX';
+    }
+    return 'DESCONOCIDO';
   }
 }

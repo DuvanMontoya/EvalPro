@@ -6,21 +6,32 @@
  * @fecha     2026-03-02
  */
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoIntento, EstadoSesion, RolUsuario } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { EstadoIntento, EstadoSesion, Prisma, RolUsuario, SeveridadEvento, TipoEventoTelemetria } from '@prisma/client';
 import { createHash } from 'crypto';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { aleatorizarConSemilla } from '../Comun/Utilidades/AleatorizadorPreguntas.util';
 import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
-import { IniciarIntentoDto } from './Dto/IniciarIntento.dto';
+import { IniciarIntentoDto, IntegridadDispositivoIntentoDto } from './Dto/IniciarIntento.dto';
 import { SesionesExamenGateway } from '../SesionesExamen/SesionesExamen.gateway';
 
 const LIMITE_SEMILLA_PERSONAL = 999999;
+
+interface EvaluacionIntegridadInicio {
+  puntaje: number;
+  razones: string[];
+  bloquearInicio: boolean;
+  requiereRevision: boolean;
+  plataforma: string;
+  metadatos: Record<string, unknown>;
+}
 
 @Injectable()
 export class IntentosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sesionesGateway: SesionesExamenGateway,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -62,6 +73,18 @@ export class IntentosService {
       throw new ForbiddenException({
         message: 'Código de acceso inválido para la sesión',
         codigoError: CODIGOS_ERROR.CODIGO_SESION_INVALIDO,
+      });
+    }
+
+    const evaluacionIntegridad = this.evaluarIntegridadInicio(dto);
+    if (evaluacionIntegridad.bloquearInicio) {
+      throw new ForbiddenException({
+        message: 'El dispositivo no cumple la política de integridad para iniciar el intento',
+        codigoError: CODIGOS_ERROR.DISPOSITIVO_NO_SEGURO,
+        datos: {
+          puntajeIntegridad: evaluacionIntegridad.puntaje,
+          razonesRiesgo: evaluacionIntegridad.razones,
+        },
       });
     }
 
@@ -134,6 +157,13 @@ export class IntentosService {
         modeloDispositivo: dto.modeloDispositivo,
         sistemaOperativo: dto.sistemaOperativo,
         versionApp: dto.versionApp,
+        indiceRiesgoFraude: evaluacionIntegridad.puntaje,
+        requiereRevision: evaluacionIntegridad.requiereRevision,
+        esSospechoso: evaluacionIntegridad.requiereRevision,
+        razonSospecha:
+          evaluacionIntegridad.razones.length > 0
+            ? `Integridad dispositivo: ${evaluacionIntegridad.razones.join('; ')}`
+            : null,
       },
       include: {
         estudiante: {
@@ -144,6 +174,18 @@ export class IntentosService {
         },
       },
     });
+
+    if (dto.integridadDispositivo) {
+      await this.prisma.eventoTelemetria.create({
+        data: {
+          intentoId: intentoCreado.id,
+          tipo: TipoEventoTelemetria.SYNC_ANOMALA,
+          severidad: evaluacionIntegridad.requiereRevision ? SeveridadEvento.SOSPECHOSO : SeveridadEvento.INFO,
+          descripcion: 'INTEGRIDAD_DISPOSITIVO_INICIO',
+          metadatos: evaluacionIntegridad.metadatos as Prisma.InputJsonValue,
+        },
+      });
+    }
 
     this.sesionesGateway.emitirProgreso(dto.idSesion, {
       idIntento: intentoCreado.id,
@@ -307,5 +349,184 @@ export class IntentosService {
         throw new ForbiddenException('El estudiante no pertenece activamente al grupo de la asignación');
       }
     }
+  }
+
+  private evaluarIntegridadInicio(dto: IniciarIntentoDto): EvaluacionIntegridadInicio {
+    const plataforma = this.resolverPlataforma(dto.integridadDispositivo, dto.sistemaOperativo);
+    const esAndroid = plataforma === 'ANDROID';
+    const reporte = dto.integridadDispositivo;
+    const razones = new Set<string>();
+    let puntaje = 0;
+
+    const requiereReporteAndroid = this.obtenerFlagBooleano(
+      'INTEGRIDAD_REQUERIR_REPORTE_ANDROID',
+      true,
+    );
+    const requiereBloqueoEstrictoAndroid = this.obtenerFlagBooleano(
+      'INTEGRIDAD_REQUERIR_BLOQUEO_ESTRICTO_ANDROID',
+      true,
+    );
+    const permitirEmulador = this.obtenerFlagBooleano(
+      'INTEGRIDAD_PERMITIR_EMULADOR',
+      process.env.NODE_ENV !== 'production',
+    );
+    const permitirCompilacionDebug = this.obtenerFlagBooleano(
+      'INTEGRIDAD_PERMITIR_COMPILACION_DEBUG',
+      process.env.NODE_ENV !== 'production',
+    );
+    const permitirOpcionesDesarrollador = this.obtenerFlagBooleano(
+      'INTEGRIDAD_PERMITIR_OPCIONES_DESARROLLADOR',
+      process.env.NODE_ENV !== 'production',
+    );
+    const permitirAdb = this.obtenerFlagBooleano(
+      'INTEGRIDAD_PERMITIR_ADB',
+      process.env.NODE_ENV !== 'production',
+    );
+    const umbralBloqueo = this.obtenerNumeroEnRango(
+      'INTEGRIDAD_RIESGO_BLOQUEO_UMBRAL',
+      60,
+      0,
+      100,
+    );
+
+    if (esAndroid && requiereReporteAndroid && !reporte) {
+      razones.add('REPORTE_INTEGRIDAD_AUSENTE');
+      puntaje = 100;
+      return this.construirResultadoIntegridad(
+        plataforma,
+        puntaje,
+        Array.from(razones),
+        true,
+        reporte,
+      );
+    }
+
+    if (!reporte) {
+      return this.construirResultadoIntegridad(plataforma, 0, [], false, undefined);
+    }
+
+    if (reporte.rootDetectado === true) {
+      puntaje += 45;
+      razones.add('ROOT_O_JAILBREAK_DETECTADO');
+    }
+
+    if (reporte.appDepurable === true && !permitirCompilacionDebug) {
+      puntaje += 35;
+      razones.add('APP_DEPURABLE_NO_PERMITIDA');
+    }
+
+    if (reporte.opcionesDesarrolladorActivas === true && !permitirOpcionesDesarrollador) {
+      puntaje += 25;
+      razones.add('OPCIONES_DESARROLLADOR_ACTIVAS');
+    }
+
+    if (reporte.adbActivo === true && !permitirAdb) {
+      puntaje += 25;
+      razones.add('ADB_ACTIVO');
+    }
+
+    if (reporte.emuladorDetectado === true && !permitirEmulador) {
+      puntaje += 25;
+      razones.add('EMULADOR_NO_PERMITIDO');
+    }
+
+    if (esAndroid && requiereBloqueoEstrictoAndroid) {
+      if (reporte.bloqueoEstrictoDisponible !== true) {
+        puntaje += 30;
+        razones.add('BLOQUEO_ESTRICTO_NO_DISPONIBLE');
+      }
+      if (reporte.bloqueoEstrictoActivo !== true) {
+        puntaje += 40;
+        razones.add('BLOQUEO_ESTRICTO_NO_ACTIVO');
+      }
+      if (reporte.lockTaskActivo === false) {
+        puntaje += 20;
+        razones.add('LOCK_TASK_INACTIVO');
+      }
+      if (reporte.dispositivoPropietario === false) {
+        puntaje += 20;
+        razones.add('DEVICE_OWNER_INACTIVO');
+      }
+    }
+
+    puntaje = Math.min(100, Math.max(0, puntaje));
+    const bloquearPorCriticos =
+      razones.has('ROOT_O_JAILBREAK_DETECTADO') ||
+      razones.has('BLOQUEO_ESTRICTO_NO_ACTIVO') ||
+      razones.has('REPORTE_INTEGRIDAD_AUSENTE');
+    const bloquearPorPuntaje = puntaje >= umbralBloqueo;
+    const bloquearInicio = bloquearPorCriticos || bloquearPorPuntaje;
+
+    return this.construirResultadoIntegridad(
+      plataforma,
+      puntaje,
+      Array.from(razones),
+      bloquearInicio,
+      reporte,
+    );
+  }
+
+  private construirResultadoIntegridad(
+    plataforma: string,
+    puntaje: number,
+    razones: string[],
+    bloquearInicio: boolean,
+    reporte?: IntegridadDispositivoIntentoDto,
+  ): EvaluacionIntegridadInicio {
+    return {
+      plataforma,
+      puntaje,
+      razones,
+      bloquearInicio,
+      requiereRevision: puntaje > 0 || razones.length > 0,
+      metadatos: {
+        plataforma,
+        puntajeIntegridad: puntaje,
+        razonesRiesgo: razones,
+        reporteOriginal: reporte ?? null,
+      },
+    };
+  }
+
+  private resolverPlataforma(
+    reporte: IntegridadDispositivoIntentoDto | undefined,
+    sistemaOperativo: string | undefined,
+  ): string {
+    const desdeReporte = reporte?.plataforma?.trim().toUpperCase();
+    if (desdeReporte) {
+      return desdeReporte;
+    }
+
+    const so = sistemaOperativo?.trim().toUpperCase() ?? '';
+    if (so.includes('ANDROID')) {
+      return 'ANDROID';
+    }
+    if (so.includes('IOS')) {
+      return 'IOS';
+    }
+    return 'DESCONOCIDA';
+  }
+
+  private obtenerFlagBooleano(clave: string, valorPorDefecto: boolean): boolean {
+    const valor = this.configService.get<string>(clave);
+    if (valor == null) {
+      return valorPorDefecto;
+    }
+    const normalizado = valor.trim().toLowerCase();
+    if (normalizado === 'true') {
+      return true;
+    }
+    if (normalizado === 'false') {
+      return false;
+    }
+    return valorPorDefecto;
+  }
+
+  private obtenerNumeroEnRango(clave: string, valorPorDefecto: number, minimo: number, maximo: number): number {
+    const valor = Number.parseInt(this.configService.get<string>(clave) ?? '', 10);
+    if (!Number.isFinite(valor)) {
+      return valorPorDefecto;
+    }
+    return Math.min(maximo, Math.max(minimo, valor));
   }
 }

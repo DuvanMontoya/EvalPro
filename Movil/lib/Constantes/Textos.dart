@@ -70,6 +70,8 @@ abstract class Textos {
       'Ya agotaste el numero de intentos permitidos para esta sesion.';
   static const errorCodigoSesionInvalido =
       'El codigo ingresado no coincide con la sesion activa.';
+  static const errorDispositivoNoSeguro =
+      'No se puede iniciar el examen porque el dispositivo no cumple la politica de seguridad requerida.';
   static const errorTokenInvalido =
       'Tu sesion expiro. Inicia sesion nuevamente.';
   static const errorValidacion = 'Los datos enviados no son validos.';
