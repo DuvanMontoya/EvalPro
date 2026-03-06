@@ -15,6 +15,10 @@ enum TipoEventoTelemetria {
   SESION_INVALIDA,
   EXAMEN_ENVIADO,
   SINCRONIZACION_COMPLETADA,
+  SYNC_ANOMALA,
+  CAMBIO_RED,
+  CAPTURA_PANTALLA_DETECTADA,
+  MULTIPLES_DISPOSITIVOS,
 }
 
 /// Utilidades de conversion para TipoEventoTelemetria.

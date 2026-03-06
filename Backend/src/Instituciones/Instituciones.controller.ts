@@ -6,6 +6,7 @@ import { UsuarioActual } from '../Comun/Decoradores/UsuarioActual.decorador';
 import { JwtAutenticacionGuard } from '../Comun/Guards/JwtAutenticacion.guard';
 import { RolesGuard } from '../Comun/Guards/Roles.guard';
 import { UsuarioAutenticado } from '../Comun/Tipos/UsuarioAutenticado.tipo';
+import { ActualizarConfiguracionAntifraudeDto } from './Dto/ActualizarConfiguracionAntifraude.dto';
 import { CambiarEstadoInstitucionDto } from './Dto/CambiarEstadoInstitucion.dto';
 import { CrearInstitucionDto } from './Dto/CrearInstitucion.dto';
 import { InstitucionesService } from './Instituciones.service';
@@ -40,5 +41,16 @@ export class InstitucionesController {
     @UsuarioActual() actor: UsuarioAutenticado,
   ) {
     return this.institucionesService.cambiarEstado(idInstitucion, dto, actor.rol);
+  }
+
+  @Patch(':id/configuracion-antifraude')
+  @Roles(RolUsuario.SUPERADMINISTRADOR, RolUsuario.ADMINISTRADOR)
+  @ApiOperation({ summary: 'Actualiza umbrales de antifraude de red por institución' })
+  async actualizarConfiguracionAntifraude(
+    @Param('id', ParseUUIDPipe) idInstitucion: string,
+    @Body() dto: ActualizarConfiguracionAntifraudeDto,
+    @UsuarioActual() actor: UsuarioAutenticado,
+  ) {
+    return this.institucionesService.actualizarConfiguracionAntifraude(idInstitucion, dto, actor);
   }
 }

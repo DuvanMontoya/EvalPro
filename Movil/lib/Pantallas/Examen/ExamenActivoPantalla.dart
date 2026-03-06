@@ -16,6 +16,7 @@ import '../../Modelos/Enums/TipoEventoTelemetria.dart';
 import '../../Providers/AutenticacionProvider.dart';
 import '../../Providers/ExamenProvider.dart';
 import 'Widgets/IndicadorConexion.dart';
+import 'Widgets/IndicadorSeguridadExamen.dart';
 import 'Widgets/MapaProgreso.dart';
 import 'Widgets/NavegadorPreguntas.dart';
 import 'Widgets/TarjetaPregunta.dart';
@@ -108,6 +109,10 @@ class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
           ),
           actions: const <Widget>[
             Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: IndicadorSeguridadExamen(),
+            ),
+            Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: IndicadorConexion())
           ],
@@ -119,6 +124,8 @@ class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
             child: Column(
               children: <Widget>[
+                const PanelEstadoSeguridadExamen(),
+                const SizedBox(height: 8),
                 MapaProgreso(
                   totalPreguntas: estado.preguntasAleatorizadas.length,
                   indiceActual: estado.indicePreguntaActual,

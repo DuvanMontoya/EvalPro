@@ -9,6 +9,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  actualizarConfiguracionAntifraudeInstitucion,
+  ActualizarConfiguracionAntifraudeDto,
   cambiarEstadoInstitucion,
   CambiarEstadoInstitucionDto,
   crearInstitucion,
@@ -37,10 +39,16 @@ export function useInstituciones() {
     onSuccess: invalidar,
   });
 
+  const mutacionActualizarConfiguracionAntifraude = useMutation({
+    mutationFn: ({ idInstitucion, dto }: { idInstitucion: string; dto: ActualizarConfiguracionAntifraudeDto }) =>
+      actualizarConfiguracionAntifraudeInstitucion(idInstitucion, dto),
+    onSuccess: invalidar,
+  });
+
   return {
     consultaInstituciones,
     mutacionCrearInstitucion,
     mutacionCambiarEstadoInstitucion,
+    mutacionActualizarConfiguracionAntifraude,
   };
 }
-

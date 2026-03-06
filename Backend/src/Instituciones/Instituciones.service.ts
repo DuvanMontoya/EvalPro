@@ -1,8 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoInstitucion, RolUsuario } from '@prisma/client';
-import { Prisma } from '@prisma/client';
+import { EstadoInstitucion, Prisma, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { UsuarioAutenticado } from '../Comun/Tipos/UsuarioAutenticado.tipo';
+import { ActualizarConfiguracionAntifraudeDto } from './Dto/ActualizarConfiguracionAntifraude.dto';
 import { CambiarEstadoInstitucionDto } from './Dto/CambiarEstadoInstitucion.dto';
 import { CrearInstitucionDto } from './Dto/CrearInstitucion.dto';
 
@@ -69,6 +69,58 @@ export class InstitucionesService {
     };
   }
 
+  async actualizarConfiguracionAntifraude(
+    idInstitucion: string,
+    dto: ActualizarConfiguracionAntifraudeDto,
+    actor: UsuarioAutenticado,
+  ) {
+    if (actor.rol !== RolUsuario.SUPERADMINISTRADOR && actor.rol !== RolUsuario.ADMINISTRADOR) {
+      throw new ForbiddenException('Solo SUPERADMINISTRADOR o ADMINISTRADOR pueden actualizar políticas antifraude');
+    }
+
+    if (actor.rol === RolUsuario.ADMINISTRADOR && actor.idInstitucion !== idInstitucion) {
+      throw new ForbiddenException('No puede actualizar políticas de otra institución');
+    }
+    if (dto.red.umbralRiesgoCritico < dto.red.umbralRiesgoSospechoso) {
+      throw new BadRequestException('El umbral crítico no puede ser menor que el umbral sospechoso');
+    }
+
+    const institucion = await this.prisma.institucion.findUnique({
+      where: { id: idInstitucion },
+      select: { id: true, configuracion: true },
+    });
+    if (!institucion) {
+      throw new NotFoundException('Institución no encontrada');
+    }
+
+    const configuracionActual = this.extraerObjeto(institucion.configuracion) ?? {};
+    const antifraudeActual = this.extraerObjeto(configuracionActual.antifraude) ?? {};
+    const configuracionNueva = {
+      ...configuracionActual,
+      antifraude: {
+        ...antifraudeActual,
+        red: {
+          ventanaSegundos: dto.red.ventanaSegundos,
+          maxReconexionesVentana: dto.red.maxReconexionesVentana,
+          maxCambiosTipoRedVentana: dto.red.maxCambiosTipoRedVentana,
+          maxTiempoOfflineSegundos: dto.red.maxTiempoOfflineSegundos,
+          riesgoPorReconexion: dto.red.riesgoPorReconexion,
+          riesgoPorCambioTipoRed: dto.red.riesgoPorCambioTipoRed,
+          riesgoPorOfflineExtenso: dto.red.riesgoPorOfflineExtenso,
+          umbralRiesgoSospechoso: dto.red.umbralRiesgoSospechoso,
+          umbralRiesgoCritico: dto.red.umbralRiesgoCritico,
+        },
+      },
+    };
+
+    return this.prisma.institucion.update({
+      where: { id: idInstitucion },
+      data: {
+        configuracion: configuracionNueva as Prisma.InputJsonValue,
+      },
+    });
+  }
+
   private validarSuperadministrador(rolActor: RolUsuario): void {
     if (rolActor !== RolUsuario.SUPERADMINISTRADOR) {
       throw new ForbiddenException('Solo SUPERADMINISTRADOR puede operar sobre instituciones');
@@ -99,5 +151,12 @@ export class InstitucionesService {
     ) {
       throw new BadRequestException('Transición inválida desde SUSPENDIDA');
     }
+  }
+
+  private extraerObjeto(valor: unknown): Record<string, unknown> | null {
+    if (valor && typeof valor === 'object' && !Array.isArray(valor)) {
+      return valor as Record<string, unknown>;
+    }
+    return null;
   }
 }

@@ -243,6 +243,23 @@ export const esquemaCrearGrupo = z.object({
   idPeriodo: z.uuid('Selecciona un periodo académico válido'),
 });
 
+export const esquemaConfiguracionAntifraudeRed = z
+  .object({
+    ventanaSegundos: z.number().int().min(30).max(3600),
+    maxReconexionesVentana: z.number().int().min(1).max(30),
+    maxCambiosTipoRedVentana: z.number().int().min(1).max(30),
+    maxTiempoOfflineSegundos: z.number().int().min(5).max(900),
+    riesgoPorReconexion: z.number().int().min(1).max(50),
+    riesgoPorCambioTipoRed: z.number().int().min(1).max(50),
+    riesgoPorOfflineExtenso: z.number().int().min(1).max(50),
+    umbralRiesgoSospechoso: z.number().int().min(0).max(100),
+    umbralRiesgoCritico: z.number().int().min(1).max(100),
+  })
+  .refine((valores) => valores.umbralRiesgoCritico >= valores.umbralRiesgoSospechoso, {
+    path: ['umbralRiesgoCritico'],
+    message: 'El umbral crítico debe ser mayor o igual al umbral sospechoso.',
+  });
+
 export type IniciarSesionFormulario = z.infer<typeof esquemaIniciarSesion>;
 export type CambiarContrasenaPrimerLoginFormulario = z.infer<typeof esquemaCambiarContrasenaPrimerLogin>;
 export type CrearExamenFormulario = z.infer<typeof esquemaCrearExamen>;
@@ -253,3 +270,4 @@ export type CrearUsuarioAcademicoFormulario = z.infer<typeof esquemaCrearUsuario
 export type CrearInstitucionFormulario = z.infer<typeof esquemaCrearInstitucion>;
 export type CrearPeriodoAcademicoFormulario = z.infer<typeof esquemaCrearPeriodoAcademico>;
 export type CrearGrupoFormulario = z.infer<typeof esquemaCrearGrupo>;
+export type ConfiguracionAntifraudeRedFormulario = z.infer<typeof esquemaConfiguracionAntifraudeRed>;

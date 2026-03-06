@@ -48,6 +48,14 @@ export function rolPuedeGestionarInstituciones(rol: RolUsuario | null | undefine
 }
 
 /**
+ * Define si el rol puede ajustar umbrales antifraude de su institución.
+ * @param rol - Rol autenticado.
+ */
+export function rolPuedeGestionarConfiguracionAntifraude(rol: RolUsuario | null | undefined): boolean {
+  return rol === RolUsuario.SUPERADMINISTRADOR || rol === RolUsuario.ADMINISTRADOR;
+}
+
+/**
  * Define si el rol puede gestionar grupos académicos.
  * @param rol - Rol autenticado.
  */

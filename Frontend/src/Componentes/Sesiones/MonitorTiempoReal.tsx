@@ -50,6 +50,10 @@ const MAPA_EVENTOS: Record<string, string> = {
   APLICACION_EN_SEGUNDO_PLANO: 'Aplicación en segundo plano',
   PANTALLA_ABANDONADA: 'Pantalla abandonada',
   FORZAR_CIERRE: 'Cierre forzado del dispositivo',
+  CAMBIO_RED: 'Cambio de red detectado',
+  SYNC_ANOMALA: 'Reconexiones de red anómalas',
+  CAPTURA_PANTALLA_DETECTADA: 'Captura de pantalla detectada',
+  MULTIPLES_DISPOSITIVOS: 'Múltiples dispositivos',
 };
 
 /**

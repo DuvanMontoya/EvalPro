@@ -246,6 +246,8 @@ class ModoExamenServicio with WidgetsBindingObserver {
   })  : _telemetriaServicio = telemetriaServicio,
         _socketServicio = socketServicio;
 
+  String? get idIntentoMonitoreado => _idIntentoActivo;
+
   /// Registra el intento activo y habilita monitoreo de ciclo de vida.
   void iniciarMonitoreo(String idIntento) {
     _idIntentoActivo = idIntento;
