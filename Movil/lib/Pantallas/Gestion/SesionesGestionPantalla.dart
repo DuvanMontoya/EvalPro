@@ -138,6 +138,7 @@ class _SesionesGestionPantallaState
                         sesion.estado == EstadoSesion.ACTIVA);
 
                 return Card(
+                  key: ValueKey<String>('session_management_card_${sesion.id}'),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -151,6 +152,8 @@ class _SesionesGestionPantallaState
                         const SizedBox(height: 6),
                         Text('Estado: ${sesion.estado.name}'),
                         Text('Examen: ${sesion.examenId}'),
+                        if ((sesion.descripcion ?? '').trim().isNotEmpty)
+                          Text('Descripcion: ${sesion.descripcion!.trim()}'),
                         if (sesion.fechaInicio != null)
                           Text(
                               'Inicio: ${FormateadorFecha.fechaHora(sesion.fechaInicio!)}'),
@@ -163,6 +166,9 @@ class _SesionesGestionPantallaState
                           runSpacing: 8,
                           children: <Widget>[
                             OutlinedButton.icon(
+                              key: ValueKey<String>(
+                                'session_management_report_button_${sesion.id}',
+                              ),
                               onPressed: () => context.go(
                                 Rutas.reporteSesionPorId(sesion.id),
                               ),
@@ -171,6 +177,9 @@ class _SesionesGestionPantallaState
                             ),
                             if (puedeActivar)
                               ElevatedButton(
+                                key: ValueKey<String>(
+                                  'session_management_activate_button_${sesion.id}',
+                                ),
                                 onPressed: () => _ejecutarAccion(
                                   accion: () async {
                                     await ref
@@ -184,6 +193,9 @@ class _SesionesGestionPantallaState
                               ),
                             if (puedeFinalizar)
                               ElevatedButton(
+                                key: ValueKey<String>(
+                                  'session_management_finalize_button_${sesion.id}',
+                                ),
                                 onPressed: () => _ejecutarAccion(
                                   accion: () async {
                                     await ref
@@ -197,6 +209,9 @@ class _SesionesGestionPantallaState
                               ),
                             if (puedeCancelar)
                               ElevatedButton(
+                                key: ValueKey<String>(
+                                  'session_management_cancel_button_${sesion.id}',
+                                ),
                                 onPressed: () => _ejecutarAccion(
                                   accion: () async {
                                     await ref

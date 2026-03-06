@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 
 class OpcionSeleccionable extends StatelessWidget {
+  final Key? clavePrueba;
   final String etiqueta;
   final String contenido;
   final bool seleccionada;
@@ -15,6 +16,7 @@ class OpcionSeleccionable extends StatelessWidget {
 
   const OpcionSeleccionable({
     super.key,
+    this.clavePrueba,
     required this.etiqueta,
     required this.contenido,
     required this.seleccionada,
@@ -35,6 +37,7 @@ class OpcionSeleccionable extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          key: clavePrueba,
           borderRadius: BorderRadius.circular(12),
           onTap: alPresionar,
           child: AnimatedContainer(

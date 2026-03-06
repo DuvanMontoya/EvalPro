@@ -232,6 +232,10 @@ class ModoExamenServicio with WidgetsBindingObserver {
     'KIOSCO_ESTRICTO_REQUERIDO',
     defaultValue: true,
   );
+  static const bool _omitirLockTaskEnPruebas = bool.fromEnvironment(
+    'KIOSCO_OMITIR_LOCK_TASK_EN_PRUEBAS',
+    defaultValue: false,
+  );
 
   final TelemetriaServicio _telemetriaServicio;
   final SocketServicio _socketServicio;
@@ -323,6 +327,9 @@ class ModoExamenServicio with WidgetsBindingObserver {
   /// Lanza PlatformException si el SO rechaza el bloqueo.
   Future<bool> activarModoKiosco() async {
     await _activarProteccionVisual();
+    if (_omitirLockTaskEnPruebas) {
+      return _proteccionVisualActiva;
+    }
     if (!Platform.isAndroid) {
       return _proteccionVisualActiva;
     }

@@ -1,24 +1,21 @@
-/// @archivo   FlujosAplicacion_test.dart
-/// @descripcion Pruebas de integracion para flujos principales de autenticacion y navegacion.
-/// @modulo    integration_test
+/// @archivo   FlujosAplicacionWidget_test.dart
+/// @descripcion Pruebas de widget para autenticacion y navegacion con servicios simulados.
+/// @modulo    test
 /// @autor     EvalPro
-/// @fecha     2026-03-03
+/// @fecha     2026-03-05
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:movil/Aplicacion.dart';
 import 'package:movil/Constantes/Textos.dart';
 import 'package:movil/Modelos/Enums/RolUsuario.dart';
 import 'package:movil/Modelos/Usuario.dart';
 import 'package:movil/Providers/AutenticacionProvider.dart';
 
-import '../test/Auxiliares/ApiServicioSimulado.dart';
+import 'Auxiliares/ApiServicioSimulado.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   testWidgets('login exitoso de estudiante navega al inicio', (tester) async {
     final autenticacionPrueba = _AutenticacionEstadoPrueba(
       estadoInicial: const EstadoAutenticacion(

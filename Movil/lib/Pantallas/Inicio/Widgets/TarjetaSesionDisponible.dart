@@ -27,6 +27,7 @@ class TarjetaSesionDisponible extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Card(
+      key: ValueKey<String>('session_result_card_${sesion.id}'),
       child: Padding(
         padding: const EdgeInsets.all(Dimensiones.espaciadoLg),
         child: Column(
@@ -85,6 +86,7 @@ class TarjetaSesionDisponible extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
+                key: ValueKey<String>('session_join_button_${sesion.id}'),
                 onPressed: cargando ? null : alUnirse,
                 icon: cargando
                     ? const SizedBox(

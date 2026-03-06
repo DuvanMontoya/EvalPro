@@ -85,6 +85,7 @@ class ResumenExamenPantalla extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
+              key: const Key('exam_submit_button'),
               onPressed: estado.estaEnviando
                   ? null
                   : () async {

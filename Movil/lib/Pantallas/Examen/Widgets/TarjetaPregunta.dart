@@ -34,6 +34,7 @@ class TarjetaPregunta extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorPrimario = Theme.of(context).colorScheme.primary;
     return Card(
+      key: ValueKey<String>('exam_question_card_${pregunta.id}'),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
@@ -106,6 +107,8 @@ class TarjetaPregunta extends StatelessWidget {
     return Column(
       children: pregunta.opciones.map((opcion) {
         return OpcionSeleccionable(
+          clavePrueba:
+              ValueKey<String>('exam_option_${pregunta.id}_${opcion.letra}'),
           etiqueta: opcion.letra,
           contenido: opcion.contenido,
           seleccionada: opcion.letra == seleccionada,
@@ -122,6 +125,8 @@ class TarjetaPregunta extends StatelessWidget {
       children: pregunta.opciones.map((opcion) {
         final activa = seleccionadas.contains(opcion.letra);
         return OpcionSeleccionable(
+          clavePrueba:
+              ValueKey<String>('exam_option_${pregunta.id}_${opcion.letra}'),
           etiqueta: opcion.letra,
           contenido: opcion.contenido,
           seleccionada: activa,
@@ -163,6 +168,9 @@ class TarjetaPregunta extends StatelessWidget {
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 6),
             child: ElevatedButton(
+              key: ValueKey<String>(
+                'exam_option_${pregunta.id}_${opcion['letra']}',
+              ),
               onPressed: () => _responderConFeedback(opcion['letra']!),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(0, 52),

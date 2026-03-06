@@ -176,6 +176,7 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
           ),
           const SizedBox(height: 16),
           TextField(
+            key: const Key('session_search_code_field'),
             controller: _controladorCodigo,
             maxLength: 9,
             textCapitalization: TextCapitalization.characters,
@@ -207,6 +208,7 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
+              key: const Key('session_search_button'),
               onPressed: estado.cargando ||
                       _normalizarCodigo(_controladorCodigo.text).length < 4
                   ? null
@@ -225,6 +227,7 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
           const SizedBox(height: 14),
           if (estado.error != null)
             Container(
+              key: const Key('session_search_error_banner'),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: const Color(0xFFFEECEC),

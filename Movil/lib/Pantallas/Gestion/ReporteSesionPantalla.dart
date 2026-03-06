@@ -94,6 +94,7 @@ class _ReporteSesionPantallaState extends ConsumerState<ReporteSesionPantalla> {
               padding: const EdgeInsets.all(12),
               children: <Widget>[
                 Card(
+                  key: const Key('session_report_summary_card'),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -122,26 +123,33 @@ class _ReporteSesionPantallaState extends ConsumerState<ReporteSesionPantalla> {
                 _tarjetaMetrica(
                   'Total estudiantes',
                   reporte.totalEstudiantes.toString(),
+                  clavePrueba:
+                      const Key('session_report_metric_total_students'),
                 ),
                 _tarjetaMetrica(
                   'Entregados',
                   reporte.estudiantesQueEnviaron.toString(),
+                  clavePrueba: const Key('session_report_metric_submitted'),
                 ),
                 _tarjetaMetrica(
                   'Sospechosos',
                   reporte.estudiantesSospechosos.toString(),
+                  clavePrueba: const Key('session_report_metric_suspicious'),
                 ),
                 _tarjetaMetrica(
                   'Promedio',
                   reporte.puntajePromedio?.toStringAsFixed(2) ?? '-',
+                  clavePrueba: const Key('session_report_metric_average'),
                 ),
                 _tarjetaMetrica(
                   'Maximo',
                   reporte.puntajeMaximo?.toStringAsFixed(2) ?? '-',
+                  clavePrueba: const Key('session_report_metric_maximum'),
                 ),
                 _tarjetaMetrica(
                   'Minimo',
                   reporte.puntajeMinimo?.toStringAsFixed(2) ?? '-',
+                  clavePrueba: const Key('session_report_metric_minimum'),
                 ),
                 const SizedBox(height: 10),
                 const Text(
@@ -163,8 +171,13 @@ class _ReporteSesionPantallaState extends ConsumerState<ReporteSesionPantalla> {
     );
   }
 
-  Widget _tarjetaMetrica(String titulo, String valor) {
+  Widget _tarjetaMetrica(
+    String titulo,
+    String valor, {
+    Key? clavePrueba,
+  }) {
     return Card(
+      key: clavePrueba,
       child: ListTile(
         title: Text(titulo),
         trailing: Text(
@@ -177,6 +190,9 @@ class _ReporteSesionPantallaState extends ConsumerState<ReporteSesionPantalla> {
 
   Widget _tarjetaEstudiante(EstudianteReporteSesion estudiante) {
     return Card(
+      key: ValueKey<String>(
+        'session_report_student_${estudiante.nombre}_${estudiante.apellidos}',
+      ),
       child: ListTile(
         title: Text('${estudiante.nombre} ${estudiante.apellidos}'),
         subtitle: Text(

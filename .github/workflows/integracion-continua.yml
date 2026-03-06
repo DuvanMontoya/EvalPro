@@ -143,3 +143,137 @@ jobs:
 
       - name: Ejecutar pruebas Flutter
         run: flutter test
+
+  movil-e2e:
+    name: Movil Flutter E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: evalpro_usuario
+          POSTGRES_PASSWORD: evalpro_contrasena_segura
+          POSTGRES_DB: evalPro_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U evalpro_usuario -d evalPro_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://evalpro_usuario:evalpro_contrasena_segura@localhost:5432/evalPro_db?schema=public
+      JWT_SECRETO_ACCESO: minimo_64_caracteres_completamente_aleatorios_acceso
+      JWT_EXPIRACION_ACCESO: 15m
+      JWT_SECRETO_REFRESH: minimo_64_caracteres_completamente_aleatorios_refresh
+      JWT_EXPIRACION_REFRESH: 7d
+      PUERTO_APP: 3001
+      CORS_ORIGENES_PERMITIDOS: http://localhost:3000
+      ENTORNO: pruebas
+      BCRYPT_RONDAS_HASH: 12
+      ADMIN_CORREO_INICIAL: admin@evalpro.com
+      ADMIN_CONTRASENA_INICIAL: Gaussiano1008*
+      SUPERADMIN_CORREO_INICIAL: superadmin@evalpro.com
+      SUPERADMIN_CONTRASENA_INICIAL: Gaussiano1008*
+      DOCENTE_CORREO_INICIAL: docente@evalpro.com
+      DOCENTE_CONTRASENA_INICIAL: Gaussiano1008*
+      ESTUDIANTE_CORREO_INICIAL: estudiante@evalpro.com
+      ESTUDIANTE_CONTRASENA_INICIAL: Gaussiano1008*
+      TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA: 3
+      TELEMETRIA_MAX_EVENTOS_SEGUNDO_PLANO: 0
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.2
+          channel: stable
+          cache: true
+
+      - name: Instalar dependencias backend
+        working-directory: Backend
+        run: npm ci
+
+      - name: Preparar base de datos backend
+        working-directory: Backend
+        run: |
+          npx prisma generate
+          npx prisma db push
+          npx prisma db seed
+
+      - name: Compilar backend
+        working-directory: Backend
+        run: npm run build
+
+      - name: Arrancar backend para e2e movil
+        working-directory: Backend
+        run: |
+          nohup npm run start:prod > ../backend-e2e.log 2>&1 &
+          echo $! > ../backend-e2e.pid
+
+      - name: Esperar backend disponible
+        run: |
+          for intento in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:3001/api/v1/salud >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "El backend no respondio a tiempo."
+          test -f backend-e2e.log && cat backend-e2e.log
+          exit 1
+
+      - name: Instalar dependencias movil
+        working-directory: Movil
+        run: flutter pub get
+
+      - name: Ejecutar e2e movil en emulador Android
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_7
+          disable-animations: true
+          script: |
+            cd "$GITHUB_WORKSPACE/Movil"
+            adb shell settings put global window_animation_scale 0
+            adb shell settings put global transition_animation_scale 0
+            adb shell settings put global animator_duration_scale 0
+            flutter test integration_test/FlujoCompletoMovil_e2e_test.dart -d emulator-5554 \
+              --dart-define=API_URL=http://10.0.2.2:3001/api/v1 \
+              --dart-define=WEBSOCKET_URL=http://10.0.2.2:3001 \
+              --dart-define=KIOSCO_ESTRICTO_REQUERIDO=false \
+              --dart-define=KIOSCO_OMITIR_LOCK_TASK_EN_PRUEBAS=true
+
+      - name: Mostrar log backend si falla
+        if: failure()
+        run: |
+          if [ -f backend-e2e.log ]; then
+            cat backend-e2e.log
+          fi
+
+      - name: Detener backend e2e
+        if: always()
+        run: |
+          if [ -f backend-e2e.pid ]; then
+            kill "$(cat backend-e2e.pid)" || true
+          fi

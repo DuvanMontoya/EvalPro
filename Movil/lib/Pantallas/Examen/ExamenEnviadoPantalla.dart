@@ -77,6 +77,7 @@ class ExamenEnviadoPantalla extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
+                      key: const Key('exam_back_home_button'),
                       onPressed: () => context.go(Rutas.inicio),
                       child: const Text('Volver al inicio'),
                     ),

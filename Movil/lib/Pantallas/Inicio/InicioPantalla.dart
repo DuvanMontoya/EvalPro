@@ -86,6 +86,7 @@ class InicioPantalla extends ConsumerWidget {
                     icono: Icons.how_to_reg_rounded,
                     onPressed: () => context.go(Rutas.unirseExamen),
                     esPrimaria: true,
+                    clavePrueba: const Key('inicio_join_session_button'),
                   ),
                   _AccionInicio(
                     etiqueta: Textos.misResultados,
@@ -105,6 +106,7 @@ class InicioPantalla extends ConsumerWidget {
                     icono: Icons.event_note_outlined,
                     onPressed: () => context.go(Rutas.gestionSesiones),
                     esPrimaria: true,
+                    clavePrueba: const Key('inicio_manage_sessions_button'),
                   ),
                   _AccionInicio(
                     etiqueta: Textos.gestionarExamenes,
@@ -161,6 +163,7 @@ class InicioPantalla extends ConsumerWidget {
                     icono: Icons.event_note_outlined,
                     onPressed: () => context.go(Rutas.gestionSesiones),
                     esPrimaria: true,
+                    clavePrueba: const Key('inicio_manage_sessions_button'),
                   ),
                   _AccionInicio(
                     etiqueta: Textos.gestionarExamenes,
@@ -347,6 +350,7 @@ class _BotonAccion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FilledButton.icon(
+      key: accion.clavePrueba,
       style: FilledButton.styleFrom(
         backgroundColor:
             accion.esPrimaria ? Colores.azulPrimario : Colores.grisFondo,
@@ -372,11 +376,13 @@ class _AccionInicio {
   final IconData icono;
   final VoidCallback onPressed;
   final bool esPrimaria;
+  final Key? clavePrueba;
 
   const _AccionInicio({
     required this.etiqueta,
     required this.icono,
     required this.onPressed,
     this.esPrimaria = false,
+    this.clavePrueba,
   });
 }

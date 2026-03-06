@@ -29,6 +29,7 @@ class NavegadorPreguntas extends StatelessWidget {
         if (mostrarAnterior)
           Expanded(
             child: OutlinedButton(
+              key: const Key('exam_previous_button'),
               onPressed: alAnterior == null
                   ? null
                   : () {
@@ -47,6 +48,7 @@ class NavegadorPreguntas extends StatelessWidget {
         if (mostrarAnterior) const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
+            key: const Key('exam_next_button'),
             onPressed: () {
               HapticFeedback.selectionClick();
               alSiguiente();
