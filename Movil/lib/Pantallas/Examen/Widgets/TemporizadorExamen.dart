@@ -9,17 +9,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../Constantes/Colores.dart';
+import '../../../core/theme/app_colors.dart';
 
 class TemporizadorExamen extends StatefulWidget {
-  final int duracionMinutos;
-  final VoidCallback alFinalizar;
-
   const TemporizadorExamen({
     super.key,
     required this.duracionMinutos,
     required this.alFinalizar,
   });
+
+  final int duracionMinutos;
+  final VoidCallback alFinalizar;
 
   @override
   State<TemporizadorExamen> createState() => _TemporizadorExamenState();
@@ -71,37 +71,51 @@ class _TemporizadorExamenState extends State<TemporizadorExamen> {
   Color _obtenerColor() {
     final total = widget.duracionMinutos * 60;
     if (_sinLimite || total <= 0) {
-      return Colores.verdeExito;
+      return AppColors.success;
     }
     final porcentaje = _segundosRestantes / total;
-    if (porcentaje <= 0.10) return Colores.rojoError;
-    if (porcentaje <= 0.20) return Colores.amarilloAlerta;
-    return Colores.verdeExito;
+    if (porcentaje <= 0.10) return AppColors.error;
+    if (porcentaje <= 0.20) return AppColors.warning;
+    return AppColors.primary;
+  }
+
+  Color _obtenerFondo(Color color) {
+    return color.withValues(alpha: 0.12);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_sinLimite) {
-      return Text(
-        'Sin limite',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: _obtenerColor(),
-          fontSize: 18,
-        ),
-      );
-    }
+    final color = _obtenerColor();
+    final texto = _sinLimite ? 'Sin limite' : _formatearTiempo();
 
-    final minutos = (_segundosRestantes ~/ 60).toString().padLeft(2, '0');
-    final segundos = (_segundosRestantes % 60).toString().padLeft(2, '0');
-
-    return Text(
-      '$minutos:$segundos',
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        color: _obtenerColor(),
-        fontSize: 18,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: _obtenerFondo(color),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(Icons.timer_outlined, size: 18, color: color),
+          const SizedBox(width: 8),
+          Text(
+            texto,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ],
       ),
     );
+  }
+
+  String _formatearTiempo() {
+    final minutos = (_segundosRestantes ~/ 60).toString().padLeft(2, '0');
+    final segundos = (_segundosRestantes % 60).toString().padLeft(2, '0');
+    return '$minutos:$segundos';
   }
 }

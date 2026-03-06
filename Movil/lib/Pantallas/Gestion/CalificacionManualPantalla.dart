@@ -7,12 +7,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../Constantes/Dimensiones.dart';
 import '../../Constantes/Textos.dart';
 import '../../Modelos/RespuestaPendienteCalificacion.dart';
 import '../../Providers/AutenticacionProvider.dart';
 import '../../Servicios/CalificacionManualServicio.dart';
 import '../../Utilidades/FormateadorFecha.dart';
 import '../../Utilidades/MapeadorErroresNegocio.dart';
+import '../../core/widgets/common/eval_empty_state.dart';
+import '../../core/widgets/common/eval_error_state.dart';
+import '../../core/widgets/common/eval_surface.dart';
 
 class CalificacionManualPantalla extends ConsumerStatefulWidget {
   const CalificacionManualPantalla({super.key});
@@ -56,6 +60,7 @@ class _CalificacionManualPantallaState
                 Text(
                   'Puntaje maximo: ${respuesta.puntajeMaximo.toStringAsFixed(2)}',
                 ),
+                const SizedBox(height: Dimensiones.espaciadoMd),
                 TextField(
                   controller: puntajeControlador,
                   keyboardType: const TextInputType.numberWithOptions(
@@ -65,11 +70,13 @@ class _CalificacionManualPantallaState
                   decoration:
                       const InputDecoration(labelText: 'Puntaje obtenido'),
                 ),
+                const SizedBox(height: Dimensiones.espaciadoMd),
                 TextField(
                   controller: observacionControlador,
                   maxLines: 3,
                   decoration: const InputDecoration(
-                      labelText: 'Observacion (opcional)'),
+                    labelText: 'Observacion (opcional)',
+                  ),
                 ),
               ],
             ),
@@ -98,8 +105,7 @@ class _CalificacionManualPantallaState
       return;
     }
     if (puntaje < 0 || puntaje > respuesta.puntajeMaximo) {
-      _mostrarError(
-          'El puntaje debe estar entre 0 y ${respuesta.puntajeMaximo}.');
+      _mostrarError('El puntaje debe estar entre 0 y ${respuesta.puntajeMaximo}.');
       return;
     }
 
@@ -117,10 +123,12 @@ class _CalificacionManualPantallaState
       );
       await _recargar();
     } catch (error) {
-      _mostrarError(MapeadorErroresNegocio.mapear(
-        error,
-        mensajePorDefecto: Textos.errorGestion,
-      ));
+      _mostrarError(
+        MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorGestion,
+        ),
+      );
     }
   }
 
@@ -144,86 +152,113 @@ class _CalificacionManualPantallaState
           ),
         ],
       ),
-      body: FutureBuilder<List<RespuestaPendienteCalificacion>>(
-        future: _futuroPendientes,
-        builder: (contexto, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  MapeadorErroresNegocio.mapear(
-                    snapshot.error!,
-                    mensajePorDefecto: Textos.errorGestion,
-                  ),
-                  textAlign: TextAlign.center,
+      body: EvalPageBackground(
+        child: FutureBuilder<List<RespuestaPendienteCalificacion>>(
+          future: _futuroPendientes,
+          builder: (contexto, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return EvalErrorState(
+                message: MapeadorErroresNegocio.mapear(
+                  snapshot.error!,
+                  mensajePorDefecto: Textos.errorGestion,
                 ),
+                onRetry: _recargar,
+              );
+            }
+
+            final pendientes =
+                snapshot.data ?? <RespuestaPendienteCalificacion>[];
+            if (pendientes.isEmpty) {
+              return EvalEmptyState(
+                icon: Icons.rate_review_outlined,
+                title: 'No hay respuestas pendientes',
+                subtitle:
+                    'Cuando existan preguntas abiertas por calificar apareceran en esta vista.',
+                actionLabel: 'Actualizar',
+                onAction: _recargar,
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: _recargar,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciadoSm,
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciado2xl,
+                ),
+                children: <Widget>[
+                  const EvalPageHeader(
+                    eyebrow: 'Revision humana',
+                    title: 'Calificacion manual',
+                    subtitle:
+                        'Resuelve respuestas abiertas con contexto completo del estudiante y del examen.',
+                  ),
+                  const SizedBox(height: Dimensiones.espaciadoLg),
+                  ...pendientes.map((respuesta) {
+                    final contenido = (respuesta.valorTexto ?? '').trim();
+                    final opciones = respuesta.opcionesSeleccionadas.join(', ');
+                    return Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      child: EvalSectionCard(
+                        title: respuesta.tituloExamen ?? 'Examen',
+                        subtitle: respuesta.estudianteNombreCompleto,
+                        child: Column(
+                          children: <Widget>[
+                            if (respuesta.codigoSesion != null)
+                              EvalInfoRow(
+                                label: 'Sesion',
+                                value: respuesta.codigoSesion!,
+                                icon: Icons.confirmation_number_outlined,
+                              ),
+                            if (respuesta.guardadoEn != null)
+                              EvalInfoRow(
+                                label: 'Respondido',
+                                value: FormateadorFecha.fechaHora(
+                                  respuesta.guardadoEn!,
+                                ),
+                                icon: Icons.schedule_rounded,
+                              ),
+                            EvalInfoRow(
+                              label: 'Puntaje maximo',
+                              value: respuesta.puntajeMaximo.toStringAsFixed(2),
+                              icon: Icons.stars_outlined,
+                              compact: true,
+                            ),
+                            const SizedBox(height: Dimensiones.espaciadoSm),
+                            EvalNotice(
+                              title: 'Pregunta',
+                              message: respuesta.enunciadoPregunta,
+                            ),
+                            const SizedBox(height: Dimensiones.espaciadoSm),
+                            EvalNotice(
+                              title: contenido.isNotEmpty ? 'Respuesta' : 'Opciones',
+                              message: contenido.isNotEmpty ? contenido : opciones,
+                              variant: EvalNoticeVariant.success,
+                            ),
+                            const SizedBox(height: Dimensiones.espaciadoMd),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () => _calificar(respuesta),
+                                child: const Text('Calificar'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
               ),
             );
-          }
-
-          final pendientes =
-              snapshot.data ?? <RespuestaPendienteCalificacion>[];
-          if (pendientes.isEmpty) {
-            return const Center(child: Text(Textos.sinDatos));
-          }
-
-          return RefreshIndicator(
-            onRefresh: _recargar,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: pendientes.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (contexto, indice) {
-                final respuesta = pendientes[indice];
-                final contenido = (respuesta.valorTexto ?? '').trim();
-                final opciones = respuesta.opcionesSeleccionadas.join(', ');
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          respuesta.tituloExamen ?? 'Examen',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                            'Estudiante: ${respuesta.estudianteNombreCompleto}'),
-                        if (respuesta.codigoSesion != null)
-                          Text('Sesion: ${respuesta.codigoSesion}'),
-                        if (respuesta.guardadoEn != null)
-                          Text(
-                            'Respondido: ${FormateadorFecha.fechaHora(respuesta.guardadoEn!)}',
-                          ),
-                        const SizedBox(height: 8),
-                        Text('Pregunta: ${respuesta.enunciadoPregunta}'),
-                        const SizedBox(height: 6),
-                        Text(
-                          contenido.isNotEmpty
-                              ? 'Respuesta: $contenido'
-                              : 'Opciones: $opciones',
-                        ),
-                        const SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: () => _calificar(respuesta),
-                          child: const Text('Calificar'),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }

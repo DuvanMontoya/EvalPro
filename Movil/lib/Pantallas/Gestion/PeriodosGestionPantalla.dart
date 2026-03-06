@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../Constantes/Dimensiones.dart';
 import '../../Constantes/Textos.dart';
 import '../../Modelos/Enums/EstadoInstitucion.dart';
 import '../../Modelos/Enums/RolUsuario.dart';
@@ -17,6 +18,10 @@ import '../../Servicios/InstitucionServicio.dart';
 import '../../Servicios/PeriodoGestionServicio.dart';
 import '../../Utilidades/FormateadorFecha.dart';
 import '../../Utilidades/MapeadorErroresNegocio.dart';
+import '../../core/widgets/common/eval_badge.dart';
+import '../../core/widgets/common/eval_empty_state.dart';
+import '../../core/widgets/common/eval_error_state.dart';
+import '../../core/widgets/common/eval_surface.dart';
 
 class PeriodosGestionPantalla extends ConsumerStatefulWidget {
   const PeriodosGestionPantalla({super.key});
@@ -55,15 +60,18 @@ class _PeriodosGestionPantallaState
             await InstitucionServicio(ref.read(apiServicioProvider)).listar();
         instituciones = instituciones
             .where(
-                (institucion) => institucion.estado == EstadoInstitucion.ACTIVA)
+              (institucion) => institucion.estado == EstadoInstitucion.ACTIVA,
+            )
             .toList();
         institucionSeleccionada =
             instituciones.isNotEmpty ? instituciones.first : null;
       } catch (error) {
-        _mostrarError(MapeadorErroresNegocio.mapear(
-          error,
-          mensajePorDefecto: Textos.errorGestion,
-        ));
+        _mostrarError(
+          MapeadorErroresNegocio.mapear(
+            error,
+            mensajePorDefecto: Textos.errorGestion,
+          ),
+        );
         return;
       }
     }
@@ -86,7 +94,8 @@ class _PeriodosGestionPantallaState
                       controller: nombreControlador,
                       decoration: const InputDecoration(labelText: 'Nombre'),
                     ),
-                    if (esSuperadmin)
+                    if (esSuperadmin) ...<Widget>[
+                      const SizedBox(height: Dimensiones.espaciadoMd),
                       DropdownButtonFormField<String>(
                         initialValue: institucionSeleccionada?.id,
                         items: instituciones
@@ -114,9 +123,9 @@ class _PeriodosGestionPantallaState
                           labelText: 'Institucion destino',
                         ),
                       ),
+                    ],
                     const SizedBox(height: 10),
                     ListTile(
-                      contentPadding: EdgeInsets.zero,
                       title: const Text('Fecha inicio'),
                       subtitle: Text(
                         fechaInicio == null
@@ -144,7 +153,6 @@ class _PeriodosGestionPantallaState
                       },
                     ),
                     ListTile(
-                      contentPadding: EdgeInsets.zero,
                       title: const Text('Fecha fin'),
                       subtitle: Text(
                         fechaFin == null
@@ -157,8 +165,7 @@ class _PeriodosGestionPantallaState
                           context: contexto,
                           firstDate: DateTime(2020),
                           lastDate: DateTime(2100),
-                          initialDate:
-                              fechaFin ?? fechaInicio ?? DateTime.now(),
+                          initialDate: fechaFin ?? fechaInicio ?? DateTime.now(),
                         );
                         if (seleccion != null) {
                           setEstado(() {
@@ -173,7 +180,6 @@ class _PeriodosGestionPantallaState
                       },
                     ),
                     SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
                       value: activo,
                       title: const Text('Activo al crear'),
                       onChanged: (valor) => setEstado(() {
@@ -227,15 +233,16 @@ class _PeriodosGestionPantallaState
       );
       await _recargar();
     } catch (error) {
-      _mostrarError(MapeadorErroresNegocio.mapear(
-        error,
-        mensajePorDefecto: Textos.errorGestion,
-      ));
+      _mostrarError(
+        MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorGestion,
+        ),
+      );
     }
   }
 
-  Future<void> _actualizarEstado(
-      PeriodoGestion periodo, bool nuevoEstado) async {
+  Future<void> _actualizarEstado(PeriodoGestion periodo, bool nuevoEstado) async {
     try {
       await _servicio.actualizarEstado(
         idPeriodo: periodo.id,
@@ -249,10 +256,12 @@ class _PeriodosGestionPantallaState
       );
       await _recargar();
     } catch (error) {
-      _mostrarError(MapeadorErroresNegocio.mapear(
-        error,
-        mensajePorDefecto: Textos.errorGestion,
-      ));
+      _mostrarError(
+        MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorGestion,
+        ),
+      );
     }
   }
 
@@ -288,76 +297,96 @@ class _PeriodosGestionPantallaState
               label: const Text('Nuevo'),
             )
           : null,
-      body: FutureBuilder<List<PeriodoGestion>>(
-        future: _futuroPeriodos,
-        builder: (contexto, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  MapeadorErroresNegocio.mapear(
-                    snapshot.error!,
-                    mensajePorDefecto: Textos.errorGestion,
-                  ),
-                  textAlign: TextAlign.center,
+      body: EvalPageBackground(
+        child: FutureBuilder<List<PeriodoGestion>>(
+          future: _futuroPeriodos,
+          builder: (contexto, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return EvalErrorState(
+                message: MapeadorErroresNegocio.mapear(
+                  snapshot.error!,
+                  mensajePorDefecto: Textos.errorGestion,
                 ),
+                onRetry: _recargar,
+              );
+            }
+
+            final periodos = snapshot.data ?? <PeriodoGestion>[];
+            if (periodos.isEmpty) {
+              return EvalEmptyState(
+                icon: Icons.calendar_month_rounded,
+                title: 'No hay periodos creados',
+                subtitle:
+                    'Crea un nuevo periodo academico para ordenar la operacion institucional.',
+                actionLabel: 'Actualizar',
+                onAction: _recargar,
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: _recargar,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciadoSm,
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciado2xl,
+                ),
+                children: <Widget>[
+                  const EvalPageHeader(
+                    eyebrow: 'Calendario academico',
+                    title: 'Periodos',
+                    subtitle:
+                        'Activa, consulta y organiza ventanas academicas vigentes para toda la institucion.',
+                  ),
+                  const SizedBox(height: Dimensiones.espaciadoLg),
+                  ...periodos.map((periodo) {
+                    return Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      child: EvalSectionCard(
+                        title: periodo.nombre,
+                        subtitle: 'Institucion ${periodo.idInstitucion}',
+                        trailing: EvalBadge(
+                          periodo.activo ? 'Activo' : 'Inactivo',
+                          variant: periodo.activo
+                              ? EvalBadgeVariant.success
+                              : EvalBadgeVariant.neutral,
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            EvalInfoRow(
+                              label: 'Inicio',
+                              value: FormateadorFecha.fechaHora(periodo.fechaInicio),
+                              icon: Icons.event_available_outlined,
+                            ),
+                            EvalInfoRow(
+                              label: 'Fin',
+                              value: FormateadorFecha.fechaHora(periodo.fechaFin),
+                              icon: Icons.event_busy_outlined,
+                              compact: true,
+                            ),
+                            const SizedBox(height: Dimensiones.espaciadoSm),
+                            SwitchListTile(
+                              title: const Text('Activo'),
+                              value: periodo.activo,
+                              onChanged: puedeCrear
+                                  ? (valor) => _actualizarEstado(periodo, valor)
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
               ),
             );
-          }
-
-          final periodos = snapshot.data ?? <PeriodoGestion>[];
-          if (periodos.isEmpty) {
-            return const Center(child: Text(Textos.sinDatos));
-          }
-
-          return RefreshIndicator(
-            onRefresh: _recargar,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: periodos.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (contexto, indice) {
-                final periodo = periodos[indice];
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          periodo.nombre,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text('ID institucion: ${periodo.idInstitucion}'),
-                        Text(
-                            'Inicio: ${FormateadorFecha.fechaHora(periodo.fechaInicio)}'),
-                        Text(
-                            'Fin: ${FormateadorFecha.fechaHora(periodo.fechaFin)}'),
-                        const SizedBox(height: 8),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Activo'),
-                          value: periodo.activo,
-                          onChanged: puedeCrear
-                              ? (valor) => _actualizarEstado(periodo, valor)
-                              : null,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }

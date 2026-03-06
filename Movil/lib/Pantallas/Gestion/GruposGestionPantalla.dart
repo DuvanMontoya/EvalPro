@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../Constantes/Dimensiones.dart';
 import '../../Constantes/Textos.dart';
 import '../../Modelos/Enums/EstadoGrupo.dart';
 import '../../Modelos/Enums/RolUsuario.dart';
@@ -18,6 +19,10 @@ import '../../Servicios/GrupoGestionServicio.dart';
 import '../../Servicios/PeriodoGestionServicio.dart';
 import '../../Servicios/UsuarioGestionServicio.dart';
 import '../../Utilidades/MapeadorErroresNegocio.dart';
+import '../../core/widgets/common/eval_badge.dart';
+import '../../core/widgets/common/eval_empty_state.dart';
+import '../../core/widgets/common/eval_error_state.dart';
+import '../../core/widgets/common/eval_surface.dart';
 
 class GruposGestionPantalla extends ConsumerStatefulWidget {
   const GruposGestionPantalla({super.key});
@@ -472,91 +477,122 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
               label: const Text('Nuevo'),
             )
           : null,
-      body: FutureBuilder<List<GrupoGestion>>(
-        future: _futuroGrupos,
-        builder: (contexto, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  MapeadorErroresNegocio.mapear(
-                    snapshot.error!,
-                    mensajePorDefecto: Textos.errorGestion,
-                  ),
-                  textAlign: TextAlign.center,
+      body: EvalPageBackground(
+        child: FutureBuilder<List<GrupoGestion>>(
+          future: _futuroGrupos,
+          builder: (contexto, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return EvalErrorState(
+                message: MapeadorErroresNegocio.mapear(
+                  snapshot.error!,
+                  mensajePorDefecto: Textos.errorGestion,
                 ),
-              ),
-            );
-          }
+                onRetry: _recargar,
+              );
+            }
 
-          final grupos = snapshot.data ?? <GrupoGestion>[];
-          if (grupos.isEmpty) {
-            return const Center(child: Text(Textos.sinDatos));
-          }
+            final grupos = snapshot.data ?? <GrupoGestion>[];
+            if (grupos.isEmpty) {
+              return EvalEmptyState(
+                icon: Icons.groups_2_outlined,
+                title: 'No hay grupos configurados',
+                subtitle:
+                    'Crea grupos academicos y asigna miembros para empezar a operar.',
+                actionLabel: 'Actualizar',
+                onAction: _recargar,
+              );
+            }
 
-          return RefreshIndicator(
-            onRefresh: _recargar,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: grupos.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (contexto, indice) {
-                final grupo = grupos[indice];
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          grupo.nombre,
-                          style: const TextStyle(
-                              fontSize: 17, fontWeight: FontWeight.w700),
+            return RefreshIndicator(
+              onRefresh: _recargar,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciadoSm,
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciado2xl,
+                ),
+                children: <Widget>[
+                  const EvalPageHeader(
+                    eyebrow: 'Organizacion academica',
+                    title: 'Grupos',
+                    subtitle:
+                        'Mantén el contexto operativo de cada grupo con acceso rapido a estado, periodo y membresias.',
+                  ),
+                  const SizedBox(height: Dimensiones.espaciadoLg),
+                  ...grupos.map((grupo) {
+                    return Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      child: EvalSectionCard(
+                        title: grupo.nombre,
+                        subtitle: grupo.nombrePeriodo ?? grupo.idPeriodo,
+                        trailing: EvalBadge(
+                          grupo.estado.name,
+                          variant: grupo.estado == EstadoGrupo.ACTIVO
+                              ? EvalBadgeVariant.success
+                              : EvalBadgeVariant.warning,
                         ),
-                        const SizedBox(height: 6),
-                        Text('Estado: ${grupo.estado.name}'),
-                        Text('Codigo: ${grupo.codigoAcceso}'),
-                        Text(
-                            'Periodo: ${grupo.nombrePeriodo ?? grupo.idPeriodo}'),
-                        Text('Docentes: ${grupo.docentes.length}'),
-                        Text('Estudiantes: ${grupo.estudiantes.length}'),
-                        if (grupo.descripcion != null &&
-                            grupo.descripcion!.trim().isNotEmpty)
-                          Text('Descripcion: ${grupo.descripcion}'),
-                        if (puedeGestionar) ...<Widget>[
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: <Widget>[
-                              OutlinedButton(
-                                onPressed: () => _mostrarAsignarDocente(grupo),
-                                child: const Text('Asignar docente'),
-                              ),
-                              OutlinedButton(
-                                onPressed: () =>
-                                    _mostrarInscribirEstudiante(grupo),
-                                child: const Text('Inscribir estudiante'),
-                              ),
-                              OutlinedButton(
-                                onPressed: () => _mostrarCambiarEstado(grupo),
-                                child: const Text('Cambiar estado'),
+                        child: Column(
+                          children: <Widget>[
+                            EvalInfoRow(
+                              label: 'Codigo',
+                              value: grupo.codigoAcceso,
+                              icon: Icons.qr_code_rounded,
+                            ),
+                            EvalInfoRow(
+                              label: 'Docentes',
+                              value: grupo.docentes.length.toString(),
+                              icon: Icons.school_outlined,
+                            ),
+                            EvalInfoRow(
+                              label: 'Estudiantes',
+                              value: grupo.estudiantes.length.toString(),
+                              icon: Icons.people_outline_rounded,
+                              compact: (grupo.descripcion ?? '').trim().isEmpty,
+                            ),
+                            if (grupo.descripcion != null &&
+                                grupo.descripcion!.trim().isNotEmpty) ...<Widget>[
+                              EvalNotice(
+                                title: 'Descripcion',
+                                message: grupo.descripcion!,
                               ),
                             ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+                            if (puedeGestionar) ...<Widget>[
+                              const SizedBox(height: Dimensiones.espaciadoMd),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: <Widget>[
+                                  OutlinedButton(
+                                    onPressed: () => _mostrarAsignarDocente(grupo),
+                                    child: const Text('Asignar docente'),
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () =>
+                                        _mostrarInscribirEstudiante(grupo),
+                                    child: const Text('Inscribir estudiante'),
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () => _mostrarCambiarEstado(grupo),
+                                    child: const Text('Cambiar estado'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

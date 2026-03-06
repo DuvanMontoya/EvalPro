@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../Constantes/Dimensiones.dart';
 import '../../Constantes/Textos.dart';
 import '../../Modelos/Enums/RolUsuario.dart';
 import '../../Modelos/Enums/EstadoInstitucion.dart';
@@ -16,6 +17,10 @@ import '../../Providers/AutenticacionProvider.dart';
 import '../../Servicios/InstitucionServicio.dart';
 import '../../Servicios/UsuarioGestionServicio.dart';
 import '../../Utilidades/MapeadorErroresNegocio.dart';
+import '../../core/widgets/common/eval_badge.dart';
+import '../../core/widgets/common/eval_empty_state.dart';
+import '../../core/widgets/common/eval_error_state.dart';
+import '../../core/widgets/common/eval_surface.dart';
 
 class UsuariosGestionPantalla extends ConsumerStatefulWidget {
   const UsuariosGestionPantalla({super.key});
@@ -411,87 +416,117 @@ class _UsuariosGestionPantallaState
               label: const Text('Nuevo'),
             )
           : null,
-      body: FutureBuilder<List<UsuarioGestion>>(
-        future: _futuroUsuarios,
-        builder: (contexto, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  MapeadorErroresNegocio.mapear(
-                    snapshot.error!,
-                    mensajePorDefecto: Textos.errorGestion,
-                  ),
-                  textAlign: TextAlign.center,
+      body: EvalPageBackground(
+        child: FutureBuilder<List<UsuarioGestion>>(
+          future: _futuroUsuarios,
+          builder: (contexto, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return EvalErrorState(
+                message: MapeadorErroresNegocio.mapear(
+                  snapshot.error!,
+                  mensajePorDefecto: Textos.errorGestion,
                 ),
-              ),
-            );
-          }
+                onRetry: _recargar,
+              );
+            }
 
-          final usuarios = snapshot.data ?? <UsuarioGestion>[];
-          if (usuarios.isEmpty) {
-            return const Center(child: Text(Textos.sinDatos));
-          }
+            final usuarios = snapshot.data ?? <UsuarioGestion>[];
+            if (usuarios.isEmpty) {
+              return EvalEmptyState(
+                icon: Icons.manage_accounts_outlined,
+                title: Textos.sinDatos,
+                subtitle:
+                    'Crea o sincroniza usuarios para administrarlos desde esta vista.',
+                actionLabel: 'Actualizar',
+                onAction: _recargar,
+              );
+            }
 
-          return RefreshIndicator(
-            onRefresh: _recargar,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: usuarios.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (contexto, indice) {
-                final usuario = usuarios[indice];
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
+            return RefreshIndicator(
+              onRefresh: _recargar,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciadoSm,
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciado2xl,
+                ),
+                children: <Widget>[
+                  const EvalPageHeader(
+                    eyebrow: 'Identidad y acceso',
+                    title: 'Usuarios',
+                    subtitle:
+                        'Administra perfiles, roles y estado operativo desde una vista mas clara y priorizada.',
+                  ),
+                  const SizedBox(height: Dimensiones.espaciadoLg),
+                  ...usuarios.map((usuario) {
+                    return Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      child: EvalSectionCard(
+                        title: '${usuario.nombre} ${usuario.apellidos}'.trim(),
+                        subtitle: usuario.correo,
+                        trailing: EvalBadge(
+                          usuario.rol.name,
+                          variant: usuario.activo
+                              ? EvalBadgeVariant.primary
+                              : EvalBadgeVariant.error,
+                        ),
+                        child: Column(
                           children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                '${usuario.nombre} ${usuario.apellidos}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                ),
-                              ),
+                            EvalInfoRow(
+                              label: 'Estado cuenta',
+                              value: usuario.estadoCuenta,
+                              icon: Icons.verified_user_outlined,
                             ),
-                            if (puedeGestionar)
-                              IconButton(
-                                tooltip: 'Editar',
-                                onPressed: () =>
-                                    _mostrarEditarUsuario(usuario, rolActor),
-                                icon: const Icon(Icons.edit_outlined),
+                            EvalInfoRow(
+                              label: 'Activo',
+                              value: usuario.activo ? 'SI' : 'NO',
+                              icon: Icons.toggle_on_outlined,
+                            ),
+                            if (usuario.idInstitucion != null)
+                              EvalInfoRow(
+                                label: 'Institucion',
+                                value: usuario.idInstitucion!,
+                                icon: Icons.apartment_outlined,
+                                compact: true,
                               ),
-                            if (puedeGestionar && usuario.activo)
-                              IconButton(
-                                tooltip: 'Desactivar',
-                                onPressed: () => _desactivarUsuario(usuario),
-                                icon: const Icon(Icons.person_off_outlined),
+                            const SizedBox(height: Dimensiones.espaciadoSm),
+                            if (puedeGestionar)
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: <Widget>[
+                                  OutlinedButton.icon(
+                                    onPressed: () =>
+                                        _mostrarEditarUsuario(usuario, rolActor),
+                                    icon: const Icon(Icons.edit_outlined),
+                                    label: const Text('Editar'),
+                                  ),
+                                  if (usuario.activo)
+                                    OutlinedButton.icon(
+                                      onPressed: () =>
+                                          _desactivarUsuario(usuario),
+                                      icon: const Icon(
+                                        Icons.person_off_outlined,
+                                      ),
+                                      label: const Text('Desactivar'),
+                                    ),
+                                ],
                               ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text('Correo: ${usuario.correo}'),
-                        Text('Rol: ${usuario.rol.name}'),
-                        Text('Estado cuenta: ${usuario.estadoCuenta}'),
-                        Text('Activo: ${usuario.activo ? 'SI' : 'NO'}'),
-                        if (usuario.idInstitucion != null)
-                          Text('Institucion: ${usuario.idInstitucion}'),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

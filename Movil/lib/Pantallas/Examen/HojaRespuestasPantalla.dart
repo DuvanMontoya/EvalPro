@@ -15,6 +15,7 @@ import '../../Constantes/Rutas.dart';
 import '../../Modelos/Enums/TipoEventoTelemetria.dart';
 import '../../Providers/AutenticacionProvider.dart';
 import '../../Providers/ExamenProvider.dart';
+import '../../core/widgets/common/eval_surface.dart';
 import 'Widgets/CuadriculaOMR.dart';
 import 'Widgets/IndicadorConexion.dart';
 import 'Widgets/MapaProgreso.dart';
@@ -105,40 +106,43 @@ class HojaRespuestasPantalla extends ConsumerWidget {
                 child: IndicadorConexion())
           ],
         ),
-        body: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: MapaProgreso(
-                totalPreguntas: estado.preguntasAleatorizadas.length,
-                indiceActual: estado.indicePreguntaActual,
-                respondidas: respondidas,
-                permitirNavegacion: true,
-                alSeleccionar: (indice) =>
-                    ref.read(examenActivoProvider.notifier).irAPregunta(indice),
+        body: EvalPageBackground(
+          child: Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: MapaProgreso(
+                  totalPreguntas: estado.preguntasAleatorizadas.length,
+                  indiceActual: estado.indicePreguntaActual,
+                  respondidas: respondidas,
+                  permitirNavegacion: true,
+                  alSeleccionar: (indice) => ref
+                      .read(examenActivoProvider.notifier)
+                      .irAPregunta(indice),
+                ),
               ),
-            ),
-            Expanded(
-              child: CuadriculaOMR(
-                totalPreguntas: estado.preguntasAleatorizadas.length,
-                respuestas: respuestas,
-                alSeleccionar: (numero, letra) async {
-                  final indice = numero - 1;
-                  final pregunta = estado.preguntasAleatorizadas[indice];
-                  final actual = respuestas[numero];
-                  if (actual == letra) {
+              Expanded(
+                child: CuadriculaOMR(
+                  totalPreguntas: estado.preguntasAleatorizadas.length,
+                  respuestas: respuestas,
+                  alSeleccionar: (numero, letra) async {
+                    final indice = numero - 1;
+                    final pregunta = estado.preguntasAleatorizadas[indice];
+                    final actual = respuestas[numero];
+                    if (actual == letra) {
+                      await ref
+                          .read(examenActivoProvider.notifier)
+                          .registrarRespuesta(pregunta.id, <String>[]);
+                      return;
+                    }
                     await ref
                         .read(examenActivoProvider.notifier)
-                        .registrarRespuesta(pregunta.id, <String>[]);
-                    return;
-                  }
-                  await ref
-                      .read(examenActivoProvider.notifier)
-                      .registrarRespuesta(pregunta.id, letra);
-                },
+                        .registrarRespuesta(pregunta.id, letra);
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => context.go(Rutas.resumenExamen),

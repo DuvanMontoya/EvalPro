@@ -8,11 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class NavegadorPreguntas extends StatelessWidget {
-  final bool mostrarAnterior;
-  final bool esUltima;
-  final VoidCallback? alAnterior;
-  final VoidCallback alSiguiente;
-
   const NavegadorPreguntas({
     super.key,
     required this.mostrarAnterior,
@@ -21,48 +16,44 @@ class NavegadorPreguntas extends StatelessWidget {
     required this.alSiguiente,
   });
 
-  /// Construye navegacion inferior para avanzar o retroceder preguntas.
+  final bool mostrarAnterior;
+  final bool esUltima;
+  final VoidCallback? alAnterior;
+  final VoidCallback alSiguiente;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        if (mostrarAnterior)
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: <Widget>[
+          if (mostrarAnterior)
+            Expanded(
+              child: OutlinedButton(
+                key: const Key('exam_previous_button'),
+                onPressed: alAnterior == null
+                    ? null
+                    : () {
+                        HapticFeedback.selectionClick();
+                        alAnterior!.call();
+                      },
+                child: const Text('Anterior'),
+              ),
+            ),
+          if (mostrarAnterior) const SizedBox(width: 12),
           Expanded(
-            child: OutlinedButton(
-              key: const Key('exam_previous_button'),
-              onPressed: alAnterior == null
-                  ? null
-                  : () {
-                      HapticFeedback.selectionClick();
-                      alAnterior!.call();
-                    },
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 54),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Text('Anterior'),
+            flex: 2,
+            child: ElevatedButton(
+              key: const Key('exam_next_button'),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                alSiguiente();
+              },
+              child: Text(esUltima ? 'Revisar y enviar' : 'Siguiente'),
             ),
           ),
-        if (mostrarAnterior) const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton(
-            key: const Key('exam_next_button'),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              alSiguiente();
-            },
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(0, 54),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: Text(esUltima ? 'Revisar y Enviar' : 'Siguiente'),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

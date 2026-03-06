@@ -6,15 +6,13 @@
 
 import 'package:flutter/material.dart';
 
-import '../../../Constantes/Colores.dart';
 import '../../../Constantes/Dimensiones.dart';
 import '../../../Modelos/SesionExamen.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/common/eval_badge.dart';
+import '../../../core/widgets/common/eval_surface.dart';
 
 class TarjetaSesionDisponible extends StatelessWidget {
-  final SesionExamen sesion;
-  final VoidCallback alUnirse;
-  final bool cargando;
-
   const TarjetaSesionDisponible({
     super.key,
     required this.sesion,
@@ -22,126 +20,111 @@ class TarjetaSesionDisponible extends StatelessWidget {
     this.cargando = false,
   });
 
-  /// Construye tarjeta compacta con datos de la sesion activa.
+  final SesionExamen sesion;
+  final VoidCallback alUnirse;
+  final bool cargando;
+
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Card(
+    return EvalSectionCard(
       key: ValueKey<String>('session_result_card_${sesion.id}'),
-      child: Padding(
-        padding: const EdgeInsets.all(Dimensiones.espaciadoLg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Dimensiones.espaciadoSm,
-                    vertical: Dimensiones.espaciadoXs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colores.verdeExito.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(Dimensiones.radioSm),
-                  ),
-                  child: Text(
-                    'SESION ACTIVA',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: Colores.verdeExito,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.play_circle_fill_rounded,
-                  color: Colores.azulPrimario.withValues(alpha: 0.7),
-                ),
-              ],
-            ),
-            const SizedBox(height: Dimensiones.espaciadoMd),
-            Text(
-              sesion.examen.titulo,
-              style:
-                  textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: Dimensiones.espaciadoMd),
-            _DatoSesion(
-              icono: Icons.grid_view_rounded,
-              etiqueta: 'Modalidad',
-              valor: sesion.examen.modalidad.name,
-            ),
-            _DatoSesion(
-              icono: Icons.timer_outlined,
-              etiqueta: 'Duracion',
-              valor: '${sesion.examen.duracionMinutos} min',
-            ),
-            if (sesion.examen.docente != null)
-              _DatoSesion(
-                icono: Icons.person_outline_rounded,
-                etiqueta: 'Docente',
-                valor: sesion.examen.docente!,
+      title: sesion.examen.titulo,
+      subtitle: 'Sesión validada y lista para iniciar.',
+      trailing: const EvalBadge(
+        'Sesión activa',
+        variant: EvalBadgeVariant.success,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Wrap(
+            spacing: Dimensiones.espaciadoSm,
+            runSpacing: Dimensiones.espaciadoSm,
+            children: <Widget>[
+              _TagDato(
+                icono: Icons.grid_view_rounded,
+                texto: sesion.examen.modalidad.name,
               ),
-            const SizedBox(height: Dimensiones.espaciadoLg),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                key: ValueKey<String>('session_join_button_${sesion.id}'),
-                onPressed: cargando ? null : alUnirse,
-                icon: cargando
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.login_rounded),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colores.azulPrimario,
-                ),
-                label: Text(cargando ? 'Preparando...' : 'Unirse'),
+              _TagDato(
+                icono: Icons.timer_outlined,
+                texto: '${sesion.examen.duracionMinutos} min',
               ),
+              if (sesion.examen.docente != null)
+                _TagDato(
+                  icono: Icons.person_outline_rounded,
+                  texto: sesion.examen.docente!,
+                ),
+            ],
+          ),
+          const SizedBox(height: Dimensiones.espaciadoLg),
+          EvalHeroCard(
+            eyebrow: 'Código confirmado',
+            title: sesion.codigoAcceso,
+            subtitle:
+                'Todo está preparado para iniciar el intento en esta sesión.',
+            icon: const Icon(
+              Icons.verified_rounded,
+              color: Colors.white,
+              size: 28,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: Dimensiones.espaciadoLg),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              key: ValueKey<String>('session_join_button_${sesion.id}'),
+              onPressed: cargando ? null : alUnirse,
+              icon: cargando
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.login_rounded),
+              label: Text(cargando ? 'Preparando...' : 'Unirse'),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DatoSesion extends StatelessWidget {
-  final IconData icono;
-  final String etiqueta;
-  final String valor;
-
-  const _DatoSesion({
+class _TagDato extends StatelessWidget {
+  const _TagDato({
     required this.icono,
-    required this.etiqueta,
-    required this.valor,
+    required this.texto,
   });
+
+  final IconData icono;
+  final String texto;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Dimensiones.espaciadoSm),
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Dimensiones.espaciadoMd,
+        vertical: Dimensiones.espaciadoSm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(Dimensiones.radioLg),
+        border: Border.all(color: AppColors.slate200),
+      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icono, size: 18, color: Colores.textoSecundario),
+          Icon(icono, size: 16, color: AppColors.slate600),
           const SizedBox(width: Dimensiones.espaciadoSm),
           Text(
-            '$etiqueta: ',
-            style: textTheme.bodyMedium?.copyWith(
-              color: Colores.textoSecundario,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              valor,
-              style: textTheme.bodyMedium?.copyWith(
-                color: Colores.textoPrincipal,
-              ),
-            ),
+            texto,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: AppColors.slate700,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
         ],
       ),

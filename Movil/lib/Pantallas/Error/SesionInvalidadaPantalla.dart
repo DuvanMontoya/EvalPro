@@ -8,32 +8,28 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../Constantes/Rutas.dart';
+import '../../core/widgets/common/eval_error_state.dart';
+import '../../core/widgets/common/eval_surface.dart';
 
 class SesionInvalidadaPantalla extends StatelessWidget {
   const SesionInvalidadaPantalla({super.key});
 
-  /// Construye vista de sesion invalidada.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Sesion invalidada')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(Icons.gpp_bad, size: 56),
-              const SizedBox(height: 16),
-              const Text('Tu intento fue invalidado. Contacta al docente.'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go(Rutas.inicio),
-                child: const Text('Ir al inicio'),
-              ),
-            ],
-          ),
+      body: const EvalPageBackground(
+        child: EvalErrorState(
+          title: 'Tu intento fue invalidado',
+          message:
+              'Se detecto un evento critico durante la sesion. Contacta al docente o a la institucion para revisar el caso.',
+          icon: Icons.gpp_bad_rounded,
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.go(Rutas.inicio),
+        icon: const Icon(Icons.arrow_back_rounded),
+        label: const Text('Ir al inicio'),
       ),
     );
   }

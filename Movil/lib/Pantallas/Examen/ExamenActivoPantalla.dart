@@ -15,6 +15,7 @@ import '../../Constantes/Rutas.dart';
 import '../../Modelos/Enums/TipoEventoTelemetria.dart';
 import '../../Providers/AutenticacionProvider.dart';
 import '../../Providers/ExamenProvider.dart';
+import '../../core/widgets/common/eval_surface.dart';
 import 'Widgets/IndicadorConexion.dart';
 import 'Widgets/IndicadorSeguridadExamen.dart';
 import 'Widgets/MapaProgreso.dart';
@@ -82,7 +83,6 @@ class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
         _manejarIntentoSalir();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF3F5FA),
         appBar: AppBar(
           automaticallyImplyLeading: false,
           centerTitle: false,
@@ -117,55 +117,57 @@ class _ExamenActivoPantallaState extends ConsumerState<ExamenActivoPantalla> {
                 child: IndicadorConexion())
           ],
         ),
-        body: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            child: Column(
-              children: <Widget>[
-                const PanelEstadoSeguridadExamen(),
-                const SizedBox(height: 8),
-                MapaProgreso(
-                  totalPreguntas: estado.preguntasAleatorizadas.length,
-                  indiceActual: estado.indicePreguntaActual,
-                  respondidas: respondidas,
-                  permitirNavegacion: estado.examen.permitirNavegacion,
-                  alSeleccionar: (indice) {
-                    ref.read(examenActivoProvider.notifier).irAPregunta(indice);
-                  },
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: TarjetaPregunta(
-                    pregunta: pregunta,
-                    respuesta: estado.respuestasLocales[pregunta.id],
-                    indiceActual: estado.indicePreguntaActual + 1,
+        body: EvalPageBackground(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: Column(
+                children: <Widget>[
+                  const PanelEstadoSeguridadExamen(),
+                  const SizedBox(height: 8),
+                  MapaProgreso(
                     totalPreguntas: estado.preguntasAleatorizadas.length,
-                    alResponder: (valor) async {
-                      await ref
-                          .read(examenActivoProvider.notifier)
-                          .registrarRespuesta(pregunta.id, valor);
+                    indiceActual: estado.indicePreguntaActual,
+                    respondidas: respondidas,
+                    permitirNavegacion: estado.examen.permitirNavegacion,
+                    alSeleccionar: (indice) {
+                      ref.read(examenActivoProvider.notifier).irAPregunta(indice);
                     },
                   ),
-                ),
-                NavegadorPreguntas(
-                  mostrarAnterior: estado.examen.permitirNavegacion,
-                  alAnterior: puedeRetroceder
-                      ? () => ref
-                          .read(examenActivoProvider.notifier)
-                          .retrocederPregunta()
-                      : null,
-                  esUltima: esUltima,
-                  alSiguiente: () {
-                    if (esUltima) {
-                      context.go(Rutas.resumenExamen);
-                    } else {
-                      ref.read(examenActivoProvider.notifier).avanzarPregunta();
-                    }
-                  },
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: TarjetaPregunta(
+                      pregunta: pregunta,
+                      respuesta: estado.respuestasLocales[pregunta.id],
+                      indiceActual: estado.indicePreguntaActual + 1,
+                      totalPreguntas: estado.preguntasAleatorizadas.length,
+                      alResponder: (valor) async {
+                        await ref
+                            .read(examenActivoProvider.notifier)
+                            .registrarRespuesta(pregunta.id, valor);
+                      },
+                    ),
+                  ),
+                  NavegadorPreguntas(
+                    mostrarAnterior: estado.examen.permitirNavegacion,
+                    alAnterior: puedeRetroceder
+                        ? () => ref
+                            .read(examenActivoProvider.notifier)
+                            .retrocederPregunta()
+                        : null,
+                    esUltima: esUltima,
+                    alSiguiente: () {
+                      if (esUltima) {
+                        context.go(Rutas.resumenExamen);
+                      } else {
+                        ref.read(examenActivoProvider.notifier).avanzarPregunta();
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),

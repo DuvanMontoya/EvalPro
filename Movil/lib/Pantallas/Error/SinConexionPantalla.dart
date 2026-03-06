@@ -8,32 +8,28 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../Constantes/Rutas.dart';
+import '../../core/widgets/common/eval_error_state.dart';
+import '../../core/widgets/common/eval_surface.dart';
 
 class SinConexionPantalla extends StatelessWidget {
   const SinConexionPantalla({super.key});
 
-  /// Construye vista de error sin conexion.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Sin conexion')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(Icons.wifi_off, size: 56),
-              const SizedBox(height: 16),
-              const Text('No hay internet disponible en este momento.'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go(Rutas.inicio),
-                child: const Text('Volver al inicio'),
-              ),
-            ],
-          ),
+      body: const EvalPageBackground(
+        child: EvalErrorState(
+          title: 'No hay internet disponible',
+          message:
+              'Revisa la conectividad del dispositivo y vuelve al inicio para continuar.',
+          icon: Icons.wifi_off_rounded,
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.go(Rutas.inicio),
+        icon: const Icon(Icons.home_rounded),
+        label: const Text('Volver al inicio'),
       ),
     );
   }

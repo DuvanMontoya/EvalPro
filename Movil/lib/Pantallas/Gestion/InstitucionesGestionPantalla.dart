@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../Constantes/Dimensiones.dart';
 import '../../Constantes/Textos.dart';
 import '../../Modelos/Enums/EstadoInstitucion.dart';
 import '../../Modelos/Enums/RolUsuario.dart';
@@ -15,6 +16,10 @@ import '../../Providers/AutenticacionProvider.dart';
 import '../../Servicios/InstitucionServicio.dart';
 import '../../Utilidades/FormateadorFecha.dart';
 import '../../Utilidades/MapeadorErroresNegocio.dart';
+import '../../core/widgets/common/eval_badge.dart';
+import '../../core/widgets/common/eval_empty_state.dart';
+import '../../core/widgets/common/eval_error_state.dart';
+import '../../core/widgets/common/eval_surface.dart';
 
 class InstitucionesGestionPantalla extends ConsumerStatefulWidget {
   const InstitucionesGestionPantalla({super.key});
@@ -58,6 +63,7 @@ class _InstitucionesGestionPantallaState
                 controller: nombreControlador,
                 decoration: const InputDecoration(labelText: 'Nombre'),
               ),
+              const SizedBox(height: Dimensiones.espaciadoMd),
               TextField(
                 controller: dominioControlador,
                 decoration:
@@ -101,10 +107,12 @@ class _InstitucionesGestionPantallaState
       );
       await _recargar();
     } catch (error) {
-      _mostrarError(MapeadorErroresNegocio.mapear(
-        error,
-        mensajePorDefecto: Textos.errorGestion,
-      ));
+      _mostrarError(
+        MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorGestion,
+        ),
+      );
     }
   }
 
@@ -163,10 +171,12 @@ class _InstitucionesGestionPantallaState
       );
       await _recargar();
     } catch (error) {
-      _mostrarError(MapeadorErroresNegocio.mapear(
-        error,
-        mensajePorDefecto: Textos.errorGestion,
-      ));
+      _mostrarError(
+        MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorGestion,
+        ),
+      );
     }
   }
 
@@ -202,66 +212,113 @@ class _InstitucionesGestionPantallaState
               label: const Text('Nueva'),
             )
           : null,
-      body: FutureBuilder<List<InstitucionGestion>>(
-        future: _futuroInstituciones,
-        builder: (contexto, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: EvalPageBackground(
+        child: FutureBuilder<List<InstitucionGestion>>(
+          future: _futuroInstituciones,
+          builder: (contexto, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  MapeadorErroresNegocio.mapear(
-                    snapshot.error!,
-                    mensajePorDefecto: Textos.errorGestion,
-                  ),
-                  textAlign: TextAlign.center,
+            if (snapshot.hasError) {
+              return EvalErrorState(
+                message: MapeadorErroresNegocio.mapear(
+                  snapshot.error!,
+                  mensajePorDefecto: Textos.errorGestion,
                 ),
-              ),
-            );
-          }
+                onRetry: _recargar,
+              );
+            }
 
-          final instituciones = snapshot.data ?? <InstitucionGestion>[];
-          if (instituciones.isEmpty) {
-            return const Center(child: Text(Textos.sinDatos));
-          }
+            final instituciones = snapshot.data ?? <InstitucionGestion>[];
+            if (instituciones.isEmpty) {
+              return EvalEmptyState(
+                icon: Icons.apartment_rounded,
+                title: 'No hay instituciones registradas',
+                subtitle:
+                    'Crea una nueva institucion o vuelve a sincronizar para ver la operacion disponible.',
+                actionLabel: 'Actualizar',
+                onAction: _recargar,
+              );
+            }
 
-          return RefreshIndicator(
-            onRefresh: _recargar,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: instituciones.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (contexto, indice) {
-                final institucion = instituciones[indice];
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
+            final activas = instituciones
+                .where((institucion) => institucion.estado == EstadoInstitucion.ACTIVA)
+                .length;
+
+            return RefreshIndicator(
+              onRefresh: _recargar,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciadoSm,
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciado2xl,
+                ),
+                children: <Widget>[
+                  const EvalPageHeader(
+                    eyebrow: 'Multitenancy',
+                    title: 'Instituciones',
+                    subtitle:
+                        'Consulta el estado de cada tenant y aplica cambios administrativos con trazabilidad.',
+                  ),
+                  const SizedBox(height: Dimensiones.espaciadoXl),
+                  EvalSectionCard(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columnas = constraints.maxWidth > 640 ? 3 : 1;
+                        return GridView.count(
+                          crossAxisCount: columnas,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisSpacing: Dimensiones.espaciadoMd,
+                          mainAxisSpacing: Dimensiones.espaciadoMd,
+                          childAspectRatio: columnas == 1 ? 2.7 : 1.5,
                           children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                institucion.nombre,
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                            EvalMetricTile(
+                              label: 'Total',
+                              value: instituciones.length.toString(),
                             ),
-                            if (esSuperadmin)
+                            EvalMetricTile(
+                              label: 'Activas',
+                              value: activas.toString(),
+                              highlightColor: Colors.green,
+                            ),
+                            EvalMetricTile(
+                              label: 'No activas',
+                              value: (instituciones.length - activas).toString(),
+                              highlightColor: Colors.orange,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: Dimensiones.espaciadoLg),
+                  ...instituciones.map((institucion) {
+                    return Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      child: EvalSectionCard(
+                        title: institucion.nombre,
+                        subtitle: institucion.dominio ?? 'Sin dominio configurado',
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            EvalBadge(
+                              institucion.estado.name,
+                              variant: _badgeEstado(institucion.estado),
+                            ),
+                            if (esSuperadmin) ...<Widget>[
+                              const SizedBox(width: 8),
                               PopupMenuButton<EstadoInstitucion>(
                                 onSelected: (estado) =>
                                     _cambiarEstado(institucion, estado),
                                 itemBuilder: (contexto) {
                                   return EstadoInstitucion.values
-                                      .where((estado) =>
-                                          estado != institucion.estado)
+                                      .where(
+                                        (estado) => estado != institucion.estado,
+                                      )
                                       .map(
                                         (estado) =>
                                             PopupMenuItem<EstadoInstitucion>(
@@ -273,24 +330,39 @@ class _InstitucionesGestionPantallaState
                                 },
                                 icon: const Icon(Icons.more_horiz),
                               ),
+                            ],
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text('Estado: ${institucion.estado.name}'),
-                        Text('Dominio: ${institucion.dominio ?? '-'}'),
-                        if (institucion.fechaCreacion != null)
-                          Text(
-                            'Creada: ${FormateadorFecha.fechaHora(institucion.fechaCreacion!)}',
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+                        child: Column(
+                          children: <Widget>[
+                            if (institucion.fechaCreacion != null)
+                              EvalInfoRow(
+                                label: 'Creada',
+                                value: FormateadorFecha.fechaHora(
+                                  institucion.fechaCreacion!,
+                                ),
+                                icon: Icons.event_available_outlined,
+                                compact: true,
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
+  }
+
+  EvalBadgeVariant _badgeEstado(EstadoInstitucion estado) {
+    return switch (estado) {
+      EstadoInstitucion.ACTIVA => EvalBadgeVariant.success,
+      EstadoInstitucion.SUSPENDIDA => EvalBadgeVariant.warning,
+      EstadoInstitucion.ARCHIVADA => EvalBadgeVariant.error,
+    };
   }
 }

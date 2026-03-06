@@ -6,15 +6,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../../../Constantes/Colores.dart';
+import '../../../core/theme/app_colors.dart';
 
 class MapaProgreso extends StatelessWidget {
-  final int totalPreguntas;
-  final int indiceActual;
-  final Set<int> respondidas;
-  final bool permitirNavegacion;
-  final ValueChanged<int> alSeleccionar;
-
   const MapaProgreso({
     super.key,
     required this.totalPreguntas,
@@ -24,11 +18,22 @@ class MapaProgreso extends StatelessWidget {
     required this.alSeleccionar,
   });
 
-  /// Construye mapa horizontal con estado visual por pregunta.
+  final int totalPreguntas;
+  final int indiceActual;
+  final Set<int> respondidas;
+  final bool permitirNavegacion;
+  final ValueChanged<int> alSeleccionar;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
+    return Container(
+      height: 68,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.slate200),
+      ),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: totalPreguntas,
@@ -37,33 +42,44 @@ class MapaProgreso extends StatelessWidget {
           final esActual = indice == indiceActual;
           final respondida = respondidas.contains(indice);
           final color = esActual
-              ? Colores.azulPrimario
+              ? AppColors.primary
               : respondida
-                  ? Colores.verdeExito
-                  : Colors.grey.shade400;
-          final colorTexto =
-              esActual || respondida ? Colors.white : Colors.black54;
+                  ? AppColors.success
+                  : AppColors.slate300;
+          final texto = esActual || respondida ? Colors.white : AppColors.slate600;
 
           return InkWell(
             onTap: permitirNavegacion ? () => alSeleccionar(indice) : null,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
-              width: 36,
-              height: 36,
+              width: esActual ? 54 : 42,
               decoration: BoxDecoration(
                 color: esActual
                     ? color
-                    : color.withValues(alpha: respondida ? 1 : 0.2),
-                shape: BoxShape.circle,
-                border: Border.all(color: color, width: esActual ? 2 : 1),
+                    : respondida
+                        ? color.withValues(alpha: 0.88)
+                        : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: color, width: esActual ? 0 : 1.4),
+                boxShadow: esActual
+                    ? [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.22),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ]
+                    : null,
               ),
               child: Center(
                 child: Text(
                   '${indice + 1}',
-                  style:
-                      TextStyle(color: colorTexto, fontWeight: FontWeight.w700),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: texto,
+                        fontWeight: FontWeight.w800,
+                      ),
                 ),
               ),
             ),

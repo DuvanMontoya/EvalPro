@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../Constantes/Dimensiones.dart';
 import '../../Constantes/Textos.dart';
 import '../../Modelos/ReporteEstudianteGestion.dart';
 import '../../Providers/AutenticacionProvider.dart';
@@ -14,6 +15,11 @@ import '../../Servicios/ReclamoServicio.dart';
 import '../../Servicios/ReporteServicio.dart';
 import '../../Utilidades/FormateadorFecha.dart';
 import '../../Utilidades/MapeadorErroresNegocio.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/common/eval_badge.dart';
+import '../../core/widgets/common/eval_empty_state.dart';
+import '../../core/widgets/common/eval_error_state.dart';
+import '../../core/widgets/common/eval_surface.dart';
 
 class ResultadosEstudiantePantalla extends ConsumerStatefulWidget {
   const ResultadosEstudiantePantalla({super.key});
@@ -75,6 +81,7 @@ class _ResultadosEstudiantePantallaState
                     hintText: 'Describe por que solicitas revision',
                   ),
                 ),
+                const SizedBox(height: Dimensiones.espaciadoMd),
                 TextField(
                   controller: preguntaControlador,
                   decoration: const InputDecoration(
@@ -121,10 +128,12 @@ class _ResultadosEstudiantePantallaState
       );
       await _recargar();
     } catch (error) {
-      _mostrarError(MapeadorErroresNegocio.mapear(
-        error,
-        mensajePorDefecto: Textos.errorGestion,
-      ));
+      _mostrarError(
+        MapeadorErroresNegocio.mapear(
+          error,
+          mensajePorDefecto: Textos.errorGestion,
+        ),
+      );
     }
   }
 
@@ -148,85 +157,197 @@ class _ResultadosEstudiantePantallaState
           ),
         ],
       ),
-      body: FutureBuilder<ReporteEstudianteGestion>(
-        future: _futuroReporte,
-        builder: (contexto, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  MapeadorErroresNegocio.mapear(
-                    snapshot.error!,
-                    mensajePorDefecto: Textos.errorGestion,
-                  ),
-                  textAlign: TextAlign.center,
+      body: EvalPageBackground(
+        child: FutureBuilder<ReporteEstudianteGestion>(
+          future: _futuroReporte,
+          builder: (contexto, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return EvalErrorState(
+                message: MapeadorErroresNegocio.mapear(
+                  snapshot.error!,
+                  mensajePorDefecto: Textos.errorGestion,
                 ),
-              ),
-            );
-          }
+                onRetry: _recargar,
+              );
+            }
 
-          final reporte = snapshot.data;
-          if (reporte == null || reporte.intentos.isEmpty) {
-            return const Center(child: Text(Textos.sinDatos));
-          }
+            final reporte = snapshot.data;
+            if (reporte == null || reporte.intentos.isEmpty) {
+              return EvalEmptyState(
+                icon: Icons.insights_rounded,
+                title: 'Aun no hay resultados',
+                subtitle:
+                    'Cuando completes examenes y se publiquen los resultados, apareceran aqui.',
+                actionLabel: 'Actualizar',
+                onAction: _recargar,
+              );
+            }
 
-          return RefreshIndicator(
-            onRefresh: _recargar,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: reporte.intentos.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (contexto, indice) {
-                final intento = reporte.intentos[indice];
-                final puntaje =
-                    intento.puntajeObtenido?.toStringAsFixed(2) ?? '-';
-                final porcentaje =
-                    intento.porcentaje?.toStringAsFixed(2) ?? '-';
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          intento.tituloExamen,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                            'Sesion: ${intento.codigoAcceso ?? intento.idSesion}'),
-                        Text('Estado intento: ${intento.estado.name}'),
-                        if (intento.estadoResultado != null)
-                          Text(
-                              'Estado resultado: ${intento.estadoResultado!.name}'),
-                        if (intento.resultadoPublicadoEn != null)
-                          Text(
-                            'Publicado: ${FormateadorFecha.fechaHora(intento.resultadoPublicadoEn!)}',
-                          ),
-                        Text('Puntaje: $puntaje'),
-                        Text('Porcentaje: $porcentaje'),
-                        const SizedBox(height: 10),
-                        if (intento.idResultado != null)
-                          ElevatedButton(
-                            onPressed: () => _presentarReclamo(intento),
-                            child: const Text('Presentar reclamo'),
-                          ),
-                      ],
+            final publicados = reporte.intentos
+                .where((intento) => intento.resultadoPublicadoEn != null)
+                .length;
+            final sospechosos =
+                reporte.intentos.where((intento) => intento.esSospechoso).length;
+
+            return RefreshIndicator(
+              onRefresh: _recargar,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciadoSm,
+                  Dimensiones.espaciadoLg,
+                  Dimensiones.espaciado2xl,
+                ),
+                children: <Widget>[
+                  EvalPageHeader(
+                    eyebrow: 'Seguimiento personal',
+                    title: reporte.nombreCompleto.isEmpty
+                        ? 'Tus resultados'
+                        : reporte.nombreCompleto,
+                    subtitle:
+                        'Consulta el historial de intentos, los estados publicados y presenta reclamos cuando aplique.',
+                  ),
+                  const SizedBox(height: Dimensiones.espaciadoXl),
+                  EvalSectionCard(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columnas = constraints.maxWidth > 640 ? 3 : 1;
+                        return GridView.count(
+                          crossAxisCount: columnas,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisSpacing: Dimensiones.espaciadoMd,
+                          mainAxisSpacing: Dimensiones.espaciadoMd,
+                          childAspectRatio: columnas == 1 ? 2.7 : 1.5,
+                          children: <Widget>[
+                            EvalMetricTile(
+                              label: 'Intentos',
+                              value: reporte.intentos.length.toString(),
+                              icon: const Icon(
+                                Icons.fact_check_outlined,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            EvalMetricTile(
+                              label: 'Publicados',
+                              value: publicados.toString(),
+                              highlightColor: AppColors.success,
+                              icon: const Icon(
+                                Icons.task_alt_rounded,
+                                color: AppColors.success,
+                              ),
+                            ),
+                            EvalMetricTile(
+                              label: 'En revision',
+                              value: sospechosos.toString(),
+                              highlightColor: AppColors.warning,
+                              icon: const Icon(
+                                Icons.shield_outlined,
+                                color: AppColors.warning,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
-                );
-              },
-            ),
-          );
-        },
+                  const SizedBox(height: Dimensiones.espaciadoLg),
+                  ...reporte.intentos.map(_construirTarjetaIntento),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
+  }
+
+  Widget _construirTarjetaIntento(IntentoReporteEstudiante intento) {
+    final puntaje = intento.puntajeObtenido?.toStringAsFixed(2) ?? '-';
+    final porcentaje = intento.porcentaje?.toStringAsFixed(2) ?? '-';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+      child: EvalSectionCard(
+        title: intento.tituloExamen,
+        subtitle: 'Sesion ${intento.codigoAcceso ?? intento.idSesion}',
+        trailing: EvalBadge(
+          intento.estado.name,
+          variant: _badgeIntento(intento),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            if (intento.estadoResultado != null) ...<Widget>[
+              Row(
+                children: <Widget>[
+                  EvalBadge(
+                    intento.estadoResultado!.name,
+                    variant: intento.pendienteCalificacionManual == true
+                        ? EvalBadgeVariant.warning
+                        : EvalBadgeVariant.primary,
+                  ),
+                  if (intento.esSospechoso) ...<Widget>[
+                    const SizedBox(width: Dimensiones.espaciadoSm),
+                    const EvalBadge(
+                      'Revision',
+                      variant: EvalBadgeVariant.warning,
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: Dimensiones.espaciadoLg),
+            ],
+            EvalInfoRow(
+              label: 'Puntaje',
+              value: puntaje,
+              icon: Icons.stars_outlined,
+              valueColor: AppColors.primary,
+            ),
+            EvalInfoRow(
+              label: 'Porcentaje',
+              value: porcentaje == '-' ? '-' : '$porcentaje%',
+              icon: Icons.percent_rounded,
+              valueColor: AppColors.success,
+            ),
+            if (intento.resultadoPublicadoEn != null)
+              EvalInfoRow(
+                label: 'Publicado',
+                value: FormateadorFecha.fechaHora(intento.resultadoPublicadoEn!),
+                icon: Icons.schedule_rounded,
+                compact: true,
+              ),
+            const SizedBox(height: Dimensiones.espaciadoSm),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: intento.idResultado == null
+                    ? null
+                    : () => _presentarReclamo(intento),
+                icon: const Icon(Icons.rate_review_outlined),
+                label: const Text('Presentar reclamo'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  EvalBadgeVariant _badgeIntento(IntentoReporteEstudiante intento) {
+    if (intento.esSospechoso) {
+      return EvalBadgeVariant.warning;
+    }
+    if ((intento.estadoResultado?.name ?? '').contains('RECTIFICADO')) {
+      return EvalBadgeVariant.success;
+    }
+    return switch (intento.estado.name) {
+      'ENVIADO' => EvalBadgeVariant.success,
+      'ANULADO' => EvalBadgeVariant.error,
+      _ => EvalBadgeVariant.primary,
+    };
   }
 }
