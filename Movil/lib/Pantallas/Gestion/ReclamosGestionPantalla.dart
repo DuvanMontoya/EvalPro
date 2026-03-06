@@ -65,6 +65,7 @@ class _ReclamosGestionPantallaState
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 TextField(
+                  key: const Key('claims_resolution_field'),
                   controller: resolucionControlador,
                   maxLines: 4,
                   decoration: const InputDecoration(labelText: 'Resolucion'),
@@ -72,6 +73,7 @@ class _ReclamosGestionPantallaState
                 if (aprobar) ...<Widget>[
                   const SizedBox(height: Dimensiones.espaciadoMd),
                   TextField(
+                    key: const Key('claims_score_field'),
                     controller: puntajeControlador,
                     keyboardType: const TextInputType.numberWithOptions(
                       signed: false,
@@ -87,10 +89,12 @@ class _ReclamosGestionPantallaState
           ),
           actions: <Widget>[
             TextButton(
+              key: const Key('claims_resolution_cancel_button'),
               onPressed: () => Navigator.of(contexto).pop(false),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
+              key: const Key('claims_resolution_submit_button'),
               onPressed: () => Navigator.of(contexto).pop(true),
               child: const Text('Guardar'),
             ),
@@ -157,6 +161,7 @@ class _ReclamosGestionPantallaState
         title: const Text(Textos.gestionarReclamos),
         actions: <Widget>[
           IconButton(
+            key: const Key('claims_refresh_button'),
             onPressed: _recargar,
             icon: const Icon(Icons.refresh),
           ),
@@ -213,9 +218,10 @@ class _ReclamosGestionPantallaState
                         reclamo.estado == EstadoReclamo.PRESENTADO ||
                             reclamo.estado == EstadoReclamo.EN_REVISION;
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      padding: const EdgeInsets.only(
+                          bottom: Dimensiones.espaciadoLg),
                       child: EvalSectionCard(
+                        key: ValueKey<String>('claim_card_${reclamo.id}'),
                         title: reclamo.tituloExamen ?? 'Examen sin titulo',
                         subtitle:
                             '${reclamo.estudiante?.nombre ?? ''} ${reclamo.estudiante?.apellidos ?? ''}'
@@ -255,7 +261,9 @@ class _ReclamosGestionPantallaState
                               message: reclamo.motivo,
                               variant: EvalNoticeVariant.info,
                             ),
-                            if ((reclamo.resolucion ?? '').trim().isNotEmpty) ...<Widget>[
+                            if ((reclamo.resolucion ?? '')
+                                .trim()
+                                .isNotEmpty) ...<Widget>[
                               const SizedBox(height: Dimensiones.espaciadoSm),
                               EvalNotice(
                                 title: 'Resolucion',
@@ -270,11 +278,17 @@ class _ReclamosGestionPantallaState
                                 runSpacing: 8,
                                 children: <Widget>[
                                   ElevatedButton(
+                                    key: ValueKey<String>(
+                                      'claim_approve_button_${reclamo.id}',
+                                    ),
                                     onPressed: () =>
                                         _resolverReclamo(reclamo, true),
                                     child: const Text('Aprobar'),
                                   ),
                                   OutlinedButton(
+                                    key: ValueKey<String>(
+                                      'claim_reject_button_${reclamo.id}',
+                                    ),
                                     onPressed: () =>
                                         _resolverReclamo(reclamo, false),
                                     child: const Text('Rechazar'),

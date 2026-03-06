@@ -109,24 +109,29 @@ class _UsuariosGestionPantallaState
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   TextField(
+                    key: const Key('users_create_name_field'),
                     controller: nombreControlador,
                     decoration: const InputDecoration(labelText: 'Nombre'),
                   ),
                   TextField(
+                    key: const Key('users_create_last_name_field'),
                     controller: apellidosControlador,
                     decoration: const InputDecoration(labelText: 'Apellidos'),
                   ),
                   TextField(
+                    key: const Key('users_create_email_field'),
                     controller: correoControlador,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(labelText: Textos.correo),
                   ),
                   TextField(
+                    key: const Key('users_create_password_field'),
                     controller: contrasenaControlador,
                     decoration:
                         const InputDecoration(labelText: Textos.contrasena),
                   ),
                   DropdownButtonFormField<RolUsuario>(
+                    key: const Key('users_create_role_field'),
                     initialValue: rolSeleccionado,
                     items: roles
                         .map(
@@ -148,6 +153,7 @@ class _UsuariosGestionPantallaState
                   if (rolActor == RolUsuario.SUPERADMINISTRADOR &&
                       rolSeleccionado != RolUsuario.SUPERADMINISTRADOR)
                     DropdownButtonFormField<String>(
+                      key: const Key('users_create_institution_field'),
                       initialValue: institucionSeleccionada?.id,
                       items: instituciones
                           .map(
@@ -176,10 +182,12 @@ class _UsuariosGestionPantallaState
             ),
             actions: <Widget>[
               TextButton(
+                key: const Key('users_create_cancel_button'),
                 onPressed: () => Navigator.of(contexto).pop(false),
                 child: const Text('Cancelar'),
               ),
               ElevatedButton(
+                key: const Key('users_create_submit_button'),
                 onPressed: () => Navigator.of(contexto).pop(true),
                 child: const Text('Crear'),
               ),
@@ -258,26 +266,31 @@ class _UsuariosGestionPantallaState
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     TextField(
+                      key: const Key('users_edit_name_field'),
                       controller: nombreControlador,
                       decoration: const InputDecoration(labelText: 'Nombre'),
                     ),
                     TextField(
+                      key: const Key('users_edit_last_name_field'),
                       controller: apellidosControlador,
                       decoration: const InputDecoration(labelText: 'Apellidos'),
                     ),
                     TextField(
+                      key: const Key('users_edit_email_field'),
                       controller: correoControlador,
                       keyboardType: TextInputType.emailAddress,
                       decoration:
                           const InputDecoration(labelText: Textos.correo),
                     ),
                     TextField(
+                      key: const Key('users_edit_password_field'),
                       controller: contrasenaControlador,
                       decoration: const InputDecoration(
                         labelText: 'Nueva contrasena (opcional)',
                       ),
                     ),
                     DropdownButtonFormField<RolUsuario>(
+                      key: const Key('users_edit_role_field'),
                       initialValue: rolSeleccionado,
                       items: roles
                           .map(
@@ -301,10 +314,12 @@ class _UsuariosGestionPantallaState
               ),
               actions: <Widget>[
                 TextButton(
+                  key: const Key('users_edit_cancel_button'),
                   onPressed: () => Navigator.of(contexto).pop(false),
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
+                  key: const Key('users_edit_submit_button'),
                   onPressed: () => Navigator.of(contexto).pop(true),
                   child: const Text('Guardar'),
                 ),
@@ -353,10 +368,12 @@ class _UsuariosGestionPantallaState
               Text('Se desactivara a ${usuario.nombre} ${usuario.apellidos}.'),
           actions: <Widget>[
             TextButton(
+              key: const Key('users_deactivate_cancel_button'),
               onPressed: () => Navigator.of(contexto).pop(false),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
+              key: const Key('users_deactivate_submit_button'),
               onPressed: () => Navigator.of(contexto).pop(true),
               child: const Text('Desactivar'),
             ),
@@ -404,6 +421,7 @@ class _UsuariosGestionPantallaState
         title: const Text(Textos.gestionarUsuarios),
         actions: <Widget>[
           IconButton(
+            key: const Key('users_refresh_button'),
             onPressed: _recargar,
             icon: const Icon(Icons.refresh),
           ),
@@ -411,6 +429,7 @@ class _UsuariosGestionPantallaState
       ),
       floatingActionButton: puedeGestionar
           ? FloatingActionButton.extended(
+              key: const Key('users_create_fab'),
               onPressed: () => _mostrarCrearUsuario(rolActor),
               icon: const Icon(Icons.person_add_alt_1),
               label: const Text('Nuevo'),
@@ -464,9 +483,10 @@ class _UsuariosGestionPantallaState
                   const SizedBox(height: Dimensiones.espaciadoLg),
                   ...usuarios.map((usuario) {
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      padding: const EdgeInsets.only(
+                          bottom: Dimensiones.espaciadoLg),
                       child: EvalSectionCard(
+                        key: ValueKey<String>('user_card_${usuario.id}'),
                         title: '${usuario.nombre} ${usuario.apellidos}'.trim(),
                         subtitle: usuario.correo,
                         trailing: EvalBadge(
@@ -501,13 +521,19 @@ class _UsuariosGestionPantallaState
                                 runSpacing: 8,
                                 children: <Widget>[
                                   OutlinedButton.icon(
-                                    onPressed: () =>
-                                        _mostrarEditarUsuario(usuario, rolActor),
+                                    key: ValueKey<String>(
+                                      'user_edit_button_${usuario.id}',
+                                    ),
+                                    onPressed: () => _mostrarEditarUsuario(
+                                        usuario, rolActor),
                                     icon: const Icon(Icons.edit_outlined),
                                     label: const Text('Editar'),
                                   ),
                                   if (usuario.activo)
                                     OutlinedButton.icon(
+                                      key: ValueKey<String>(
+                                        'user_deactivate_button_${usuario.id}',
+                                      ),
                                       onPressed: () =>
                                           _desactivarUsuario(usuario),
                                       icon: const Icon(

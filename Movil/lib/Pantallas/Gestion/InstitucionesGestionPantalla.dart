@@ -60,11 +60,13 @@ class _InstitucionesGestionPantallaState
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               TextField(
+                key: const Key('institutions_create_name_field'),
                 controller: nombreControlador,
                 decoration: const InputDecoration(labelText: 'Nombre'),
               ),
               const SizedBox(height: Dimensiones.espaciadoMd),
               TextField(
+                key: const Key('institutions_create_domain_field'),
                 controller: dominioControlador,
                 decoration:
                     const InputDecoration(labelText: 'Dominio (opcional)'),
@@ -73,10 +75,12 @@ class _InstitucionesGestionPantallaState
           ),
           actions: <Widget>[
             TextButton(
+              key: const Key('institutions_create_cancel_button'),
               onPressed: () => Navigator.of(contexto).pop(false),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
+              key: const Key('institutions_create_submit_button'),
               onPressed: () => Navigator.of(contexto).pop(true),
               child: const Text('Crear'),
             ),
@@ -127,6 +131,7 @@ class _InstitucionesGestionPantallaState
         return AlertDialog(
           title: const Text('Cambiar estado'),
           content: TextField(
+            key: const Key('institution_state_reason_field'),
             controller: razonControlador,
             maxLines: 3,
             decoration: const InputDecoration(
@@ -136,10 +141,12 @@ class _InstitucionesGestionPantallaState
           ),
           actions: <Widget>[
             TextButton(
+              key: const Key('institution_state_cancel_button'),
               onPressed: () => Navigator.of(contexto).pop(false),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
+              key: const Key('institution_state_save_button'),
               onPressed: () => Navigator.of(contexto).pop(true),
               child: const Text('Guardar'),
             ),
@@ -199,6 +206,7 @@ class _InstitucionesGestionPantallaState
         title: const Text(Textos.gestionarInstituciones),
         actions: <Widget>[
           IconButton(
+            key: const Key('institutions_refresh_button'),
             onPressed: _recargar,
             icon: const Icon(Icons.refresh),
             tooltip: 'Actualizar',
@@ -207,6 +215,7 @@ class _InstitucionesGestionPantallaState
       ),
       floatingActionButton: esSuperadmin
           ? FloatingActionButton.extended(
+              key: const Key('institutions_create_fab'),
               onPressed: _mostrarCrearInstitucion,
               icon: const Icon(Icons.add),
               label: const Text('Nueva'),
@@ -243,7 +252,8 @@ class _InstitucionesGestionPantallaState
             }
 
             final activas = instituciones
-                .where((institucion) => institucion.estado == EstadoInstitucion.ACTIVA)
+                .where((institucion) =>
+                    institucion.estado == EstadoInstitucion.ACTIVA)
                 .length;
 
             return RefreshIndicator(
@@ -286,7 +296,8 @@ class _InstitucionesGestionPantallaState
                             ),
                             EvalMetricTile(
                               label: 'No activas',
-                              value: (instituciones.length - activas).toString(),
+                              value:
+                                  (instituciones.length - activas).toString(),
                               highlightColor: Colors.orange,
                             ),
                           ],
@@ -297,11 +308,15 @@ class _InstitucionesGestionPantallaState
                   const SizedBox(height: Dimensiones.espaciadoLg),
                   ...instituciones.map((institucion) {
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      padding: const EdgeInsets.only(
+                          bottom: Dimensiones.espaciadoLg),
                       child: EvalSectionCard(
+                        key: ValueKey<String>(
+                          'institution_card_${institucion.id}',
+                        ),
                         title: institucion.nombre,
-                        subtitle: institucion.dominio ?? 'Sin dominio configurado',
+                        subtitle:
+                            institucion.dominio ?? 'Sin dominio configurado',
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
@@ -312,16 +327,23 @@ class _InstitucionesGestionPantallaState
                             if (esSuperadmin) ...<Widget>[
                               const SizedBox(width: 8),
                               PopupMenuButton<EstadoInstitucion>(
+                                key: ValueKey<String>(
+                                  'institution_actions_button_${institucion.id}',
+                                ),
                                 onSelected: (estado) =>
                                     _cambiarEstado(institucion, estado),
                                 itemBuilder: (contexto) {
                                   return EstadoInstitucion.values
                                       .where(
-                                        (estado) => estado != institucion.estado,
+                                        (estado) =>
+                                            estado != institucion.estado,
                                       )
                                       .map(
                                         (estado) =>
                                             PopupMenuItem<EstadoInstitucion>(
+                                          key: ValueKey<String>(
+                                            'institution_change_state_${institucion.id}_${estado.name}',
+                                          ),
                                           value: estado,
                                           child: Text(estado.name),
                                         ),

@@ -91,6 +91,7 @@ class _ExamenesGestionPantallaState
         title: const Text(Textos.gestionarExamenes),
         actions: <Widget>[
           IconButton(
+            key: const Key('exams_refresh_button'),
             onPressed: _recargar,
             icon: const Icon(Icons.refresh),
             tooltip: 'Actualizar',
@@ -195,13 +196,14 @@ class _ExamenesGestionPantallaState
                   ...examenes.map((examen) {
                     final habilitaPublicar =
                         puedePublicar && examen.estado == EstadoExamen.BORRADOR;
-                    final habilitaArchivar =
-                        puedeArchivar && examen.estado != EstadoExamen.ARCHIVADO;
+                    final habilitaArchivar = puedeArchivar &&
+                        examen.estado != EstadoExamen.ARCHIVADO;
 
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      padding: const EdgeInsets.only(
+                          bottom: Dimensiones.espaciadoLg),
                       child: EvalSectionCard(
+                        key: ValueKey<String>('exam_card_${examen.id}'),
                         title: examen.titulo,
                         subtitle: examen.modalidad.name,
                         trailing: EvalBadge(
@@ -229,6 +231,9 @@ class _ExamenesGestionPantallaState
                               children: <Widget>[
                                 if (habilitaPublicar)
                                   ElevatedButton(
+                                    key: ValueKey<String>(
+                                      'exam_publish_button_${examen.id}',
+                                    ),
                                     onPressed: () => _ejecutarAccion(
                                       accion: () async {
                                         await ref
@@ -242,6 +247,9 @@ class _ExamenesGestionPantallaState
                                   ),
                                 if (habilitaArchivar)
                                   OutlinedButton(
+                                    key: ValueKey<String>(
+                                      'exam_archive_button_${examen.id}',
+                                    ),
                                     onPressed: () => _ejecutarAccion(
                                       accion: () async {
                                         await ref

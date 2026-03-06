@@ -57,6 +57,7 @@ class InicioPantalla extends ConsumerWidget {
         descripcion: 'Organiza bancos, estados y publicación.',
         icono: Icons.menu_book_outlined,
         onPressed: () => context.go(Rutas.gestionExamenes),
+        clavePrueba: const Key('inicio_manage_exams_button'),
       ),
       if (puedeGestionarUsuarios)
         _AccionInicio(
@@ -64,6 +65,7 @@ class InicioPantalla extends ConsumerWidget {
           descripcion: 'Administra perfiles y permisos institucionales.',
           icono: Icons.manage_accounts_outlined,
           onPressed: () => context.go(Rutas.gestionUsuarios),
+          clavePrueba: const Key('inicio_manage_users_button'),
         ),
       if (puedeGestionarGrupos)
         _AccionInicio(
@@ -71,6 +73,7 @@ class InicioPantalla extends ConsumerWidget {
           descripcion: 'Mantén grupos, docentes y matrículas alineados.',
           icono: Icons.groups_2_outlined,
           onPressed: () => context.go(Rutas.gestionGrupos),
+          clavePrueba: const Key('inicio_manage_groups_button'),
         ),
       if (puedeGestionarPeriodos)
         _AccionInicio(
@@ -78,6 +81,7 @@ class InicioPantalla extends ConsumerWidget {
           descripcion: 'Controla ciclos y disponibilidad académica.',
           icono: Icons.calendar_month_outlined,
           onPressed: () => context.go(Rutas.gestionPeriodos),
+          clavePrueba: const Key('inicio_manage_periods_button'),
         ),
       if (puedeGestionarInstituciones)
         _AccionInicio(
@@ -85,6 +89,7 @@ class InicioPantalla extends ConsumerWidget {
           descripcion: 'Monitorea operación multi-tenant y estado global.',
           icono: Icons.apartment_outlined,
           onPressed: () => context.go(Rutas.gestionInstituciones),
+          clavePrueba: const Key('inicio_manage_institutions_button'),
         ),
       if (puedeGestionarReclamos)
         _AccionInicio(
@@ -92,6 +97,7 @@ class InicioPantalla extends ConsumerWidget {
           descripcion: 'Resuelve revisiones con trazabilidad completa.',
           icono: Icons.support_agent_outlined,
           onPressed: () => context.go(Rutas.gestionReclamos),
+          clavePrueba: const Key('inicio_manage_claims_button'),
         ),
       if (puedeCalificarManual)
         _AccionInicio(
@@ -219,7 +225,8 @@ class InicioPantalla extends ConsumerWidget {
                 ),
               ),
               if (!esEstudiante &&
-                  (puedeGestionarUsuarios || puedeGestionarInstituciones)) ...<Widget>[
+                  (puedeGestionarUsuarios ||
+                      puedeGestionarInstituciones)) ...<Widget>[
                 const SizedBox(height: Dimensiones.espaciadoLg),
                 Wrap(
                   spacing: Dimensiones.espaciadoSm,
@@ -265,9 +272,8 @@ class InicioPantalla extends ConsumerWidget {
                 ),
               if (accionesAcademicas.isNotEmpty)
                 _BloqueAcciones(
-                  titulo: esSuperadmin
-                      ? 'Operacion global'
-                      : 'Gestion academica',
+                  titulo:
+                      esSuperadmin ? 'Operacion global' : 'Gestion academica',
                   descripcion: esSuperadmin
                       ? 'Supervisa instituciones, usuarios, periodos y toda la operación multi-tenant.'
                       : 'Administra sesiones, exámenes y el funcionamiento académico desde una sola vista.',
@@ -334,8 +340,7 @@ class _BloqueAcciones extends StatelessWidget {
               : constraints.maxWidth > 480
                   ? 2
                   : 1;
-          final totalSpacing =
-              (columnas - 1) * Dimensiones.espaciadoMd;
+          final totalSpacing = (columnas - 1) * Dimensiones.espaciadoMd;
           final ancho = (constraints.maxWidth - totalSpacing) / columnas;
           return Wrap(
             spacing: Dimensiones.espaciadoMd,

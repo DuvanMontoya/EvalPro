@@ -94,6 +94,7 @@ class _SesionesGestionPantallaState
         title: const Text(Textos.gestionarSesiones),
         actions: <Widget>[
           IconButton(
+            key: const Key('sessions_refresh_button'),
             onPressed: _recargar,
             icon: const Icon(Icons.refresh),
             tooltip: 'Actualizar',
@@ -201,18 +202,20 @@ class _SesionesGestionPantallaState
                   ...sesiones.map((sesion) {
                     final puedeActivar =
                         esDocente && sesion.estado == EstadoSesion.PENDIENTE;
-                    final puedeFinalizar =
-                        puedeCerrarSesion && sesion.estado == EstadoSesion.ACTIVA;
+                    final puedeFinalizar = puedeCerrarSesion &&
+                        sesion.estado == EstadoSesion.ACTIVA;
                     final puedeCancelar = puedeCerrarSesion &&
                         (sesion.estado == EstadoSesion.PENDIENTE ||
                             sesion.estado == EstadoSesion.ACTIVA);
 
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      padding: const EdgeInsets.only(
+                          bottom: Dimensiones.espaciadoLg),
                       child: EvalSectionCard(
+                        key: ValueKey<String>('session_card_${sesion.id}'),
                         title: sesion.codigoAcceso ?? 'Sin codigo',
-                        subtitle: sesion.descripcion ?? 'Sesion lista para gestion.',
+                        subtitle:
+                            sesion.descripcion ?? 'Sesion lista para gestion.',
                         trailing: EvalBadge(
                           sesion.estado.name,
                           variant: _badgeEstado(sesion.estado),
@@ -227,15 +230,15 @@ class _SesionesGestionPantallaState
                             if (sesion.fechaInicio != null)
                               EvalInfoRow(
                                 label: 'Inicio',
-                                value:
-                                    FormateadorFecha.fechaHora(sesion.fechaInicio!),
+                                value: FormateadorFecha.fechaHora(
+                                    sesion.fechaInicio!),
                                 icon: Icons.schedule_rounded,
                               ),
                             if (sesion.fechaFin != null)
                               EvalInfoRow(
                                 label: 'Fin',
-                                value:
-                                    FormateadorFecha.fechaHora(sesion.fechaFin!),
+                                value: FormateadorFecha.fechaHora(
+                                    sesion.fechaFin!),
                                 icon: Icons.event_available_outlined,
                                 compact: true,
                               ),
@@ -248,8 +251,8 @@ class _SesionesGestionPantallaState
                                   key: ValueKey<String>(
                                     'session_management_report_button_${sesion.id}',
                                   ),
-                                  onPressed: () =>
-                                      context.go(Rutas.reporteSesionPorId(sesion.id)),
+                                  onPressed: () => context
+                                      .go(Rutas.reporteSesionPorId(sesion.id)),
                                   icon: const Icon(Icons.analytics_outlined),
                                   label: const Text(Textos.verReporte),
                                 ),

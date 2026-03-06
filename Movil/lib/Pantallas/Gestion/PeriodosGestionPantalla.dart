@@ -91,12 +91,14 @@ class _PeriodosGestionPantallaState
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     TextField(
+                      key: const Key('periods_create_name_field'),
                       controller: nombreControlador,
                       decoration: const InputDecoration(labelText: 'Nombre'),
                     ),
                     if (esSuperadmin) ...<Widget>[
                       const SizedBox(height: Dimensiones.espaciadoMd),
                       DropdownButtonFormField<String>(
+                        key: const Key('periods_create_institution_field'),
                         initialValue: institucionSeleccionada?.id,
                         items: instituciones
                             .map(
@@ -126,6 +128,7 @@ class _PeriodosGestionPantallaState
                     ],
                     const SizedBox(height: 10),
                     ListTile(
+                      key: const Key('periods_create_start_tile'),
                       title: const Text('Fecha inicio'),
                       subtitle: Text(
                         fechaInicio == null
@@ -153,6 +156,7 @@ class _PeriodosGestionPantallaState
                       },
                     ),
                     ListTile(
+                      key: const Key('periods_create_end_tile'),
                       title: const Text('Fecha fin'),
                       subtitle: Text(
                         fechaFin == null
@@ -165,7 +169,8 @@ class _PeriodosGestionPantallaState
                           context: contexto,
                           firstDate: DateTime(2020),
                           lastDate: DateTime(2100),
-                          initialDate: fechaFin ?? fechaInicio ?? DateTime.now(),
+                          initialDate:
+                              fechaFin ?? fechaInicio ?? DateTime.now(),
                         );
                         if (seleccion != null) {
                           setEstado(() {
@@ -180,6 +185,7 @@ class _PeriodosGestionPantallaState
                       },
                     ),
                     SwitchListTile(
+                      key: const Key('periods_create_active_switch'),
                       value: activo,
                       title: const Text('Activo al crear'),
                       onChanged: (valor) => setEstado(() {
@@ -191,10 +197,12 @@ class _PeriodosGestionPantallaState
               ),
               actions: <Widget>[
                 TextButton(
+                  key: const Key('periods_create_cancel_button'),
                   onPressed: () => Navigator.of(contexto).pop(false),
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
+                  key: const Key('periods_create_submit_button'),
                   onPressed: () => Navigator.of(contexto).pop(true),
                   child: const Text('Crear'),
                 ),
@@ -242,7 +250,8 @@ class _PeriodosGestionPantallaState
     }
   }
 
-  Future<void> _actualizarEstado(PeriodoGestion periodo, bool nuevoEstado) async {
+  Future<void> _actualizarEstado(
+      PeriodoGestion periodo, bool nuevoEstado) async {
     try {
       await _servicio.actualizarEstado(
         idPeriodo: periodo.id,
@@ -285,6 +294,7 @@ class _PeriodosGestionPantallaState
         title: const Text(Textos.gestionarPeriodos),
         actions: <Widget>[
           IconButton(
+            key: const Key('periods_refresh_button'),
             onPressed: _recargar,
             icon: const Icon(Icons.refresh),
           ),
@@ -292,6 +302,7 @@ class _PeriodosGestionPantallaState
       ),
       floatingActionButton: puedeCrear
           ? FloatingActionButton.extended(
+              key: const Key('periods_create_fab'),
               onPressed: () => _mostrarCrearPeriodo(esSuperadmin),
               icon: const Icon(Icons.add),
               label: const Text('Nuevo'),
@@ -345,9 +356,10 @@ class _PeriodosGestionPantallaState
                   const SizedBox(height: Dimensiones.espaciadoLg),
                   ...periodos.map((periodo) {
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      padding: const EdgeInsets.only(
+                          bottom: Dimensiones.espaciadoLg),
                       child: EvalSectionCard(
+                        key: ValueKey<String>('period_card_${periodo.id}'),
                         title: periodo.nombre,
                         subtitle: 'Institucion ${periodo.idInstitucion}',
                         trailing: EvalBadge(
@@ -360,17 +372,22 @@ class _PeriodosGestionPantallaState
                           children: <Widget>[
                             EvalInfoRow(
                               label: 'Inicio',
-                              value: FormateadorFecha.fechaHora(periodo.fechaInicio),
+                              value: FormateadorFecha.fechaHora(
+                                  periodo.fechaInicio),
                               icon: Icons.event_available_outlined,
                             ),
                             EvalInfoRow(
                               label: 'Fin',
-                              value: FormateadorFecha.fechaHora(periodo.fechaFin),
+                              value:
+                                  FormateadorFecha.fechaHora(periodo.fechaFin),
                               icon: Icons.event_busy_outlined,
                               compact: true,
                             ),
                             const SizedBox(height: Dimensiones.espaciadoSm),
                             SwitchListTile(
+                              key: ValueKey<String>(
+                                'period_toggle_${periodo.id}',
+                              ),
                               title: const Text('Activo'),
                               value: periodo.activo,
                               onChanged: puedeCrear

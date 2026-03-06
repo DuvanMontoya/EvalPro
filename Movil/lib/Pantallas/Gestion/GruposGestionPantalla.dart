@@ -86,15 +86,18 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     TextField(
+                      key: const Key('groups_create_name_field'),
                       controller: nombreControlador,
                       decoration: const InputDecoration(labelText: 'Nombre'),
                     ),
                     TextField(
+                      key: const Key('groups_create_description_field'),
                       controller: descripcionControlador,
                       decoration:
                           const InputDecoration(labelText: 'Descripcion'),
                     ),
                     DropdownButtonFormField<String>(
+                      key: const Key('groups_create_period_field'),
                       initialValue: periodoSeleccionado.id,
                       items: periodos
                           .map(
@@ -123,10 +126,12 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
               ),
               actions: <Widget>[
                 TextButton(
+                  key: const Key('groups_create_cancel_button'),
                   onPressed: () => Navigator.of(contexto).pop(false),
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
+                  key: const Key('groups_create_submit_button'),
                   onPressed: () => Navigator.of(contexto).pop(true),
                   child: const Text('Crear'),
                 ),
@@ -202,6 +207,7 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
             return AlertDialog(
               title: const Text('Asignar docente'),
               content: DropdownButtonFormField<String>(
+                key: const Key('groups_assign_teacher_field'),
                 initialValue: docenteSeleccionado.id,
                 items: docentes
                     .map(
@@ -227,10 +233,12 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
               ),
               actions: <Widget>[
                 TextButton(
+                  key: const Key('groups_assign_teacher_cancel_button'),
                   onPressed: () => Navigator.of(contexto).pop(false),
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
+                  key: const Key('groups_assign_teacher_submit_button'),
                   onPressed: () => Navigator.of(contexto).pop(true),
                   child: const Text('Asignar'),
                 ),
@@ -298,6 +306,7 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
             return AlertDialog(
               title: const Text('Inscribir estudiante'),
               content: DropdownButtonFormField<String>(
+                key: const Key('groups_enroll_student_field'),
                 initialValue: estudianteSeleccionado.id,
                 items: estudiantes
                     .map(
@@ -324,10 +333,12 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
               ),
               actions: <Widget>[
                 TextButton(
+                  key: const Key('groups_enroll_student_cancel_button'),
                   onPressed: () => Navigator.of(contexto).pop(false),
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
+                  key: const Key('groups_enroll_student_submit_button'),
                   onPressed: () => Navigator.of(contexto).pop(true),
                   child: const Text('Inscribir'),
                 ),
@@ -378,6 +389,7 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     DropdownButtonFormField<EstadoGrupo>(
+                      key: const Key('groups_state_field'),
                       initialValue: estadoSeleccionado,
                       items: EstadoGrupo.values
                           .map(
@@ -397,6 +409,7 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
                       decoration: const InputDecoration(labelText: 'Estado'),
                     ),
                     TextField(
+                      key: const Key('groups_state_reason_field'),
                       controller: razonControlador,
                       maxLines: 3,
                       decoration:
@@ -407,10 +420,12 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
               ),
               actions: <Widget>[
                 TextButton(
+                  key: const Key('groups_state_cancel_button'),
                   onPressed: () => Navigator.of(contexto).pop(false),
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
+                  key: const Key('groups_state_submit_button'),
                   onPressed: () => Navigator.of(contexto).pop(true),
                   child: const Text('Guardar'),
                 ),
@@ -465,6 +480,7 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
         title: const Text(Textos.gestionarGrupos),
         actions: <Widget>[
           IconButton(
+            key: const Key('groups_refresh_button'),
             onPressed: _recargar,
             icon: const Icon(Icons.refresh),
           ),
@@ -472,6 +488,7 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
       ),
       floatingActionButton: puedeGestionar
           ? FloatingActionButton.extended(
+              key: const Key('groups_create_fab'),
               onPressed: () => _mostrarCrearGrupo(rol),
               icon: const Icon(Icons.add),
               label: const Text('Nuevo'),
@@ -525,9 +542,10 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
                   const SizedBox(height: Dimensiones.espaciadoLg),
                   ...grupos.map((grupo) {
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: Dimensiones.espaciadoLg),
+                      padding: const EdgeInsets.only(
+                          bottom: Dimensiones.espaciadoLg),
                       child: EvalSectionCard(
+                        key: ValueKey<String>('group_card_${grupo.id}'),
                         title: grupo.nombre,
                         subtitle: grupo.nombrePeriodo ?? grupo.idPeriodo,
                         trailing: EvalBadge(
@@ -555,7 +573,9 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
                               compact: (grupo.descripcion ?? '').trim().isEmpty,
                             ),
                             if (grupo.descripcion != null &&
-                                grupo.descripcion!.trim().isNotEmpty) ...<Widget>[
+                                grupo.descripcion!
+                                    .trim()
+                                    .isNotEmpty) ...<Widget>[
                               EvalNotice(
                                 title: 'Descripcion',
                                 message: grupo.descripcion!,
@@ -568,16 +588,27 @@ class _GruposGestionPantallaState extends ConsumerState<GruposGestionPantalla> {
                                 runSpacing: 8,
                                 children: <Widget>[
                                   OutlinedButton(
-                                    onPressed: () => _mostrarAsignarDocente(grupo),
+                                    key: ValueKey<String>(
+                                      'group_assign_teacher_button_${grupo.id}',
+                                    ),
+                                    onPressed: () =>
+                                        _mostrarAsignarDocente(grupo),
                                     child: const Text('Asignar docente'),
                                   ),
                                   OutlinedButton(
+                                    key: ValueKey<String>(
+                                      'group_enroll_student_button_${grupo.id}',
+                                    ),
                                     onPressed: () =>
                                         _mostrarInscribirEstudiante(grupo),
                                     child: const Text('Inscribir estudiante'),
                                   ),
                                   OutlinedButton(
-                                    onPressed: () => _mostrarCambiarEstado(grupo),
+                                    key: ValueKey<String>(
+                                      'group_change_state_button_${grupo.id}',
+                                    ),
+                                    onPressed: () =>
+                                        _mostrarCambiarEstado(grupo),
                                     child: const Text('Cambiar estado'),
                                   ),
                                 ],
