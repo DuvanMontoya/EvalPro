@@ -261,6 +261,13 @@ class BackendE2eHelper {
       token: sesionDocente.tokenAcceso,
     );
 
+    final fechaInicioAsignacionUtc =
+        DateTime.now().toUtc().add(const Duration(seconds: 12));
+    final fechaFinAsignacionUtc =
+        fechaInicioAsignacionUtc.add(const Duration(minutes: 45));
+    final fechaPublicacionResultadosUtc =
+        fechaFinAsignacionUtc.add(const Duration(minutes: 5));
+
     final asignacion = _asMap(
       await _solicitarDatos(
         metodo: 'POST',
@@ -269,13 +276,12 @@ class BackendE2eHelper {
         cuerpo: <String, dynamic>{
           'idExamen': idExamen,
           'idGrupo': idGrupo,
-          'fechaInicio': _fechaIsoUtcDesdeAhora(const Duration(minutes: -5)),
-          'fechaFin': _fechaIsoUtcDesdeAhora(const Duration(minutes: 45)),
+          'fechaInicio': _fechaIsoUtc(fechaInicioAsignacionUtc),
+          'fechaFin': _fechaIsoUtc(fechaFinAsignacionUtc),
           'intentosMaximos': 1,
           'mostrarPuntajeInmediato': true,
           'mostrarRespuestasCorrectas': false,
-          'publicarResultadosEn':
-              _fechaIsoUtcDesdeAhora(const Duration(minutes: 50)),
+          'publicarResultadosEn': _fechaIsoUtc(fechaPublicacionResultadosUtc),
         },
       ),
     );
@@ -329,6 +335,61 @@ class BackendE2eHelper {
     );
   }
 
+  Future<String> activarSesionComoDocente(
+    EscenarioFlujoMovilE2e escenario, {
+    Duration timeout = const Duration(seconds: 75),
+  }) async {
+    final limite = DateTime.now().add(timeout);
+    Object? ultimoError;
+
+    while (DateTime.now().isBefore(limite)) {
+      final respuesta = await _cliente.request<Object?>(
+        '/sesiones/${escenario.idSesion}/activar',
+        options: Options(
+          method: 'POST',
+          headers: <String, dynamic>{
+            'Authorization': 'Bearer ${escenario.tokenDocente}',
+          },
+        ),
+      );
+
+      final estado = respuesta.statusCode ?? 0;
+      final cuerpoMapa = _asMapOpcional(respuesta.data);
+      final codigoError = cuerpoMapa?['codigoError']?.toString() ?? '';
+      final mensaje = cuerpoMapa?['mensaje']?.toString() ?? '';
+
+      if ((estado == 200 || estado == 201) && cuerpoMapa != null) {
+        final exito = cuerpoMapa['exito'];
+        if (exito != false) {
+          final sesion = _asMap(
+            cuerpoMapa.containsKey('datos') ? cuerpoMapa['datos'] : cuerpoMapa,
+          );
+          final codigo = _leerCadenaObligatoria(sesion, 'codigoAcceso');
+          if (codigo.trim().isNotEmpty) {
+            return codigo;
+          }
+          ultimoError =
+              'La activacion respondio sin codigo de acceso utilizable.';
+        }
+      } else if (estado == 403 && codigoError == 'SESION_NO_ACTIVA') {
+        ultimoError = mensaje.isEmpty ? codigoError : '$codigoError $mensaje';
+        await Future<void>.delayed(const Duration(seconds: 1));
+        continue;
+      } else {
+        throw StateError(
+          'HTTP inesperado $estado en POST /sesiones/${escenario.idSesion}/activar. '
+          'Respuesta: ${cuerpoMapa ?? respuesta.data}',
+        );
+      }
+    }
+
+    throw StateError(
+      'La sesion ${escenario.idSesion} no entro en ventana activa para '
+      'activacion docente en ${timeout.inSeconds}s. '
+      'Ultimo detalle: $ultimoError',
+    );
+  }
+
   Future<void> esperarReporteConEntrega(
     EscenarioFlujoMovilE2e escenario, {
     Duration timeout = const Duration(seconds: 30),
@@ -354,6 +415,19 @@ class BackendE2eHelper {
       'El reporte de sesion ${escenario.idSesion} no reflejo la entrega en '
       '${timeout.inSeconds}s.',
     );
+  }
+
+  Future<int> obtenerTotalParticipantesSesion(
+    EscenarioFlujoMovilE2e escenario,
+  ) async {
+    final reporte = _asMap(
+      await _solicitarDatos(
+        metodo: 'GET',
+        ruta: '/reportes/sesion/${escenario.idSesion}',
+        token: escenario.tokenDocente,
+      ),
+    );
+    return (reporte['totalEstudiantes'] as num?)?.toInt() ?? 0;
   }
 
   Future<void> esperarSesionFinalizada(
@@ -495,6 +569,8 @@ class BackendE2eHelper {
 
   String _fechaIsoUtcDesdeAhora(Duration delta) =>
       DateTime.now().toUtc().add(delta).toIso8601String();
+
+  String _fechaIsoUtc(DateTime fechaUtc) => fechaUtc.toUtc().toIso8601String();
 
   Map<String, dynamic> _asMap(Object? valor) {
     final mapa = _asMapOpcional(valor);

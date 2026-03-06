@@ -23,6 +23,27 @@ function Obtener-DispositivoEmuladorActivo {
   return $null
 }
 
+function Obtener-RegistroEmuladorAdb {
+  $rutaAdb = Obtener-RutaAdb
+  $lineasAdb = & $rutaAdb devices
+  foreach ($linea in $lineasAdb) {
+    if ($linea -match '^\s*(emulator-\d+)\s+(\S+)\s*$') {
+      return @{
+        Id = $Matches[1]
+        Estado = $Matches[2]
+      }
+    }
+  }
+
+  return $null
+}
+
+function Obtener-ProcesoQemuActivo {
+  return Get-Process -ErrorAction SilentlyContinue |
+    Where-Object { $_.ProcessName -like 'qemu-system*' } |
+    Select-Object -First 1
+}
+
 function Obtener-RutaAdb {
   $candidatas = @(
     (Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe'),
@@ -82,6 +103,100 @@ function Esperar-DispositivoEmulador {
   return $null
 }
 
+function Obtener-EstadoProceso {
+  param([System.Diagnostics.Process]$Proceso)
+
+  if ($null -eq $Proceso) {
+    return 'SIN_PROCESO'
+  }
+
+  try {
+    $procesoActivo = Get-Process -Id $Proceso.Id -ErrorAction Stop
+    if ($null -eq $procesoActivo) {
+      return 'TERMINADO'
+    }
+    return 'ACTIVO'
+  } catch {
+    return 'TERMINADO'
+  }
+}
+
+function Esperar-DispositivoEmuladorConDiagnostico {
+  param(
+    [int]$TimeoutSegundos,
+    [string]$Etapa = 'espera emulador',
+    $Lanzamiento = $null
+  )
+
+  $reintentos = [Math]::Max([int]([Math]::Ceiling($TimeoutSegundos / 2.0)), 1)
+  for ($intento = 1; $intento -le $reintentos; $intento += 1) {
+    $registroAdb = Obtener-RegistroEmuladorAdb
+    if ($null -ne $registroAdb) {
+      return @{
+        DeviceId = $registroAdb.Id
+        Estado = 'REGISTRADO'
+        Causa = $null
+        EstadoAdb = $registroAdb.Estado
+        QemuActivo = ($null -ne (Obtener-ProcesoQemuActivo))
+      }
+    }
+
+    $qemuActivo = ($null -ne (Obtener-ProcesoQemuActivo))
+
+    if ($null -ne $Lanzamiento) {
+      $causaFatal = Obtener-CausaFatalEmulador -Lanzamiento $Lanzamiento
+      if (-not [string]::IsNullOrWhiteSpace($causaFatal)) {
+        if ($causaFatal -eq 'AVD_DUPLICADO' -and $qemuActivo) {
+          if ($intento -eq 1 -or ($intento % 5 -eq 0)) {
+            $transcurrido = [Math]::Min($intento * 2, $TimeoutSegundos)
+            Write-Host "[$Etapa] el launcher detectó AVD duplicado, pero qemu sigue arrancando. Esperando registro adb... ${transcurrido}s/${TimeoutSegundos}s"
+          }
+          Start-Sleep -Seconds 2
+          continue
+        }
+
+        return @{
+          DeviceId = $null
+          Estado = 'FATAL'
+          Causa = $causaFatal
+          EstadoAdb = $null
+          QemuActivo = $qemuActivo
+        }
+      }
+
+      $estadoProceso = Obtener-EstadoProceso -Proceso $Lanzamiento.Proceso
+      if ($estadoProceso -eq 'TERMINADO' -and -not $qemuActivo) {
+        return @{
+          DeviceId = $null
+          Estado = 'PROCESO_TERMINADO'
+          Causa = 'PROCESO_TERMINADO'
+          EstadoAdb = $null
+          QemuActivo = $false
+        }
+      }
+    }
+
+    if ($intento -eq 1 -or ($intento % 5 -eq 0)) {
+      $transcurrido = [Math]::Min($intento * 2, $TimeoutSegundos)
+      if ($qemuActivo) {
+        Write-Host "[$Etapa] qemu activo, esperando registro adb... ${transcurrido}s/${TimeoutSegundos}s"
+      } else {
+        Write-Host "[$Etapa] esperando dispositivo... ${transcurrido}s/${TimeoutSegundos}s"
+      }
+    }
+
+    Start-Sleep -Seconds 2
+  }
+
+  return @{
+    DeviceId = $null
+    Estado = 'TIMEOUT'
+    Causa = 'TIMEOUT'
+    EstadoAdb = $null
+    QemuActivo = ($null -ne (Obtener-ProcesoQemuActivo))
+  }
+}
+
 function Esperar-DispositivoListo {
   param(
     [string]$RutaAdb,
@@ -112,7 +227,8 @@ function Detener-ProcesosEmuladorPorId {
   param([string]$IdAvd)
 
   $objetivo = [Regex]::Escape($IdAvd)
-  $procesos = Get-CimInstance Win32_Process -Filter "Name = 'emulator.exe'" -ErrorAction SilentlyContinue |
+  $procesos = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -in @('emulator.exe', 'qemu-system-x86_64.exe') } |
     Where-Object { [string]$_.CommandLine -match $objetivo }
 
   foreach ($proceso in $procesos) {
@@ -124,6 +240,72 @@ function Detener-ProcesosEmuladorPorId {
   }
 }
 
+function Detener-TodosLosEmuladores {
+  $procesos = Get-Process -ErrorAction SilentlyContinue |
+    Where-Object { $_.ProcessName -eq 'emulator' -or $_.ProcessName -like 'qemu-system*' }
+  foreach ($proceso in $procesos) {
+    try {
+      Stop-Process -Id $proceso.Id -Force -ErrorAction Stop
+    } catch {
+      # El proceso pudo cerrarse entre lecturas.
+    }
+  }
+}
+
+function Limpiar-EmuladoresHuerfanos {
+  param([string]$Razon = 'sin dispositivo adb visible')
+
+  $dispositivoActivo = Obtener-DispositivoEmuladorActivo
+  if (-not [string]::IsNullOrWhiteSpace($dispositivoActivo)) {
+    return $false
+  }
+
+  $procesos = Get-Process -Name 'emulator' -ErrorAction SilentlyContinue
+  if (-not $procesos) {
+    return $false
+  }
+
+  Write-Host "Se detectaron emulator.exe huérfanos ($Razon). Se limpiará el estado antes de continuar."
+  Detener-TodosLosEmuladores
+  Start-Sleep -Seconds 3
+  return $true
+}
+
+function Leer-ArchivoSeguro {
+  param([string]$Ruta)
+
+  if (-not $Ruta -or -not (Test-Path $Ruta)) {
+    return ''
+  }
+
+  try {
+    return [string](Get-Content $Ruta -Raw -ErrorAction Stop)
+  } catch {
+    return ''
+  }
+}
+
+function Obtener-CausaFatalEmulador {
+  param($Lanzamiento)
+
+  if ($null -eq $Lanzamiento) {
+    return $null
+  }
+
+  $texto = @(
+    (Leer-ArchivoSeguro -Ruta $Lanzamiento.LogOut),
+    (Leer-ArchivoSeguro -Ruta $Lanzamiento.LogErr)
+  ) -join "`n"
+
+  if ($texto -match 'Running multiple emulators with the same AVD') {
+    return 'AVD_DUPLICADO'
+  }
+  if ($texto -match 'Address these issues and try again') {
+    return 'ARRANQUE_ABORTADO'
+  }
+  return $null
+}
+
 function Lanzar-EmuladorDirecto {
   param(
     [string]$RutaEmulator,
@@ -131,7 +313,7 @@ function Lanzar-EmuladorDirecto {
     [string[]]$ArgumentosExtra
   )
 
-  $argumentos = @('-avd', $IdAvd) + $ArgumentosExtra
+  $argumentos = @('-avd', $IdAvd, '-verbose') + $ArgumentosExtra
   $salida = Join-Path $env:TEMP ("evalpro_emulator_{0}_out.log" -f ([DateTime]::Now.ToString('yyyyMMddHHmmssfff')))
   $errores = Join-Path $env:TEMP ("evalpro_emulator_{0}_err.log" -f ([DateTime]::Now.ToString('yyyyMMddHHmmssfff')))
   $proceso = Start-Process -FilePath $RutaEmulator -ArgumentList $argumentos -PassThru -RedirectStandardOutput $salida -RedirectStandardError $errores
@@ -152,6 +334,17 @@ function Testear-BackendLocal {
   } catch {
     return $false
   }
+}
+
+function Reiniciar-ServidorAdb {
+  $rutaAdb = Obtener-RutaAdb
+  try {
+    & $rutaAdb kill-server | Out-Null
+  } catch {
+    # Continuar con reinicio incluso si adb ya estaba detenido.
+  }
+  Start-Sleep -Seconds 2
+  & $rutaAdb start-server | Out-Null
 }
 
 function Iniciar-BackendSiHaceFalta {
@@ -302,10 +495,30 @@ function Configurar-DeviceOwnerEvalPro {
 }
 
 if ([string]::IsNullOrWhiteSpace($DeviceId)) {
-  $DeviceId = Obtener-DispositivoEmuladorActivo
+  $registroInicial = Obtener-RegistroEmuladorAdb
+  if ($null -ne $registroInicial) {
+    $DeviceId = $registroInicial.Id
+  }
 }
 
 $lanzamiento = $null
+
+if ([string]::IsNullOrWhiteSpace($DeviceId) -and ($null -ne (Obtener-ProcesoQemuActivo))) {
+  Write-Host 'Se detectó qemu activo sin dispositivo adb reutilizable. Esperando registro breve antes de limpiar.'
+  $resultadoPrevio = Esperar-DispositivoEmuladorConDiagnostico -TimeoutSegundos 15 -Etapa 'recuperando arranque previo'
+  $DeviceId = $resultadoPrevio.DeviceId
+
+  if ([string]::IsNullOrWhiteSpace($DeviceId) -and $resultadoPrevio.QemuActivo) {
+    Write-Host 'qemu sigue activo pero adb no registra el emulador. Reiniciando adb una vez antes de limpiar.'
+    Reiniciar-ServidorAdb
+    $resultadoPrevio = Esperar-DispositivoEmuladorConDiagnostico -TimeoutSegundos 10 -Etapa 'revalidando adb'
+    $DeviceId = $resultadoPrevio.DeviceId
+  }
+}
+
+if ([string]::IsNullOrWhiteSpace($DeviceId)) {
+  Limpiar-EmuladoresHuerfanos -Razon 'estado previo' | Out-Null
+}
 
 if (-not [string]::IsNullOrWhiteSpace($DeviceId)) {
   $rutaAdbInicial = Obtener-RutaAdb
@@ -336,21 +549,65 @@ if ([string]::IsNullOrWhiteSpace($DeviceId)) {
     Write-Host "Aviso: 'flutter emulators --launch' devolvió código $codigoSalidaFlutter. Se usará fallback inmediato."
     $DeviceId = $null
   } else {
-    $DeviceId = Esperar-DispositivoEmulador -TimeoutSegundos 40 -Etapa 'arranque flutter'
+    $resultadoFlutter = Esperar-DispositivoEmuladorConDiagnostico -TimeoutSegundos 45 -Etapa 'arranque flutter'
+    $DeviceId = $resultadoFlutter.DeviceId
+    if ([string]::IsNullOrWhiteSpace($DeviceId)) {
+      if ($resultadoFlutter.QemuActivo) {
+        Write-Host 'qemu sigue activo tras arranque vía flutter. Reiniciando adb antes de decidir fallback.'
+        Reiniciar-ServidorAdb
+        $resultadoFlutter = Esperar-DispositivoEmuladorConDiagnostico -TimeoutSegundos 15 -Etapa 'revalidando flutter/adb'
+        $DeviceId = $resultadoFlutter.DeviceId
+      }
+
+      if ([string]::IsNullOrWhiteSpace($DeviceId) -and -not $resultadoFlutter.QemuActivo) {
+        Limpiar-EmuladoresHuerfanos -Razon 'sin registro adb tras arranque flutter' | Out-Null
+      }
+    }
   }
 }
 
 if ([string]::IsNullOrWhiteSpace($DeviceId)) {
+  if ($null -ne (Obtener-ProcesoQemuActivo)) {
+    throw 'Hay un proceso qemu arrancando pero adb no logra registrarlo. No se relanzará el AVD para evitar duplicados; revise Android SDK/adb.'
+  }
+
   $rutaEmulator = Obtener-RutaEmulatorExe
   Write-Host "Fallback: lanzando emulador directo con emulator.exe ..."
   $lanzamiento = Lanzar-EmuladorDirecto -RutaEmulator $rutaEmulator -IdAvd $EmulatorId -ArgumentosExtra @('-no-snapshot-load')
-  $DeviceId = Esperar-DispositivoEmulador -TimeoutSegundos 40 -Etapa 'fallback directo'
+  $resultadoEspera = Esperar-DispositivoEmuladorConDiagnostico -TimeoutSegundos 45 -Etapa 'fallback directo' -Lanzamiento $lanzamiento
+  $DeviceId = $resultadoEspera.DeviceId
+  $causaFatal = $resultadoEspera.Causa
+  if ($causaFatal -eq 'AVD_DUPLICADO') {
+    Write-Host 'El emulador reportó AVD duplicado. Se limpiarán procesos huérfanos y se reintentará.'
+    Limpiar-EmuladoresHuerfanos -Razon 'AVD duplicado en fallback directo' | Out-Null
+  } elseif ($causaFatal -eq 'ARRANQUE_ABORTADO') {
+    Write-Host 'El emulador abortó el arranque de forma temprana. Se forzará limpieza y reintento.'
+    Limpiar-EmuladoresHuerfanos -Razon 'arranque abortado en fallback directo' | Out-Null
+  } elseif ($causaFatal -eq 'PROCESO_TERMINADO') {
+    Write-Host 'emulator.exe terminó antes de registrar un dispositivo adb. Se reintentará con recuperación fuerte.'
+  }
 
   if ([string]::IsNullOrWhiteSpace($DeviceId)) {
     Write-Host 'Reintento de recuperación: limpiando estado del AVD y relanzando...'
+    Limpiar-EmuladoresHuerfanos -Razon 'antes de reintento wipe-data' | Out-Null
     Detener-ProcesosEmuladorPorId -IdAvd $EmulatorId
     $lanzamiento = Lanzar-EmuladorDirecto -RutaEmulator $rutaEmulator -IdAvd $EmulatorId -ArgumentosExtra @('-wipe-data', '-no-snapshot', '-no-boot-anim')
-    $DeviceId = Esperar-DispositivoEmulador -TimeoutSegundos $TimeoutEmuladorSegundos -Etapa 'reintento wipe-data'
+    $resultadoEspera = Esperar-DispositivoEmuladorConDiagnostico -TimeoutSegundos $TimeoutEmuladorSegundos -Etapa 'reintento wipe-data' -Lanzamiento $lanzamiento
+    $DeviceId = $resultadoEspera.DeviceId
+    $causaFatal = $resultadoEspera.Causa
+    if ($causaFatal -eq 'AVD_DUPLICADO') {
+      Write-Host 'El reintento también detectó AVD duplicado. Se aborta con diagnóstico inmediato.'
+      Limpiar-EmuladoresHuerfanos -Razon 'AVD duplicado tras wipe-data' | Out-Null
+      $DeviceId = $null
+    } elseif ($causaFatal -eq 'ARRANQUE_ABORTADO') {
+      Write-Host 'El reintento abortó el arranque antes de crear el dispositivo adb.'
+      Limpiar-EmuladoresHuerfanos -Razon 'arranque abortado tras wipe-data' | Out-Null
+      $DeviceId = $null
+    } elseif ($causaFatal -eq 'PROCESO_TERMINADO') {
+      Write-Host 'El reintento terminó de forma prematura antes de quedar visible para adb.'
+      Limpiar-EmuladoresHuerfanos -Razon 'proceso terminado tras wipe-data' | Out-Null
+      $DeviceId = $null
+    }
   }
 }
 
@@ -374,7 +631,8 @@ if (-not (Esperar-DispositivoListo -RutaAdb $rutaAdb -IdDispositivo $DeviceId -T
 }
 
 $deviceOwnerActivo = Testear-DeviceOwnerEvalPro -RutaAdb $rutaAdb -IdDispositivo $DeviceId
-if (-not $deviceOwnerActivo -and $AutoConfigurarDeviceOwner) {
+$debeConfigurarDeviceOwner = $RequerirKioscoEstricto -and $AutoConfigurarDeviceOwner
+if (-not $deviceOwnerActivo -and $debeConfigurarDeviceOwner) {
   Write-Host 'Intentando configurar Device Owner para bloqueo estricto...'
   $resultadoOwner = Configurar-DeviceOwnerEvalPro -RutaAdb $rutaAdb -IdDispositivo $DeviceId
   Write-Host $resultadoOwner.Mensaje

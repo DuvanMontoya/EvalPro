@@ -326,10 +326,11 @@ class ModoExamenServicio with WidgetsBindingObserver {
   /// Activa el modo kiosco. Retorna true si se activo exitosamente.
   /// Lanza PlatformException si el SO rechaza el bloqueo.
   Future<bool> activarModoKiosco() async {
-    await _activarProteccionVisual();
     if (_omitirLockTaskEnPruebas) {
-      return _proteccionVisualActiva;
+      _proteccionVisualActiva = true;
+      return true;
     }
+    await _activarProteccionVisual();
     if (!Platform.isAndroid) {
       return _proteccionVisualActiva;
     }
