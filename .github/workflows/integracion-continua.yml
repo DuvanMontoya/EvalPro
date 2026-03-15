@@ -16,13 +16,13 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: evalpro_usuario
-          POSTGRES_PASSWORD: evalpro_contrasena_segura
+          POSTGRES_USER: evalpro_ci
+          POSTGRES_PASSWORD: ci_pg_${{ github.run_id }}_${{ github.run_attempt }}
           POSTGRES_DB: evalPro_db
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U evalpro_usuario -d evalPro_db"
+          --health-cmd "pg_isready -U evalpro_ci -d evalPro_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -32,23 +32,23 @@ jobs:
         working-directory: Backend
 
     env:
-      DATABASE_URL: postgresql://evalpro_usuario:evalpro_contrasena_segura@localhost:5432/evalPro_db?schema=public
-      JWT_SECRETO_ACCESO: minimo_64_caracteres_completamente_aleatorios_acceso
+      DATABASE_URL: postgresql://evalpro_ci:ci_pg_${{ github.run_id }}_${{ github.run_attempt }}@localhost:5432/evalPro_db?schema=public
+      JWT_SECRETO_ACCESO: jwt_acceso_ci_${{ github.run_id }}_${{ github.run_attempt }}_evalpro_longitud_segura_1234567890
       JWT_EXPIRACION_ACCESO: 15m
-      JWT_SECRETO_REFRESH: minimo_64_caracteres_completamente_aleatorios_refresh
+      JWT_SECRETO_REFRESH: jwt_refresh_ci_${{ github.run_id }}_${{ github.run_attempt }}_evalpro_longitud_segura_1234567890
       JWT_EXPIRACION_REFRESH: 7d
       PUERTO_APP: 3001
       CORS_ORIGENES_PERMITIDOS: http://localhost:3000
       ENTORNO: pruebas
       BCRYPT_RONDAS_HASH: 12
-      ADMIN_CORREO_INICIAL: admin@evalpro.com
-      ADMIN_CONTRASENA_INICIAL: Gaussiano1008*
-      SUPERADMIN_CORREO_INICIAL: superadmin@evalpro.com
-      SUPERADMIN_CONTRASENA_INICIAL: Gaussiano1008*
-      DOCENTE_CORREO_INICIAL: docente@evalpro.com
-      DOCENTE_CONTRASENA_INICIAL: Gaussiano1008*
-      ESTUDIANTE_CORREO_INICIAL: estudiante@evalpro.com
-      ESTUDIANTE_CONTRASENA_INICIAL: Gaussiano1008*
+      ADMIN_CORREO_INICIAL: admin.${{ github.run_id }}.${{ github.run_attempt }}@evalpro.local
+      ADMIN_CONTRASENA_INICIAL: Admin.${{ github.run_id }}.${{ github.run_attempt }}.EvalPro!
+      SUPERADMIN_CORREO_INICIAL: superadmin.${{ github.run_id }}.${{ github.run_attempt }}@evalpro.local
+      SUPERADMIN_CONTRASENA_INICIAL: Superadmin.${{ github.run_id }}.${{ github.run_attempt }}.EvalPro!
+      DOCENTE_CORREO_INICIAL: docente.${{ github.run_id }}.${{ github.run_attempt }}@evalpro.local
+      DOCENTE_CONTRASENA_INICIAL: Docente.${{ github.run_id }}.${{ github.run_attempt }}.EvalPro!
+      ESTUDIANTE_CORREO_INICIAL: estudiante.${{ github.run_id }}.${{ github.run_attempt }}@evalpro.local
+      ESTUDIANTE_CONTRASENA_INICIAL: Estudiante.${{ github.run_id }}.${{ github.run_attempt }}.EvalPro!
       TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA: 3
       TELEMETRIA_MAX_EVENTOS_SEGUNDO_PLANO: 0
       INTEGRIDAD_REQUERIR_REPORTE_ANDROID: true
@@ -159,35 +159,35 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: evalpro_usuario
-          POSTGRES_PASSWORD: evalpro_contrasena_segura
+          POSTGRES_USER: evalpro_ci
+          POSTGRES_PASSWORD: ci_pg_${{ github.run_id }}_${{ github.run_attempt }}
           POSTGRES_DB: evalPro_db
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U evalpro_usuario -d evalPro_db"
+          --health-cmd "pg_isready -U evalpro_ci -d evalPro_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://evalpro_usuario:evalpro_contrasena_segura@localhost:5432/evalPro_db?schema=public
-      JWT_SECRETO_ACCESO: minimo_64_caracteres_completamente_aleatorios_acceso
+      DATABASE_URL: postgresql://evalpro_ci:ci_pg_${{ github.run_id }}_${{ github.run_attempt }}@localhost:5432/evalPro_db?schema=public
+      JWT_SECRETO_ACCESO: jwt_acceso_ci_${{ github.run_id }}_${{ github.run_attempt }}_evalpro_longitud_segura_1234567890
       JWT_EXPIRACION_ACCESO: 15m
-      JWT_SECRETO_REFRESH: minimo_64_caracteres_completamente_aleatorios_refresh
+      JWT_SECRETO_REFRESH: jwt_refresh_ci_${{ github.run_id }}_${{ github.run_attempt }}_evalpro_longitud_segura_1234567890
       JWT_EXPIRACION_REFRESH: 7d
       PUERTO_APP: 3001
       CORS_ORIGENES_PERMITIDOS: http://localhost:3000
       ENTORNO: pruebas
       BCRYPT_RONDAS_HASH: 12
-      ADMIN_CORREO_INICIAL: admin@evalpro.com
-      ADMIN_CONTRASENA_INICIAL: Gaussiano1008*
-      SUPERADMIN_CORREO_INICIAL: superadmin@evalpro.com
-      SUPERADMIN_CONTRASENA_INICIAL: Gaussiano1008*
-      DOCENTE_CORREO_INICIAL: docente@evalpro.com
-      DOCENTE_CONTRASENA_INICIAL: Gaussiano1008*
-      ESTUDIANTE_CORREO_INICIAL: estudiante@evalpro.com
-      ESTUDIANTE_CONTRASENA_INICIAL: Gaussiano1008*
+      ADMIN_CORREO_INICIAL: admin.${{ github.run_id }}.${{ github.run_attempt }}@evalpro.local
+      ADMIN_CONTRASENA_INICIAL: Admin.${{ github.run_id }}.${{ github.run_attempt }}.EvalPro!
+      SUPERADMIN_CORREO_INICIAL: superadmin.${{ github.run_id }}.${{ github.run_attempt }}@evalpro.local
+      SUPERADMIN_CONTRASENA_INICIAL: Superadmin.${{ github.run_id }}.${{ github.run_attempt }}.EvalPro!
+      DOCENTE_CORREO_INICIAL: docente.${{ github.run_id }}.${{ github.run_attempt }}@evalpro.local
+      DOCENTE_CONTRASENA_INICIAL: Docente.${{ github.run_id }}.${{ github.run_attempt }}.EvalPro!
+      ESTUDIANTE_CORREO_INICIAL: estudiante.${{ github.run_id }}.${{ github.run_attempt }}@evalpro.local
+      ESTUDIANTE_CONTRASENA_INICIAL: Estudiante.${{ github.run_id }}.${{ github.run_attempt }}.EvalPro!
       TELEMETRIA_SEGUNDOS_MINIMOS_POR_PREGUNTA: 3
       TELEMETRIA_MAX_EVENTOS_SEGUNDO_PLANO: 0
 

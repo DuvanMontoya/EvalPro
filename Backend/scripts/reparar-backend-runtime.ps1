@@ -1,14 +1,85 @@
+<#
+ * @archivo   reparar-backend-runtime.ps1
+ * @descripcion Levanta el backend desde fuente y valida acceso superadministrador usando configuracion externa.
+ * @modulo    Scripts
+ * @autor     EvalPro
+ * @fecha     2026-03-15
+#>
 param(
   [string]$ApiHost = 'localhost',
   [int]$Port = 3001,
-  [string]$ContrasenaSuperadmin = 'Gaussiano1008*'
+  [string]$CorreoSuperadmin,
+  [string]$CorreoAdministradorObjetivo,
+  [string]$ContrasenaSuperadmin
 )
 
 $ErrorActionPreference = 'Stop'
 
 $backendDir = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$repoRootDir = (Resolve-Path (Join-Path $backendDir '..')).Path
+$envFilePath = Join-Path $repoRootDir '.env'
 $logPath = Join-Path $backendDir '.backend_dev_runtime.log'
 $baseUrl = "http://$ApiHost`:$Port/api/v1"
+
+function Get-DotenvValue {
+  param([string]$FilePath, [string]$Key)
+
+  if (-not (Test-Path $FilePath)) {
+    return $null
+  }
+
+  $linea = Get-Content $FilePath | Where-Object {
+    $texto = $_.Trim()
+    $texto.Length -gt 0 -and
+      -not $texto.StartsWith('#') -and
+      $texto -match "^$([regex]::Escape($Key))\s*="
+  } | Select-Object -First 1
+
+  if (-not $linea) {
+    return $null
+  }
+
+  $valor = ($linea -split '=', 2)[1].Trim()
+  if (
+    ($valor.StartsWith('"') -and $valor.EndsWith('"')) -or
+    ($valor.StartsWith("'") -and $valor.EndsWith("'"))
+  ) {
+    return $valor.Substring(1, $valor.Length - 2)
+  }
+
+  return $valor
+}
+
+function Resolve-ConfigValue {
+  param([string]$ExplicitValue, [string]$Key)
+
+  if ($ExplicitValue) {
+    return $ExplicitValue
+  }
+
+  $desdeProceso = [Environment]::GetEnvironmentVariable($Key)
+  if ($desdeProceso) {
+    return $desdeProceso.Trim()
+  }
+
+  $desdeDotenv = Get-DotenvValue -FilePath $envFilePath -Key $Key
+  if ($desdeDotenv) {
+    return $desdeDotenv.Trim()
+  }
+
+  return $null
+}
+
+function Resolve-RequiredConfigValue {
+  param([string]$ExplicitValue, [string]$Key)
+
+  $valor = Resolve-ConfigValue -ExplicitValue $ExplicitValue -Key $Key
+  if ($valor) {
+    return $valor
+  }
+
+  throw "No se encontro configuracion para $Key. Define el valor en .env o pasalo por parametro."
+}
 
 function Get-ListenerProcesses {
   param([int]$LocalPort)
@@ -118,33 +189,29 @@ function Wait-Health {
 }
 
 function Login-Superadmin {
-  param([string]$ApiBase, [string]$Password)
+  param([string]$ApiBase, [string]$Correo, [string]$Password)
 
-  $correos = @('superadmin@evalpro.com', 'superadmin.gauss@evalpro.com')
-  foreach ($correo in $correos) {
-    try {
-      $cuerpo = @{
-        correo = $correo
-        contrasena = $Password
-      } | ConvertTo-Json
-      $login = Invoke-RestMethod -Uri "$ApiBase/autenticacion/iniciar-sesion" -Method Post -ContentType 'application/json' -Body $cuerpo
-      $token = $login.datos.tokenAcceso
-      if ($token) {
-        return @{
-          correo = $correo
-          token = $token
-        }
+  try {
+    $cuerpo = @{
+      correo = $Correo
+      contrasena = $Password
+    } | ConvertTo-Json
+    $login = Invoke-RestMethod -Uri "$ApiBase/autenticacion/iniciar-sesion" -Method Post -ContentType 'application/json' -Body $cuerpo
+    $token = $login.datos.tokenAcceso
+    if ($token) {
+      return @{
+        correo = $Correo
+        token = $token
       }
-    } catch {
-      # Try next candidate.
     }
+  } catch {
+    throw "No se pudo autenticar superadmin con el correo configurado: $Correo"
   }
-
-  throw 'No se pudo autenticar superadmin con las credenciales esperadas.'
+  throw "No se recibio token de acceso para superadmin: $Correo"
 }
 
 function Assert-SuperadminPatchUsers {
-  param([string]$ApiBase, [string]$Token)
+  param([string]$ApiBase, [string]$Token, [string]$CorreoAdminObjetivo)
 
   $headers = @{
     Authorization = "Bearer $Token"
@@ -156,9 +223,12 @@ function Assert-SuperadminPatchUsers {
     throw 'No hay usuarios para validar PATCH /usuarios/:id.'
   }
 
-  $objetivo = $usuarios |
-    Where-Object { $_.rol -eq 'ADMINISTRADOR' -and $_.correo -eq 'admin@evalpro.com' } |
-    Select-Object -First 1
+  $objetivo = $null
+  if ($CorreoAdminObjetivo) {
+    $objetivo = $usuarios |
+      Where-Object { $_.rol -eq 'ADMINISTRADOR' -and $_.correo -eq $CorreoAdminObjetivo } |
+      Select-Object -First 1
+  }
 
   if ($null -eq $objetivo) {
     $objetivo = $usuarios | Where-Object { $_.rol -eq 'ADMINISTRADOR' } | Select-Object -First 1
@@ -176,6 +246,10 @@ function Assert-SuperadminPatchUsers {
 }
 
 Write-Output "Reparando runtime backend en $baseUrl ..."
+
+$correoSuperadminResuelto = Resolve-RequiredConfigValue -ExplicitValue $CorreoSuperadmin -Key 'SUPERADMIN_CORREO_INICIAL'
+$correoAdministradorObjetivoResuelto = Resolve-ConfigValue -ExplicitValue $CorreoAdministradorObjetivo -Key 'ADMIN_CORREO_INICIAL'
+$contrasenaSuperadminResuelta = Resolve-RequiredConfigValue -ExplicitValue $ContrasenaSuperadmin -Key 'SUPERADMIN_CONTRASENA_INICIAL'
 
 $bloqueadores = Get-ListenerProcesses -LocalPort $Port
 if ($bloqueadores.Count -gt 0) {
@@ -196,8 +270,8 @@ if (-not (Test-Path (Join-Path $backendDir 'node_modules'))) {
 Start-BackendFromSource -BackendPath $backendDir -RuntimeLogPath $logPath
 Wait-Health -HealthUrl "$baseUrl/salud"
 
-$sesionSuperadmin = Login-Superadmin -ApiBase $baseUrl -Password $ContrasenaSuperadmin
-Assert-SuperadminPatchUsers -ApiBase $baseUrl -Token $sesionSuperadmin.token
+$sesionSuperadmin = Login-Superadmin -ApiBase $baseUrl -Correo $correoSuperadminResuelto -Password $contrasenaSuperadminResuelta
+Assert-SuperadminPatchUsers -ApiBase $baseUrl -Token $sesionSuperadmin.token -CorreoAdminObjetivo $correoAdministradorObjetivoResuelto
 
 Write-Output "OK: Backend activo desde fuente y PATCH /usuarios/:id funciona con superadmin ($($sesionSuperadmin.correo))."
 Write-Output "Log runtime: $logPath"

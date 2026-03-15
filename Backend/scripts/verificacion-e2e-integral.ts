@@ -36,6 +36,14 @@ function assertOrThrow(condicion: unknown, mensaje: string): asserts condicion {
   }
 }
 
+function obtenerVariableEntornoObligatoria(clave: string): string {
+  const valor = process.env[clave]?.trim();
+  if (!valor) {
+    throw new Error(`Debe definir la variable de entorno ${clave} para ejecutar la verificacion integral.`);
+  }
+  return valor;
+}
+
 function ahoraIsoMas(segundos: number): string {
   return new Date(Date.now() + segundos * 1000).toISOString();
 }
@@ -108,8 +116,8 @@ async function iniciarSesionConFlujoPrimerLogin(
 async function ejecutarVerificacionIntegral(): Promise<void> {
   const sufijo = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const violacionesDetectadas: string[] = [];
-  const superadminCorreo = process.env.SUPERADMIN_CORREO_INICIAL ?? 'superadmin@evalpro.com';
-  const superadminContrasena = process.env.SUPERADMIN_CONTRASENA_INICIAL ?? 'Gaussiano1008*';
+  const superadminCorreo = obtenerVariableEntornoObligatoria('SUPERADMIN_CORREO_INICIAL');
+  const superadminContrasena = obtenerVariableEntornoObligatoria('SUPERADMIN_CONTRASENA_INICIAL');
 
   const adminTemporal = 'TemporalAdmin1!';
   const adminNueva = 'AdminDefinitiva1!';

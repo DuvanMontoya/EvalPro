@@ -16,6 +16,7 @@ import { validarEntornoBackend } from './Entorno.config';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
+      envFilePath: ['.env', '../.env'],
       validate: validarEntornoBackend,
     }),
   ],

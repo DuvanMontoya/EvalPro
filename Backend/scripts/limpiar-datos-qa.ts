@@ -19,7 +19,13 @@ const prisma = new PrismaClient();
 const argumentos = new Set(process.argv.slice(2));
 const aplicar = argumentos.has('--apply');
 
-const CORREOS_PROTEGIDOS = new Set(['admin@evalpro.com', 'superadmin@evalpro.com']);
+function obtenerCorreosProtegidos(): string[] {
+  return ['ADMIN_CORREO_INICIAL', 'SUPERADMIN_CORREO_INICIAL']
+    .map((clave) => process.env[clave]?.trim() ?? '')
+    .filter((correo) => correo.length > 0);
+}
+
+const CORREOS_PROTEGIDOS = new Set(obtenerCorreosProtegidos());
 
 function idsUnicos(ids: (string | null | undefined)[]): string[] {
   return [...new Set(ids.filter((id): id is string => Boolean(id)))];

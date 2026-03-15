@@ -39,33 +39,27 @@ Si pasas `--dart-define-from-file`, ese valor tiene prioridad.
 
 ## 1.1 Credenciales iniciales de login (desarrollo)
 
-Después de ejecutar semillas del backend:
+Las credenciales iniciales ya no se documentan ni se fijan en el repositorio.
+Despues de ejecutar semillas del backend:
 
 ```bash
 cd Backend
 npm run prisma:sembrar
 ```
 
-Puedes iniciar sesión con estos perfiles:
+inicia sesion con los valores que hayas configurado previamente en el `.env`
+raiz para estos pares obligatorios:
 
-- `SUPERADMINISTRADOR`: `superadmin@evalpro.com` / `Gaussiano1008*`
-- `ADMINISTRADOR`: `admin@evalpro.com` / `Gaussiano1008*`
-- `DOCENTE`: `docente@evalpro.com` / `Gaussiano1008*`
-- `ESTUDIANTE`: `estudiante@evalpro.com` / `Gaussiano1008*`
-
-Credenciales demo adicionales (útiles si tu base local venía corrupta de pruebas previas):
-
-- `SUPERADMINISTRADOR`: `superadmin.gauss@evalpro.com` / `Gaussiano1008*`
-- `DOCENTE`: `docente.demo@evalpro.com` / `Gaussiano1008*`
-- `ESTUDIANTE`: `estudiante.demo@evalpro.com` / `Gaussiano1008*`
+- `SUPERADMIN_CORREO_INICIAL` y `SUPERADMIN_CONTRASENA_INICIAL`
+- `ADMIN_CORREO_INICIAL` y `ADMIN_CONTRASENA_INICIAL`
+- `DOCENTE_CORREO_INICIAL` y `DOCENTE_CONTRASENA_INICIAL`
+- `ESTUDIANTE_CORREO_INICIAL` y `ESTUDIANTE_CONTRASENA_INICIAL`
 
 Nota:
-- Para usuarios recién creados por gestión, el backend puede exigir cambio de contraseña en primer login.
-  La app móvil ya soporta ese flujo y te mostrará el formulario de cambio automáticamente.
-- Si tu stack ya estaba corriendo antes del cambio global de contraseñas, usa las cuentas demo:
-  - `superadmin.gauss@evalpro.com` / `Gaussiano1008*`
-  - `docente.demo@evalpro.com` / `Gaussiano1008*`
-  - `estudiante.demo@evalpro.com` / `Gaussiano1008*`
+- Para usuarios recien creados por gestion, el backend puede exigir cambio de contrasena en primer login.
+  La app movil ya soporta ese flujo y mostrara el formulario de cambio automaticamente.
+- Si actualizas las credenciales del `.env`, vuelve a ejecutar `npm run prisma:sembrar` en `Backend/`
+  para regenerar las cuentas iniciales de desarrollo con los nuevos valores.
 
 Si la app se ve vacía o sin datos de gestión:
 
