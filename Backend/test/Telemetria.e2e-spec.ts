@@ -6,7 +6,7 @@
  * @fecha     2026-03-02
  */
 import { INestApplication } from '@nestjs/common';
-import { ModalidadExamen, RolUsuario, TipoEventoTelemetria, TipoPregunta } from '@prisma/client';
+import { ModalidadExamen, RolUsuario, TipoEventoIntento, TipoPregunta } from '@prisma/client';
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
 import request from 'supertest';
 import { crearAplicacionE2e, crearUsuarioPrueba, iniciarSesionE2e, obtenerPrismaPruebas } from './UtilidadesPruebasE2e';
@@ -49,7 +49,7 @@ describe('Telemetria (e2e)', () => {
       .send({
         titulo: 'Examen telemetría',
         descripcion: 'Fraude crítico',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,
@@ -102,7 +102,7 @@ describe('Telemetria (e2e)', () => {
       .set('Authorization', `Bearer ${sesionEstudianteDos.tokenAcceso}`)
       .send({
         idIntento: idIntentoUno,
-        tipo: TipoEventoTelemetria.APLICACION_EN_SEGUNDO_PLANO,
+        tipo: TipoEventoIntento.APP_EN_BACKGROUND,
       });
     expect(intentoAjeno.status).toBe(403);
 
@@ -111,7 +111,7 @@ describe('Telemetria (e2e)', () => {
       .set('Authorization', `Bearer ${sesionEstudianteUno.tokenAcceso}`)
       .send({
         idIntento: idIntentoUno,
-        tipo: TipoEventoTelemetria.APLICACION_EN_SEGUNDO_PLANO,
+        tipo: TipoEventoIntento.APP_EN_BACKGROUND,
         descripcion: 'Se envió la app a segundo plano',
       });
     expect(eventoCritico.status).toBe(201);
@@ -153,7 +153,7 @@ describe('Telemetria (e2e)', () => {
       .send({
         titulo: 'Examen red anómala',
         descripcion: 'Validación de reconexiones',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,
@@ -239,7 +239,7 @@ describe('Telemetria (e2e)', () => {
         .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
         .send({
           idIntento,
-          tipo: TipoEventoTelemetria.CAMBIO_RED,
+          tipo: TipoEventoIntento.INCIDENTE_REGISTRADO,
           descripcion: `EVENTO_RED_${metadatos.evento}`,
           metadatos,
         });
@@ -258,11 +258,10 @@ describe('Telemetria (e2e)', () => {
     expect(intentoActualizado?.esSospechoso).toBe(true);
     expect(intentoActualizado?.requiereRevision).toBe(true);
 
-    const eventosAnomalia = await prisma.eventoTelemetria.findMany({
+    const eventosAnomalia = await prisma.eventoIntento.findMany({
       where: {
         intentoId: idIntento,
-        tipo: TipoEventoTelemetria.SYNC_ANOMALA,
-        descripcion: 'RECONEXIONES_ANOMALAS_RED',
+        tipo: TipoEventoIntento.INCIDENTE_REGISTRADO,
       },
       orderBy: { fechaEvento: 'desc' },
     });

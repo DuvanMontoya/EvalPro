@@ -27,7 +27,7 @@ mixin ExamenNavegacionMixin on Notifier<ExamenActivoEstado?> {
     _emitirPulsoNavegacion(state);
     await ref.read(telemetriaServicioProvider).registrarEvento(
           idIntento: actual.idIntento,
-          tipo: TipoEventoTelemetria.CAMBIO_PREGUNTA,
+          tipo: TipoEventoTelemetria.EVALUACION_ABIERTA,
           numeroPregunta: actual.indicePreguntaActual + 2,
         );
   }
@@ -48,7 +48,7 @@ mixin ExamenNavegacionMixin on Notifier<ExamenActivoEstado?> {
     final actual = state;
     if (actual == null) return;
     final permite = actual.examen.permitirNavegacion ||
-        actual.examen.modalidad == ModalidadExamen.HOJA_RESPUESTAS;
+        actual.examen.modalidad == ModalidadExamen.SOLO_RESPUESTAS;
     if (!permite ||
         indicePregunta < 0 ||
         indicePregunta >= actual.preguntasAleatorizadas.length) return;

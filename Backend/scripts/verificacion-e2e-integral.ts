@@ -330,7 +330,7 @@ async function ejecutarVerificacionIntegral(): Promise<void> {
       titulo: `Examen Integral ${sufijo}`,
       descripcion: 'Examen para verificación e2e integral',
       instrucciones: 'Responder todas las preguntas',
-      modalidad: 'DIGITAL_COMPLETO',
+      modalidad: 'CONTENIDO_COMPLETO',
       duracionMinutos: 45,
       permitirNavegacion: true,
       mostrarPuntaje: true,

@@ -99,7 +99,7 @@ class TarjetaSesionDisponible extends StatelessWidget {
   }
 
   String _resolverEtiquetaModalidad(ModalidadExamen modalidad) {
-    if (modalidad == ModalidadExamen.HOJA_RESPUESTAS) {
+    if (modalidad == ModalidadExamen.SOLO_RESPUESTAS) {
       return 'Solo respuestas';
     }
     return 'Contenido completo';

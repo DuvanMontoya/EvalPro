@@ -126,7 +126,7 @@ export class SesionesExamenGateway implements OnGatewayConnection {
           nombreCompleto: intentoActivo.nombreCompleto,
           modoKioscoActivo: true,
           eventosFraude: 0,
-          estadoIntento: 'EN_PROGRESO',
+          estadoIntento: 'INICIADO',
         });
       } else {
         this.logger.warn(

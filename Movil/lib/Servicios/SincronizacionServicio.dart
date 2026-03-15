@@ -148,12 +148,12 @@ class SincronizacionServicio {
   Future<void> _manejarExcesoReintentos(String idIntento) async {
     await _telemetriaServicio.registrarEvento(
       idIntento: idIntento,
-      tipo: TipoEventoTelemetria.SESION_INVALIDA,
-      descripcion: 'SINCRONIZACION_PENDIENTE',
+      tipo: TipoEventoTelemetria.RECONCILIACION_FALLIDA,
+      descripcion: 'FINALIZADO_PROVISIONAL',
       metadatos: <String, dynamic>{'motivo': 'Maximo de reintentos superado'},
     );
     _socketServicio.emitirAlertaFraude(
-      TipoEventoTelemetria.SESION_INVALIDA,
+      TipoEventoTelemetria.RECONCILIACION_FALLIDA,
       idIntento: idIntento,
     );
   }

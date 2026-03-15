@@ -111,7 +111,7 @@ class TelemetriaServicio {
 
     return registrarEvento(
       idIntento: idIntento,
-      tipo: TipoEventoTelemetria.SESION_INVALIDA,
+      tipo: TipoEventoTelemetria.RECONCILIACION_FALLIDA,
       descripcion: codigo,
       metadatos: <String, dynamic>{'detalle': detalle},
     );

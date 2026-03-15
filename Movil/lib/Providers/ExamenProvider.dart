@@ -101,7 +101,7 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
       _iniciarTemporizadorPresencia();
       await ref.read(telemetriaServicioProvider).registrarEvento(
             idIntento: intento.id,
-            tipo: TipoEventoTelemetria.INICIO_EXAMEN,
+            tipo: TipoEventoTelemetria.INTENTO_INICIADO,
           );
 
       inicioCompleto = true;
@@ -157,7 +157,7 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
     state = actual.copyWith(respuestasLocales: nuevas);
     await ref.read(telemetriaServicioProvider).registrarEvento(
           idIntento: actual.idIntento,
-          tipo: TipoEventoTelemetria.RESPUESTA_GUARDADA,
+          tipo: TipoEventoTelemetria.RESPUESTA_SELECCIONADA,
           numeroPregunta: actual.indicePreguntaActual + 1,
           tiempoTranscurrido: segundos,
         );
@@ -199,7 +199,7 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
       await ref.read(examenDaoProvider).eliminarPorIntento(actual.idIntento);
       await ref.read(telemetriaServicioProvider).registrarEvento(
             idIntento: actual.idIntento,
-            tipo: TipoEventoTelemetria.EXAMEN_ENVIADO,
+            tipo: TipoEventoTelemetria.ENVIO_SOLICITADO,
           );
       state = null;
       return resultado.mostrarPuntaje ? resultado : null;

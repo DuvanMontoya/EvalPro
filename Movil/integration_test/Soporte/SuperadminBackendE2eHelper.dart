@@ -933,7 +933,7 @@ class SuperadminBackendE2eHelper {
           'titulo': titulo,
           'descripcion': 'Examen de soporte para flujo del superadmin.',
           'instrucciones': 'Selecciona una opcion por pregunta.',
-          'modalidad': 'DIGITAL_COMPLETO',
+          'modalidad': 'CONTENIDO_COMPLETO',
           'duracionMinutos': 25,
           'permitirNavegacion': true,
           'mostrarPuntaje': true,

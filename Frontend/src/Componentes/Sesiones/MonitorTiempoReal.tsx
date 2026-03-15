@@ -43,17 +43,29 @@ interface PropiedadesMonitorTiempoReal {
 const UMBRAL_PULSO_CONECTADO_MS = 45_000;
 
 function esEstadoIntentoActivo(estado: string): boolean {
-  return estado === EstadoIntento.EN_PROGRESO || estado === EstadoIntento.SINCRONIZACION_PENDIENTE;
+  return [
+    EstadoIntento.INICIADO,
+    EstadoIntento.BLOQUEADO,
+    EstadoIntento.REANUDADO,
+    EstadoIntento.SUSPENDIDO,
+    EstadoIntento.FINALIZADO_PROVISIONAL,
+    EstadoIntento.ENVIADO,
+  ].includes(estado as EstadoIntento);
 }
 
 const MAPA_EVENTOS: Record<string, string> = {
-  APLICACION_EN_SEGUNDO_PLANO: 'Aplicación en segundo plano',
-  PANTALLA_ABANDONADA: 'Pantalla abandonada',
-  FORZAR_CIERRE: 'Cierre forzado del dispositivo',
-  CAMBIO_RED: 'Cambio de red detectado',
-  SYNC_ANOMALA: 'Reconexiones de red anómalas',
-  CAPTURA_PANTALLA_DETECTADA: 'Captura de pantalla detectada',
-  MULTIPLES_DISPOSITIVOS: 'Múltiples dispositivos',
+  APP_EN_BACKGROUND: 'Aplicación en segundo plano',
+  PERDIDA_DE_FOCO: 'Pérdida de foco',
+  NAVEGACION_NO_AUTORIZADA: 'Navegación no autorizada',
+  OVERLAY_DETECTADO: 'Overlay detectado',
+  VERIFICACION_INTEGRIDAD_FALLIDA: 'Verificación de integridad fallida',
+  INCONSISTENCIA_SINCRONIZACION: 'Inconsistencia de sincronización',
+  COMPORTAMIENTO_DUPLICADO_SOSPECHOSO: 'Comportamiento duplicado sospechoso',
+  TOKEN_REINGRESO_INVALIDO: 'Token de reingreso inválido',
+  TIEMPO_EXCEDIDO: 'Tiempo excedido',
+  RECONCILIACION_INCONSISTENTE: 'Reconciliación inconsistente',
+  INCIDENTE_REGISTRADO: 'Incidente registrado',
+  RECONCILIACION_FALLIDA: 'Reconciliación fallida',
 };
 
 /**

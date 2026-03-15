@@ -45,7 +45,7 @@ class IntentoReporteEstudiante {
       codigoAcceso: json['codigoAcceso'] as String?,
       tituloExamen: (json['tituloExamen'] as String?) ?? '',
       estado: EstadoIntentoTransformador.desdeNombre(
-          (json['estado'] as String?) ?? 'EN_PROGRESO'),
+          (json['estado'] as String?) ?? 'INICIADO'),
       estadoResultado: estadoResultadoTexto == null
           ? null
           : EstadoResultadoTransformador.desdeNombre(estadoResultadoTexto),

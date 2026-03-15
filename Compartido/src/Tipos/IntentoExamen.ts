@@ -13,7 +13,12 @@ export interface IntentoExamen {
   semillaPersonal: number;
   puntajeObtenido: number | null;
   porcentaje: number | null;
+  incidentesAcumulados?: number;
+  altoRiesgo?: boolean;
   fechaInicio: string;
+  fechaBloqueo?: string | null;
+  fechaReanudacion?: string | null;
+  fechaFinalizacionProv?: string | null;
   fechaEnvio: string | null;
   ipDispositivo: string | null;
   modeloDispositivo: string | null;

@@ -41,7 +41,7 @@ class HojaRespuestasPantalla extends ConsumerWidget {
     unawaited(
       ref.read(telemetriaServicioProvider).registrarEvento(
             idIntento: idIntento,
-            tipo: TipoEventoTelemetria.PANTALLA_ABANDONADA,
+            tipo: TipoEventoTelemetria.INCIDENTE_REGISTRADO,
             descripcion: 'Intento de retroceso bloqueado desde hoja OMR',
           ),
     );

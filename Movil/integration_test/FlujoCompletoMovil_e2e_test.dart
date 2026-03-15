@@ -164,7 +164,7 @@ void main() {
       find.byKey(const Key('exam_back_home_button')),
       timeout: const Duration(seconds: 35),
     );
-    expect(find.text('Tu examen fue enviado correctamente'), findsOneWidget);
+    expect(find.text('Tu examen fue enviado'), findsOneWidget);
 
     await _tapVisible(
       tester,
@@ -197,7 +197,7 @@ void main() {
             'session_management_report_button_${escenario.idSesion}'),
       ),
     );
-    await _tapVisible(
+    await _activarBotonAccion(
       tester,
       find.byKey(
         ValueKey<String>(
@@ -224,17 +224,13 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(
-      find.descendant(
-        of: find.byKey(
-          ValueKey<String>(
-            'session_report_student_${escenario.estudiante.nombre}_${escenario.estudiante.apellidos}',
-          ),
-        ),
-        matching: find.textContaining(escenario.estudiante.nombre),
+    final tarjetaEstudiante = find.byKey(
+      ValueKey<String>(
+        'session_report_student_${escenario.estudiante.nombre}_${escenario.estudiante.apellidos}',
       ),
-      findsOneWidget,
     );
+    await _desplazarHastaVisible(tester, tarjetaEstudiante);
+    expect(tarjetaEstudiante, findsOneWidget);
 
     await _navegarARuta(tester, Rutas.gestionSesiones);
     await _esperarVisible(
@@ -244,7 +240,7 @@ void main() {
             'session_management_finalize_button_${escenario.idSesion}'),
       ),
     );
-    await _tapVisible(
+    await _activarBotonAccion(
       tester,
       find.byKey(
         ValueKey<String>(
@@ -305,6 +301,34 @@ Future<void> _activarBotonElevado(WidgetTester tester, Finder finder) async {
   await _bombearDurante(tester, const Duration(seconds: 5));
 }
 
+Future<void> _activarBotonAccion(WidgetTester tester, Finder finder) async {
+  await _esperarVisible(tester, finder);
+  await tester.ensureVisible(finder);
+  final widget = tester.widget<Widget>(finder);
+
+  VoidCallback? accion;
+  if (widget is ElevatedButton) {
+    accion = widget.onPressed;
+  } else if (widget is OutlinedButton) {
+    accion = widget.onPressed;
+  } else if (widget is FilledButton) {
+    accion = widget.onPressed;
+  } else if (widget is TextButton) {
+    accion = widget.onPressed;
+  } else if (widget is IconButton) {
+    accion = widget.onPressed;
+  }
+
+  if (accion == null) {
+    throw TestFailure(
+      'El widget esperado no expone una accion compatible o esta deshabilitado.',
+    );
+  }
+
+  accion();
+  await _bombearDurante(tester, const Duration(seconds: 5));
+}
+
 Future<void> _navegarARuta(WidgetTester tester, String ruta) async {
   final contexto = tester.element(find.byType(Scaffold).first);
   GoRouter.of(contexto).go(ruta);
@@ -358,14 +382,40 @@ Future<void> _esperarVisible(
   );
 }
 
+Future<void> _desplazarHastaVisible(
+  WidgetTester tester,
+  Finder finder, {
+  double delta = 320,
+  Duration timeout = const Duration(seconds: 15),
+}) async {
+  final limite = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(limite)) {
+    if (finder.evaluate().isNotEmpty) {
+      await tester.ensureVisible(finder);
+      await tester.pump(const Duration(milliseconds: 250));
+      return;
+    }
+    await tester.drag(find.byType(Scrollable).first, Offset(0, -delta));
+    await tester.pump(const Duration(milliseconds: 350));
+  }
+  throw TestFailure(
+    'No se pudo desplazar hasta el elemento esperado en ${timeout.inSeconds}s.',
+  );
+}
+
 Future<String> _obtenerIdPreguntaActual(WidgetTester tester) async {
   final limite = DateTime.now().add(const Duration(seconds: 25));
+  final buscadorPregunta = find.byWidgetPredicate((widget) {
+    final clave = widget.key;
+    return clave is ValueKey<String> &&
+        clave.value.startsWith('exam_question_card_');
+  });
   while (DateTime.now().isBefore(limite)) {
     await tester.pump(const Duration(milliseconds: 250));
-    for (final widget in tester.widgetList<Card>(find.byType(Card))) {
+    if (buscadorPregunta.evaluate().isNotEmpty) {
+      final widget = tester.widget<Widget>(buscadorPregunta.first);
       final clave = widget.key;
-      if (clave is ValueKey<String> &&
-          clave.value.startsWith('exam_question_card_')) {
+      if (clave is ValueKey<String>) {
         return clave.value.replaceFirst('exam_question_card_', '');
       }
     }

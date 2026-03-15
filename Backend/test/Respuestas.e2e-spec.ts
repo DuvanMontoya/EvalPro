@@ -43,7 +43,7 @@ describe('Respuestas (e2e)', () => {
       .send({
         titulo: 'Examen duplicado intento',
         descripcion: 'Control de duplicados',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,
@@ -112,7 +112,7 @@ describe('Respuestas (e2e)', () => {
       .send({
         titulo: 'Examen integridad',
         descripcion: 'Control de bloqueo por riesgo',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,
@@ -200,7 +200,7 @@ describe('Respuestas (e2e)', () => {
       .send({
         titulo: 'Examen cuadernillo físico',
         descripcion: 'No debe filtrar enunciados',
-        modalidad: ModalidadExamen.HOJA_RESPUESTAS,
+        modalidad: ModalidadExamen.SOLO_RESPUESTAS,
         duracionMinutos: 25,
         permitirNavegacion: true,
         mostrarPuntaje: true,
@@ -350,7 +350,7 @@ describe('Respuestas (e2e)', () => {
       .send({
         titulo: `Examen busqueda ${Date.now()}`,
         descripcion: 'Control de intentos en busqueda',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,
@@ -503,7 +503,7 @@ describe('Respuestas (e2e)', () => {
       .send({
         titulo: `Examen ventana ${Date.now()}`,
         descripcion: 'Validación de activación por ventana',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,
@@ -574,7 +574,7 @@ describe('Respuestas (e2e)', () => {
       .send({
         titulo: 'Examen calificación mixta',
         descripcion: 'Cierre con abierta',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,

@@ -31,10 +31,19 @@ function renderEstadoIntento(estado: EstadoIntento) {
   if (estado === EstadoIntento.ANULADO) {
     return <Insignia variante="peligro">Anulado</Insignia>;
   }
-  if (estado === EstadoIntento.SINCRONIZACION_PENDIENTE) {
-    return <Insignia variante="alerta">Sincronización pendiente</Insignia>;
+  if (estado === EstadoIntento.SUSPENDIDO) {
+    return <Insignia variante="peligro">Suspendido</Insignia>;
   }
-  return <Insignia variante="primario">En progreso</Insignia>;
+  if (estado === EstadoIntento.BLOQUEADO) {
+    return <Insignia variante="alerta">Bloqueado</Insignia>;
+  }
+  if (estado === EstadoIntento.REANUDADO) {
+    return <Insignia variante="primario">Reanudado</Insignia>;
+  }
+  if (estado === EstadoIntento.FINALIZADO_PROVISIONAL) {
+    return <Insignia variante="alerta">Finalizado provisional</Insignia>;
+  }
+  return <Insignia variante="primario">Iniciado</Insignia>;
 }
 
 /**

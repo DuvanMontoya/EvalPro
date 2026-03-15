@@ -221,7 +221,7 @@ class BackendE2eHelper {
           'titulo': 'Examen E2E $sufijo',
           'descripcion': 'Examen preparado por backend real para e2e movil.',
           'instrucciones': 'Selecciona una opcion por pregunta.',
-          'modalidad': 'DIGITAL_COMPLETO',
+          'modalidad': 'CONTENIDO_COMPLETO',
           'duracionMinutos': 30,
           'permitirNavegacion': true,
           'mostrarPuntaje': true,
@@ -270,7 +270,7 @@ class BackendE2eHelper {
     );
 
     final fechaInicioAsignacionUtc =
-        DateTime.now().toUtc().add(const Duration(seconds: 12));
+        DateTime.now().toUtc().add(const Duration(minutes: 2));
     final fechaFinAsignacionUtc =
         fechaInicioAsignacionUtc.add(const Duration(minutes: 45));
     final fechaPublicacionResultadosUtc =
@@ -345,7 +345,7 @@ class BackendE2eHelper {
 
   Future<String> activarSesionComoDocente(
     EscenarioFlujoMovilE2e escenario, {
-    Duration timeout = const Duration(seconds: 75),
+    Duration timeout = const Duration(minutes: 3),
   }) async {
     final limite = DateTime.now().add(timeout);
     Object? ultimoError;

@@ -32,7 +32,7 @@ class ExamenGestion {
       estado: EstadoExamenTransformador.desdeNombre(
           (json['estado'] as String?) ?? 'BORRADOR'),
       modalidad: ModalidadExamenTransformador.desdeNombre(
-          (json['modalidad'] as String?) ?? 'DIGITAL_COMPLETO'),
+          (json['modalidad'] as String?) ?? 'CONTENIDO_COMPLETO'),
       totalPreguntas: (json['totalPreguntas'] as num?)?.toInt() ?? 0,
       puntajeMaximo: (json['puntajeMaximo'] as num?)?.toDouble() ??
           (json['puntajeMaximoDefinido'] as num?)?.toDouble() ??

@@ -9,12 +9,12 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { TipoEventoTelemetria } from '@/Tipos';
+import { TipoEventoIntento, TipoIncidente } from '@/Tipos';
 
 export interface AlertaFraudeSesion {
   id: string;
   nombreEstudiante: string;
-  tipoEvento: TipoEventoTelemetria;
+  tipoEvento: TipoEventoIntento | TipoIncidente;
   fecha: string;
 }
 

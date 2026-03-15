@@ -16,7 +16,7 @@ void main() {
         examen: const ResumenExamenSesion(
           id: 'examen-1',
           titulo: 'Parcial',
-          modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+          modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
           duracionMinutos: 30,
         ),
       ),

@@ -376,7 +376,7 @@ ExamenActivoEstado _crearEstadoExamenActivoPrueba() {
   final examen = Examen(
     id: 'examen-prueba',
     titulo: 'Examen de prueba',
-    modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+    modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
     duracionMinutos: 20,
     permitirNavegacion: true,
     mostrarPuntaje: true,

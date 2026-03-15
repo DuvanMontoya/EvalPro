@@ -173,7 +173,7 @@ describe('Gestion de accesos (e2e)', () => {
       .send({
         titulo: `Examen asignacion ${Date.now()}`,
         descripcion: 'Examen para lectura de asignaciones',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 25,
         permitirNavegacion: true,
         mostrarPuntaje: true,

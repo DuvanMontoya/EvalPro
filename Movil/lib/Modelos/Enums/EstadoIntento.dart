@@ -1,23 +1,34 @@
 /// @archivo   EstadoIntento.dart
-/// @descripcion Define estados del intento de examen durante sincronizacion y envio.
+/// @descripcion Define los estados canonicos del intento de examen.
 /// @modulo    Modelos/Enums
 /// @autor     EvalPro
 /// @fecha     2026-03-02
 
 enum EstadoIntento {
-  EN_PROGRESO,
+  INICIADO,
+  BLOQUEADO,
+  REANUDADO,
+  SUSPENDIDO,
+  FINALIZADO_PROVISIONAL,
   ENVIADO,
   ANULADO,
-  SINCRONIZACION_PENDIENTE,
 }
 
 /// Utilidades de conversion para EstadoIntento.
 extension EstadoIntentoTransformador on EstadoIntento {
   /// Convierte nombre textual al enum local.
   static EstadoIntento desdeNombre(String valor) {
+    switch (valor) {
+      case 'EN_PROGRESO':
+        return EstadoIntento.INICIADO;
+      case 'SINCRONIZACION_PENDIENTE':
+        return EstadoIntento.FINALIZADO_PROVISIONAL;
+      default:
+        break;
+    }
     return EstadoIntento.values.firstWhere(
       (elemento) => elemento.name == valor,
-      orElse: () => EstadoIntento.EN_PROGRESO,
+      orElse: () => EstadoIntento.INICIADO,
     );
   }
 }

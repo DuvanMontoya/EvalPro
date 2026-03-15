@@ -22,6 +22,7 @@ import { SincronizarRespuestasDto } from './Dto/SincronizarRespuestas.dto';
 import { ResultadoFinalDto } from './Dto/ResultadoFinal.dto';
 import { SesionesExamenGateway } from '../SesionesExamen/SesionesExamen.gateway';
 import { calcularIndicesPreguntasRespondidas } from '../Comun/Utilidades/ProgresoPreguntas.util';
+import { permiteEditarIntento } from '../Intentos/MaquinaEstadosIntento.util';
 
 @Injectable()
 export class RespuestasService {
@@ -52,7 +53,10 @@ export class RespuestasService {
         sesion: {
           include: {
             examen: {
-              include: { preguntas: { select: { id: true } } },
+              select: {
+                permitirCambioRespuesta: true,
+                preguntas: { select: { id: true } },
+              },
             },
           },
         },
@@ -67,14 +71,31 @@ export class RespuestasService {
     if (intento.estudianteId !== idEstudiante) {
       throw new ForbiddenException('No tiene permisos sobre este intento');
     }
-    if (intento.estado !== EstadoIntento.EN_PROGRESO) {
-      throw new BadRequestException('Solo se pueden sincronizar respuestas en intentos en progreso');
+    if (!permiteEditarIntento(intento.estado)) {
+      throw new BadRequestException('Solo se pueden sincronizar respuestas en intentos iniciados o reanudados');
     }
 
     const preguntasValidas = new Set(intento.sesion.examen.preguntas.map((pregunta) => pregunta.id));
+    const respuestasExistentes = await this.prisma.respuesta.findMany({
+      where: { intentoId: dto.idIntento },
+      select: { preguntaId: true, valorTexto: true, opcionesSeleccionadas: true },
+    });
+    const respuestasExistentesPorPregunta = new Map(respuestasExistentes.map((respuesta) => [respuesta.preguntaId, respuesta]));
     for (const respuesta of dto.respuestas) {
       if (!preguntasValidas.has(respuesta.idPregunta)) {
         throw new BadRequestException('El lote contiene preguntas que no pertenecen al examen');
+      }
+      if (intento.sesion.examen.permitirCambioRespuesta === false) {
+        const anterior = respuestasExistentesPorPregunta.get(respuesta.idPregunta);
+        const opcionesNormalizadas = this.normalizarOpcionesSeleccionadas(respuesta.opcionesSeleccionadas);
+        const cambioOpciones = JSON.stringify(anterior?.opcionesSeleccionadas ?? []) !== JSON.stringify(opcionesNormalizadas);
+        const cambioTexto = (anterior?.valorTexto ?? null) !== (respuesta.valorTexto ?? null);
+        if (anterior && (cambioOpciones || cambioTexto)) {
+          throw new ForbiddenException({
+            message: 'La evaluación no permite cambiar respuestas ya registradas',
+            codigoError: 'CAMBIO_RESPUESTA_NO_PERMITIDO',
+          });
+        }
       }
     }
 
@@ -178,8 +199,8 @@ export class RespuestasService {
     if (intento.estudianteId !== idEstudiante) {
       throw new ForbiddenException('No tiene permisos sobre este intento');
     }
-    if (intento.estado !== EstadoIntento.EN_PROGRESO) {
-      throw new BadRequestException('El intento no se encuentra en progreso');
+    if (!permiteEditarIntento(intento.estado)) {
+      throw new BadRequestException('El intento no se encuentra en un estado editable');
     }
     const { puntajeObtenido, porcentaje } = await this.calificacionRespuestasService.calificarIntento(intento.id);
     await this.telemetriaService.detectarAnomalias(intento.id);
@@ -317,7 +338,7 @@ export class RespuestasService {
     const intentos = await this.prisma.intentoExamen.findMany({
       where: {
         sesionId: idSesion,
-        estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE, EstadoIntento.ENVIADO] },
+        estado: { in: [EstadoIntento.INICIADO, EstadoIntento.REANUDADO, EstadoIntento.FINALIZADO_PROVISIONAL, EstadoIntento.ENVIADO] },
       },
       select: { id: true },
     });

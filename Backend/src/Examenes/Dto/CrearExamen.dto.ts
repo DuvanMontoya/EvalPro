@@ -26,7 +26,7 @@ export class CrearExamenDto {
   @IsString()
   instrucciones?: string;
 
-  @ApiProperty({ description: 'Modalidad del examen', enum: ModalidadExamen, example: ModalidadExamen.DIGITAL_COMPLETO })
+  @ApiProperty({ description: 'Modalidad del examen', enum: ModalidadExamen, example: ModalidadExamen.CONTENIDO_COMPLETO })
   @IsEnum(ModalidadExamen)
   modalidad!: ModalidadExamen;
 

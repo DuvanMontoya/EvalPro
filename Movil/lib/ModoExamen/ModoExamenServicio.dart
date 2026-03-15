@@ -387,11 +387,11 @@ class ModoExamenServicio with WidgetsBindingObserver {
       unawaited(
         _telemetriaServicio.registrarEventoSync(
           idIntento: idIntento,
-          tipo: TipoEventoTelemetria.APLICACION_EN_SEGUNDO_PLANO,
+          tipo: TipoEventoTelemetria.APP_EN_BACKGROUND,
         ),
       );
       _socketServicio.emitirAlertaFraude(
-        TipoEventoTelemetria.APLICACION_EN_SEGUNDO_PLANO,
+        TipoEventoTelemetria.APP_EN_BACKGROUND,
         idIntento: idIntento,
       );
       return;

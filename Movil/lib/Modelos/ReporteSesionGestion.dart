@@ -58,7 +58,7 @@ class EstudianteReporteSesion {
       puntaje: (json['puntaje'] as num?)?.toDouble(),
       porcentaje: (json['porcentaje'] as num?)?.toDouble(),
       estado: EstadoIntentoTransformador.desdeNombre(
-          (json['estado'] as String?) ?? 'EN_PROGRESO'),
+          (json['estado'] as String?) ?? 'INICIADO'),
       esSospechoso: (json['esSospechoso'] as bool?) ?? false,
     );
   }

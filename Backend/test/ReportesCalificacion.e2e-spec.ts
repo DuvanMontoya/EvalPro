@@ -38,7 +38,7 @@ describe('Reportes y Calificación (e2e)', () => {
       .send({
         titulo: 'Examen alcance reportes',
         descripcion: 'Control de alcance docente',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,
@@ -101,7 +101,7 @@ describe('Reportes y Calificación (e2e)', () => {
       .send({
         titulo: 'Examen abierta manual',
         descripcion: 'Calificación manual',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,

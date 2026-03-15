@@ -172,8 +172,8 @@ export class ReconciliacionIntentosService implements OnModuleInit, OnModuleDest
         ON u.id = i."estudianteId"
       LEFT JOIN "respuestas" r
         ON r."intentoId" = i.id
-      WHERE s.estado = 'ACTIVA'::"EstadoSesion"
-        AND i.estado IN ('EN_PROGRESO'::"EstadoIntento", 'SINCRONIZACION_PENDIENTE'::"EstadoIntento")
+      WHERE s.estado::text = 'ACTIVA'
+        AND i.estado::text IN ('INICIADO', 'REANUDADO')
         AND e."duracionMinutos" > 0
         AND i."fechaInicio" + (e."duracionMinutos" * INTERVAL '1 minute') <= NOW()
         ${filtroSesion}

@@ -12,6 +12,7 @@ import { EstadoCuenta, EstadoInstitucion, EstadoIntento, RolUsuario } from '@pri
 import { Socket } from 'socket.io';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { calcularIndicesPreguntasRespondidas } from '../Comun/Utilidades/ProgresoPreguntas.util';
+import { obtenerEstadosNoTerminalesIntento } from '../Intentos/MaquinaEstadosIntento.util';
 
 const EMISOR_JWT_DEFECTO = 'evalpro-backend';
 const AUDIENCIA_JWT_DEFECTO = 'evalpro-cliente';
@@ -154,7 +155,7 @@ export class AutorizacionSocketSesionesService {
       where: {
         sesionId: idSesion,
         estudianteId: idEstudiante,
-        estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE] },
+        estado: { in: obtenerEstadosNoTerminalesIntento() },
       },
       include: {
         estudiante: {

@@ -21,6 +21,7 @@ export interface Examen {
   puntajeMaximo: number;
   semillaAleatorizacion: number;
   permitirNavegacion: boolean;
+  permitirCambioRespuesta?: boolean;
   mostrarPuntaje: boolean;
   fechaCreacion: string;
   fechaActualizacion: string;

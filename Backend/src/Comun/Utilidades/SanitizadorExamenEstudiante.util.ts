@@ -40,7 +40,7 @@ function construirIdentificadorCuadernillo(idExamen: string, version?: number | 
  * @param examen - Examen listo para exponer al estudiante.
  */
 export function sanitizarExamenParaEstudiante<T extends ExamenExpuesto>(examen: T): T & { identificadorCuadernillo: string | null } {
-  const esHojaRespuestas = examen.modalidad === ModalidadExamen.HOJA_RESPUESTAS;
+  const esHojaRespuestas = examen.modalidad === ModalidadExamen.SOLO_RESPUESTAS;
   if (!esHojaRespuestas) {
     return {
       ...examen,

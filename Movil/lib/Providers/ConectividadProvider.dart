@@ -165,7 +165,7 @@ class ConectividadEstado extends _$ConectividadEstado {
 
     await ref.read(telemetriaServicioProvider).registrarEventoSync(
       idIntento: idIntento,
-      tipo: TipoEventoTelemetria.CAMBIO_RED,
+      tipo: TipoEventoTelemetria.INCIDENTE_REGISTRADO,
       descripcion: 'EVENTO_RED_$evento',
       metadatos: <String, dynamic>{
         'evento': evento,

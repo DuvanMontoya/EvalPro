@@ -94,7 +94,7 @@ SesionExamen _crearSesionPrueba() {
     examen: const ResumenExamenSesion(
       id: 'examen-1',
       titulo: 'Parcial de matematica',
-      modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+      modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
       duracionMinutos: 60,
       docente: 'Docente Prueba',
     ),

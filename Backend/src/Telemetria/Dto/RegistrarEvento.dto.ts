@@ -6,7 +6,7 @@
  * @fecha     2026-03-02
  */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TipoEventoTelemetria } from '@prisma/client';
+import { TipoEventoIntento } from '@prisma/client';
 import { IsEnum, IsInt, IsObject, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 
 export class RegistrarEventoDto {
@@ -14,9 +14,9 @@ export class RegistrarEventoDto {
   @IsUUID()
   idIntento!: string;
 
-  @ApiProperty({ description: 'Tipo de evento de telemetría', enum: TipoEventoTelemetria })
-  @IsEnum(TipoEventoTelemetria)
-  tipo!: TipoEventoTelemetria;
+  @ApiProperty({ description: 'Tipo de evento del ciclo de vida del intento', enum: TipoEventoIntento })
+  @IsEnum(TipoEventoIntento)
+  tipo!: TipoEventoIntento;
 
   @ApiPropertyOptional({ description: 'Descripción corta del evento' })
   @IsOptional()

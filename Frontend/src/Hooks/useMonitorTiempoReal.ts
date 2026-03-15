@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { TipoEventoTelemetria } from '@/Tipos';
+import { TipoEventoIntento, TipoIncidente } from '@/Tipos';
 import { API } from '@/Constantes/Api.constantes';
 import { establecerTokenAcceso, obtenerTokenAcceso } from '@/Servicios/ApiCliente';
 
@@ -30,7 +30,7 @@ interface ProgresoEstudiante {
 interface AlertaFraude {
   id: string;
   idIntento: string;
-  tipoEvento: TipoEventoTelemetria;
+  tipoEvento: TipoEventoIntento | TipoIncidente;
   fecha: string;
   nombreEstudiante: string;
 }
@@ -50,7 +50,7 @@ interface PayloadProgreso {
 
 interface PayloadFraude {
   idIntento: string;
-  tipoEvento: TipoEventoTelemetria;
+  tipoEvento: TipoEventoIntento | TipoIncidente;
   nombreEstudiante?: string;
   fecha?: string;
 }
@@ -181,7 +181,7 @@ export function useMonitorTiempoReal(idSesion: string) {
       });
 
       socketSesion.on(API.EVENTOS_SOCKET.ESTUDIANTE_PROGRESO, (payload: PayloadProgreso) => {
-        if (payload.estadoIntento === 'ENVIADO' || payload.estadoIntento === 'ANULADO') {
+        if (payload.estadoIntento === 'ANULADO') {
           setProgresoEstudiantes((previo) => {
             if (!previo[payload.idIntento]) {
               return previo;
@@ -213,7 +213,7 @@ export function useMonitorTiempoReal(idSesion: string) {
               nombreCompleto: payload.nombreCompleto ?? actual?.nombreCompleto ?? obtenerNombreFallback(payload.idIntento),
               modoKioscoActivo: payload.modoKioscoActivo ?? actual?.modoKioscoActivo ?? true,
               eventosFraude: payload.eventosFraude ?? actual?.eventosFraude ?? 0,
-              estadoIntento: payload.estadoIntento ?? actual?.estadoIntento ?? 'EN_PROGRESO',
+              estadoIntento: payload.estadoIntento ?? actual?.estadoIntento ?? 'INICIADO',
               ultimaActualizacionMs: marcaTiempo,
             },
           };
@@ -242,7 +242,7 @@ export function useMonitorTiempoReal(idSesion: string) {
             nombreCompleto: payload.nombreEstudiante ?? obtenerNombreFallback(payload.idIntento),
             modoKioscoActivo: false,
             eventosFraude: 0,
-            estadoIntento: 'EN_PROGRESO',
+            estadoIntento: 'INICIADO',
             ultimaActualizacionMs: Date.now(),
           };
 

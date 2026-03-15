@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 enum RolUsuario {
@@ -58,8 +59,8 @@ enum TipoPregunta {
 }
 
 enum ModalidadExamen {
-  DIGITAL_COMPLETO
-  HOJA_RESPUESTAS
+  CONTENIDO_COMPLETO
+  SOLO_RESPUESTAS
 }
 
 enum EstadoExamen {
@@ -76,32 +77,50 @@ enum EstadoSesion {
 }
 
 enum EstadoIntento {
-  EN_PROGRESO
+  INICIADO
+  BLOQUEADO
+  REANUDADO
+  SUSPENDIDO
+  FINALIZADO_PROVISIONAL
   ENVIADO
   ANULADO
-  SINCRONIZACION_PENDIENTE
 }
 
-enum TipoEventoTelemetria {
-  INICIO_EXAMEN
-  CAMBIO_PREGUNTA
-  RESPUESTA_GUARDADA
-  APLICACION_EN_SEGUNDO_PLANO
-  PANTALLA_ABANDONADA
-  CAPTURA_BLOQUEADA
-  FORZAR_CIERRE
-  SESION_INVALIDA
-  EXAMEN_ENVIADO
-  SINCRONIZACION_COMPLETADA
-  SEGUNDO_PLANO
-  FOCO_RECUPERADO
-  ABANDONO_PANTALLA
-  CIERRE_FORZADO
-  TIEMPO_ANOMALO
-  SYNC_ANOMALA
-  CAMBIO_RED
-  CAPTURA_PANTALLA_DETECTADA
-  MULTIPLES_DISPOSITIVOS
+enum TipoEventoIntento {
+  EVALUACION_ABIERTA
+  INTENTO_INICIADO
+  RESPUESTA_SELECCIONADA
+  RESPUESTA_CAMBIADA
+  RESPUESTA_LIMPIADA
+  APP_EN_BACKGROUND
+  APP_EN_FOREGROUND
+  INCIDENTE_REGISTRADO
+  REINGRESO_AUTORIZADO
+  TOKEN_REINGRESO_CONSUMIDO
+  ENVIO_SOLICITADO
+  FINALIZACION_PROVISIONAL
+  RECONCILIACION_EXITOSA
+  RECONCILIACION_FALLIDA
+  RESULTADO_PUBLICADO
+  ANULACION
+}
+
+enum TipoIncidente {
+  APP_EN_BACKGROUND
+  PERDIDA_DE_FOCO
+  NAVEGACION_NO_AUTORIZADA
+  OVERLAY_DETECTADO
+  VERIFICACION_INTEGRIDAD_FALLIDA
+  INCONSISTENCIA_SINCRONIZACION
+  COMPORTAMIENTO_DUPLICADO_SOSPECHOSO
+  TOKEN_REINGRESO_INVALIDO
+  TIEMPO_EXCEDIDO
+  RECONCILIACION_INCONSISTENTE
+}
+
+enum MetodoReingreso {
+  QR
+  PIN
 }
 
 enum SeveridadEvento {
@@ -181,6 +200,8 @@ model Usuario {
   reclamosPresentados      ReclamoCalificacion[] @relation("ReclamoPresentadoPor")
   reclamosResueltos        ReclamoCalificacion[] @relation("ReclamoResueltoPor")
   auditoriasHechas         AuditoriaAccion[]     @relation("AuditoriaActor")
+  tokensReingresoAlumno    TokenReingreso[]      @relation("TokenReingresoAlumno")
+  tokensReingresoAutoriza  TokenReingreso[]      @relation("TokenReingresoAutoriza")
 
   @@index([idInstitucion])
   @@map("usuarios")
@@ -252,6 +273,7 @@ model Examen {
   semillaAleatorizacion   Int
   permitirNavegacion      Boolean            @default(true)
   permitirNavegacionLibre Boolean            @default(true)
+  permitirCambioRespuesta Boolean            @default(true)
   aleatorizar             Boolean            @default(true)
   mostrarPuntaje          Boolean            @default(false)
   version                 Int                @default(1)
@@ -361,17 +383,22 @@ model SesionExamen {
 model IntentoExamen {
   id                     String             @id @default(uuid())
   idInstitucion          String?
-  estado                 EstadoIntento      @default(EN_PROGRESO)
+  estado                 EstadoIntento      @default(INICIADO)
   semillaPersonal        Int
   puntajeObtenido        Float?
   porcentaje             Float?
   ordenPreguntasAplicado Json?
   indiceRiesgoFraude     Float              @default(0)
+  incidentesAcumulados   Int                @default(0)
+  altoRiesgo             Boolean            @default(false)
   requiereRevision       Boolean            @default(false)
   razonAnulacion         String?            @db.Text
   anuladoPorId           String?
   anuladoEn              DateTime?
   fechaInicio            DateTime           @default(now())
+  fechaBloqueo           DateTime?
+  fechaReanudacion       DateTime?
+  fechaFinalizacionProv  DateTime?
   fechaEnvio             DateTime?
   ultimaSincronizacion   DateTime?
   ipDispositivo          String?            @db.VarChar(50)
@@ -388,7 +415,9 @@ model IntentoExamen {
   institucion            Institucion?       @relation(fields: [idInstitucion], references: [id])
   anuladoPor             Usuario?           @relation("IntentoAnuladoPor", fields: [anuladoPorId], references: [id])
   respuestas             Respuesta[]
-  eventosTelemetria      EventoTelemetria[]
+  eventosIntento         EventoIntento[]
+  incidentes             Incidente[]
+  tokensReingreso        TokenReingreso[]
   resultado              ResultadoIntento?
 
   @@index([idInstitucion])
@@ -463,20 +492,65 @@ model ReclamoCalificacion {
   @@map("reclamos_calificacion")
 }
 
-model EventoTelemetria {
-  id                 String               @id @default(uuid())
-  tipo               TipoEventoTelemetria
-  severidad          SeveridadEvento      @default(INFO)
-  descripcion        String?              @db.VarChar(500)
+model EventoIntento {
+  id                 String            @id @default(uuid())
+  tipo               TipoEventoIntento
+  severidad          SeveridadEvento   @default(INFO)
+  descripcion        String?           @db.VarChar(500)
   metadatos          Json?
   numeroPregunta     Int?
   tiempoTranscurrido Int?
   duracionMs         Int?
-  fechaEvento        DateTime             @default(now())
+  numeroSecuencia    Int
+  revisado           Boolean           @default(false)
+  ignorado           Boolean           @default(false)
+  motivoRevision     String?           @db.VarChar(500)
+  fechaEvento        DateTime          @default(now())
   intentoId          String
-  intento            IntentoExamen        @relation(fields: [intentoId], references: [id], onDelete: Cascade)
+  intento            IntentoExamen     @relation(fields: [intentoId], references: [id], onDelete: Cascade)
+  incidente          Incidente?
 
-  @@map("eventos_telemetria")
+  @@unique([intentoId, numeroSecuencia])
+  @@map("eventos_intento")
+}
+
+model Incidente {
+  id                String          @id @default(uuid())
+  tipo              TipoIncidente
+  severidad         SeveridadEvento @default(ADVERTENCIA)
+  descripcion       String?         @db.VarChar(500)
+  contexto          Json?
+  contadorAcumulado Int
+  altoRiesgo        Boolean         @default(false)
+  fechaRegistro     DateTime        @default(now())
+  intentoId         String
+  eventoId          String?         @unique
+  intento           IntentoExamen   @relation(fields: [intentoId], references: [id], onDelete: Cascade)
+  evento            EventoIntento?  @relation(fields: [eventoId], references: [id])
+
+  @@index([intentoId, fechaRegistro])
+  @@map("incidentes")
+}
+
+model TokenReingreso {
+  id                  String          @id @default(uuid())
+  intentoId           String
+  estudianteId        String
+  autorizadoPorId     String
+  metodo              MetodoReingreso @default(PIN)
+  codigoHash          String          @db.VarChar(255)
+  codigoVisible       String          @db.VarChar(12)
+  expiraEn            DateTime
+  usado               Boolean         @default(false)
+  usadoEn             DateTime?
+  dispositivoAutoriza String?         @db.VarChar(120)
+  fechaCreacion       DateTime        @default(now())
+  intento             IntentoExamen   @relation(fields: [intentoId], references: [id], onDelete: Cascade)
+  estudiante          Usuario         @relation("TokenReingresoAlumno", fields: [estudianteId], references: [id])
+  autorizadoPor       Usuario         @relation("TokenReingresoAutoriza", fields: [autorizadoPorId], references: [id])
+
+  @@index([intentoId, estudianteId, expiraEn])
+  @@map("tokens_reingreso")
 }
 
 model AuditoriaAccion {

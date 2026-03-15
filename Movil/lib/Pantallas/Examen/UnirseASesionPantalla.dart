@@ -105,7 +105,7 @@ class _UnirseASesionPantallaState extends ConsumerState<UnirseASesionPantalla> {
 
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       HapticFeedback.mediumImpact();
-      if (sesion.examen.modalidad == ModalidadExamen.HOJA_RESPUESTAS) {
+      if (sesion.examen.modalidad == ModalidadExamen.SOLO_RESPUESTAS) {
         context.go(Rutas.hojaRespuestas);
         return;
       }

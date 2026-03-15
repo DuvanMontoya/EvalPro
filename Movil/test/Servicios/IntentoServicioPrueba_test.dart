@@ -25,7 +25,7 @@ void main() {
           cuerpoCapturado = cuerpo as Map<String, dynamic>;
           return <String, dynamic>{
             'id': 'intento-1',
-            'estado': 'EN_PROGRESO',
+            'estado': 'INICIADO',
             'semillaPersonal': 11,
             'sesionId': 'sesion-1',
           };
@@ -78,7 +78,7 @@ void main() {
                 'datos': <String, dynamic>{
                   'intentoExistente': <String, dynamic>{
                     'id': 'intento-existente-1',
-                    'estado': 'EN_PROGRESO',
+                    'estado': 'INICIADO',
                     'semillaPersonal': 123,
                     'sesionId': 'sesion-1',
                   },
@@ -93,7 +93,7 @@ void main() {
     final intento = await servicio.iniciar('sesion-1', 'ABCD-1234');
 
     expect(intento.id, 'intento-existente-1');
-    expect(intento.estado, EstadoIntento.EN_PROGRESO);
+    expect(intento.estado, EstadoIntento.INICIADO);
     expect(intento.semillaPersonal, 123);
     expect(intento.sesionId, 'sesion-1');
   });

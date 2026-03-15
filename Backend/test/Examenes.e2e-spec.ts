@@ -49,7 +49,7 @@ describe('Examenes (e2e)', () => {
       .send({
         titulo: 'Examen propiedad privada',
         descripcion: 'Evaluación de control',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 30,
         permitirNavegacion: true,
         mostrarPuntaje: true,
@@ -74,7 +74,7 @@ describe('Examenes (e2e)', () => {
       .send({
         titulo: 'Examen sin preguntas',
         descripcion: 'Debe fallar publicación',
-        modalidad: ModalidadExamen.DIGITAL_COMPLETO,
+        modalidad: ModalidadExamen.CONTENIDO_COMPLETO,
         duracionMinutos: 20,
         permitirNavegacion: true,
         mostrarPuntaje: true,

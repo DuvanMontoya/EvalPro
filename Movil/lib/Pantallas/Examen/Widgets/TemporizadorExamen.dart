@@ -96,19 +96,37 @@ class _TemporizadorExamenState extends State<TemporizadorExamen> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(Icons.timer_outlined, size: 18, color: color),
-          const SizedBox(width: 8),
-          Text(
-            texto,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w800,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compacto = constraints.maxWidth.isFinite && constraints.maxWidth < 92;
+          final textoVisible = compacto && _sinLimite ? 'Libre' : texto;
+          final estilo = (compacto
+                  ? Theme.of(context).textTheme.titleSmall
+                  : Theme.of(context).textTheme.titleMedium)
+              ?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w800,
+              );
+
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (!compacto) ...<Widget>[
+                Icon(Icons.timer_outlined, size: 18, color: color),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Text(
+                  textoVisible,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
+                  style: estilo,
                 ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }

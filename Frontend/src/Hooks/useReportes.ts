@@ -94,8 +94,9 @@ export function useTableroReportes() {
         }
         const conectadosSesion = reporte.listaEstudiantes.filter(
           (estudiante) =>
-            estudiante.estado === EstadoIntento.EN_PROGRESO ||
-            estudiante.estado === EstadoIntento.SINCRONIZACION_PENDIENTE,
+            estudiante.estado === EstadoIntento.INICIADO ||
+            estudiante.estado === EstadoIntento.REANUDADO ||
+            estudiante.estado === EstadoIntento.BLOQUEADO,
         ).length;
         return total + conectadosSesion;
       }, 0);

@@ -8,9 +8,14 @@
 import { EstadoCuenta, EstadoGrupo, EstadoInstitucion, PrismaClient, RolUsuario, Usuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
+import { config as cargarEntorno } from 'dotenv';
 
 const prisma = new PrismaClient();
 const MAX_INTENTOS_CODIGO_GRUPO = 10;
+
+cargarEntornosSemilla();
 
 interface DefinicionCuentaInicial {
   correo: string;
@@ -265,6 +270,15 @@ async function generarCodigoGrupoUnico(): Promise<string> {
     }
   }
   throw new Error('No se pudo generar código único para el grupo inicial');
+}
+
+function cargarEntornosSemilla(): void {
+  const rutas = [resolve(process.cwd(), '.env'), resolve(process.cwd(), '..', '.env')];
+  for (const ruta of rutas) {
+    if (existsSync(ruta)) {
+      cargarEntorno({ path: ruta, override: false });
+    }
+  }
 }
 
 function obtenerTextoEntornoObligatorio(clave: string): string {

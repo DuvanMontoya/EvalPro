@@ -8,7 +8,7 @@
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main.js",
     "runtime:reparar": "powershell -ExecutionPolicy Bypass -File scripts/reparar-backend-runtime.ps1",
     "pruebas:e2e": "jest --config ./test/ConfiguracionPruebasE2e.cjs --runInBand",
     "pruebas:e2e:ci": "npm run pruebas:e2e -- --ci",

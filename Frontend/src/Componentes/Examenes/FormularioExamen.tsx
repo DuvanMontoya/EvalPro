@@ -44,7 +44,7 @@ export function FormularioExamen({
       titulo: valoresIniciales?.titulo ?? '',
       descripcion: valoresIniciales?.descripcion ?? '',
       instrucciones: valoresIniciales?.instrucciones ?? '',
-      modalidad: valoresIniciales?.modalidad ?? ModalidadExamen.DIGITAL_COMPLETO,
+      modalidad: valoresIniciales?.modalidad ?? ModalidadExamen.CONTENIDO_COMPLETO,
       duracionMinutos: valoresIniciales?.duracionMinutos ?? 60,
       permitirNavegacion: valoresIniciales?.permitirNavegacion ?? true,
       mostrarPuntaje: valoresIniciales?.mostrarPuntaje ?? false,
@@ -86,8 +86,8 @@ export function FormularioExamen({
               <SeleccionValor />
             </SeleccionDisparador>
             <SeleccionContenido>
-              <SeleccionItem value={ModalidadExamen.DIGITAL_COMPLETO}>Digital completo</SeleccionItem>
-              <SeleccionItem value={ModalidadExamen.HOJA_RESPUESTAS}>Hoja de respuestas</SeleccionItem>
+              <SeleccionItem value={ModalidadExamen.CONTENIDO_COMPLETO}>Contenido completo</SeleccionItem>
+              <SeleccionItem value={ModalidadExamen.SOLO_RESPUESTAS}>Solo respuestas</SeleccionItem>
             </SeleccionContenido>
           </Seleccion>
         </div>

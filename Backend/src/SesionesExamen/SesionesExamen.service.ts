@@ -281,7 +281,7 @@ export class SesionesExamenService {
     await this.prisma.intentoExamen.updateMany({
       where: {
         sesionId: idSesion,
-        estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE] },
+        estado: { in: [EstadoIntento.INICIADO, EstadoIntento.REANUDADO, EstadoIntento.BLOQUEADO] },
       },
       data: {
         estado: EstadoIntento.ENVIADO,
@@ -307,7 +307,7 @@ export class SesionesExamenService {
     await this.prisma.intentoExamen.updateMany({
       where: {
         sesionId: idSesion,
-        estado: { in: [EstadoIntento.EN_PROGRESO, EstadoIntento.SINCRONIZACION_PENDIENTE] },
+        estado: { in: [EstadoIntento.INICIADO, EstadoIntento.REANUDADO, EstadoIntento.BLOQUEADO, EstadoIntento.FINALIZADO_PROVISIONAL] },
       },
       data: {
         estado: EstadoIntento.ANULADO,

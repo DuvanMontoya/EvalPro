@@ -163,6 +163,7 @@ class EvalHeroCard extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
@@ -317,22 +318,28 @@ class EvalMetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.base),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.base,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(color: AppColors.slate200),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           if (icon != null) ...<Widget>[
             icon!,
-            const SizedBox(height: AppSpacing.base),
+            const SizedBox(height: AppSpacing.sm),
           ],
           Text(
             value,
-            style: theme.textTheme.headlineMedium?.copyWith(
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
               color: highlightColor,
             ),
@@ -340,6 +347,8 @@ class EvalMetricTile extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.slate700,
               fontWeight: FontWeight.w600,
@@ -349,6 +358,8 @@ class EvalMetricTile extends StatelessWidget {
             const SizedBox(height: AppSpacing.xs),
             Text(
               caption!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.slate500,
               ),

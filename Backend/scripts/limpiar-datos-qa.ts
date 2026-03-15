@@ -185,8 +185,16 @@ async function main() {
   const eliminados = await prisma.$transaction(async (tx) => {
     const resultado: ResultadoEliminacion = {};
 
-    resultado.eventosTelemetria = idsIntento.length
-      ? (await tx.eventoTelemetria.deleteMany({ where: { intentoId: { in: idsIntento } } })).count
+    resultado.tokensReingreso = idsIntento.length
+      ? (await tx.tokenReingreso.deleteMany({ where: { intentoId: { in: idsIntento } } })).count
+      : 0;
+
+    resultado.incidentes = idsIntento.length
+      ? (await tx.incidente.deleteMany({ where: { intentoId: { in: idsIntento } } })).count
+      : 0;
+
+    resultado.eventosIntento = idsIntento.length
+      ? (await tx.eventoIntento.deleteMany({ where: { intentoId: { in: idsIntento } } })).count
       : 0;
 
     resultado.reclamos = idsResultado.length
