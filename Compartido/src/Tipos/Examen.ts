@@ -13,6 +13,7 @@ export interface Examen {
   titulo: string;
   descripcion: string | null;
   instrucciones: string | null;
+  identificadorCuadernillo?: string | null;
   modalidad: ModalidadExamen;
   estado: EstadoExamen;
   duracionMinutos: number;

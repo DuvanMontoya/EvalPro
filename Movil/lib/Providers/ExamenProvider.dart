@@ -14,7 +14,6 @@ import '../Modelos/Pregunta.dart';
 import '../Modelos/RespuestaLocal.dart';
 import '../Modelos/ResultadoFinal.dart';
 import '../Modelos/SesionExamen.dart';
-import '../Utilidades/AleatorizadorLocal.dart';
 import '../Utilidades/MapeadorErroresNegocio.dart';
 import 'AutenticacionProvider.dart';
 import 'ConectividadProvider.dart';
@@ -63,21 +62,9 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
       modo.iniciarMonitoreo(intento.id);
       final examenBase =
           await ref.read(examenServicioProvider).obtenerParaIntento(intento.id);
-      final semillaPersonal =
-          calcularSemillaPersonal(sesion.semillaGrupo, idEstudiante);
-      final preguntasMezcladas = AleatorizadorLocal(semillaPersonal)
-          .aleatorizar<Pregunta>(examenBase.preguntas)
-          .asMap()
-          .entries
-          .map((entrada) {
-        final orden = entrada.key + 1;
-        final pregunta = entrada.value;
-        final opcionesMezcladas = AleatorizadorLocal(semillaPersonal + orden)
-            .aleatorizar(pregunta.opciones);
-        return pregunta.copyWith(opciones: opcionesMezcladas);
-      }).toList();
+      final preguntasOrdenadas = List<Pregunta>.from(examenBase.preguntas);
       final examenAleatorizado =
-          examenBase.copyWith(preguntas: preguntasMezcladas);
+          examenBase.copyWith(preguntas: preguntasOrdenadas);
       await ref.read(examenDaoProvider).guardarExamen(
             id: examenAleatorizado.id,
             contenidoJson: jsonEncode(examenAleatorizado.toJson()),
@@ -89,7 +76,7 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
       final ahora = DateTime.now();
       state = ExamenActivoEstado(
         examen: examenAleatorizado,
-        preguntasAleatorizadas: preguntasMezcladas,
+        preguntasAleatorizadas: preguntasOrdenadas,
         indicePreguntaActual: 0,
         respuestasLocales: <String, RespuestaLocal>{},
         tiempoInicioExamen: ahora,
@@ -107,7 +94,7 @@ class ExamenActivo extends _$ExamenActivo with ExamenNavegacionMixin {
             idIntento: intento.id,
             idEstudiante: idEstudiante,
             respondidas: 0,
-            total: preguntasMezcladas.length,
+            total: preguntasOrdenadas.length,
             preguntasRespondidasIndices: const <int>[],
             indicePreguntaActual: 1,
           );

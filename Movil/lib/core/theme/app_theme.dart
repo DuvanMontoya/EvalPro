@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_font.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
 
@@ -41,7 +41,7 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
       textTheme: AppTypography.textTheme,
-      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+      fontFamily: familiaFuenteApp,
       splashFactory: InkRipple.splashFactory,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -51,7 +51,7 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleSpacing: AppSpacing.screenH,
-        titleTextStyle: GoogleFonts.plusJakartaSans(
+        titleTextStyle: estiloFuenteApp(
           fontSize: 20,
           fontWeight: FontWeight.w800,
           color: AppColors.slate900,
@@ -82,12 +82,12 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
         ),
-        titleTextStyle: GoogleFonts.plusJakartaSans(
+        titleTextStyle: estiloFuenteApp(
           fontSize: 20,
           fontWeight: FontWeight.w800,
           color: AppColors.slate900,
         ),
-        contentTextStyle: GoogleFonts.plusJakartaSans(
+        contentTextStyle: estiloFuenteApp(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: AppColors.slate600,
@@ -103,7 +103,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           side: const BorderSide(color: AppColors.slate200),
         ),
-        textStyle: GoogleFonts.plusJakartaSans(
+        textStyle: estiloFuenteApp(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.slate800,
@@ -141,22 +141,22 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           borderSide: const BorderSide(color: AppColors.error, width: 1.8),
         ),
-        labelStyle: GoogleFonts.plusJakartaSans(
+        labelStyle: estiloFuenteApp(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.slate500,
         ),
-        floatingLabelStyle: GoogleFonts.plusJakartaSans(
+        floatingLabelStyle: estiloFuenteApp(
           fontSize: 14,
           fontWeight: FontWeight.w700,
           color: AppColors.primary,
         ),
-        hintStyle: GoogleFonts.plusJakartaSans(
+        hintStyle: estiloFuenteApp(
           fontSize: 15,
           fontWeight: FontWeight.w500,
           color: AppColors.slate400,
         ),
-        errorStyle: GoogleFonts.plusJakartaSans(
+        errorStyle: estiloFuenteApp(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: AppColors.error,
@@ -176,7 +176,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: estiloFuenteApp(
             fontSize: 15,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.1,
@@ -194,7 +194,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: estiloFuenteApp(
             fontSize: 15,
             fontWeight: FontWeight.w800,
           ),
@@ -209,7 +209,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: estiloFuenteApp(
             fontSize: 15,
             fontWeight: FontWeight.w700,
           ),
@@ -222,7 +222,7 @@ class AppTheme {
         hoverElevation: 0,
         focusElevation: 0,
         highlightElevation: 0,
-        extendedTextStyle: GoogleFonts.plusJakartaSans(
+        extendedTextStyle: estiloFuenteApp(
           fontSize: 14,
           fontWeight: FontWeight.w800,
           color: Colors.white,
@@ -244,7 +244,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
         ),
-        labelStyle: GoogleFonts.plusJakartaSans(
+        labelStyle: estiloFuenteApp(
           fontSize: 13,
           fontWeight: FontWeight.w700,
           color: AppColors.slate700,
@@ -259,7 +259,7 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.slate900,
         elevation: 0,
-        contentTextStyle: GoogleFonts.plusJakartaSans(
+        contentTextStyle: estiloFuenteApp(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: Colors.white,
@@ -276,8 +276,7 @@ class AppTheme {
         backgroundColor: AppColors.surface,
         indicatorColor: AppColors.primarySurface,
         elevation: 0,
-        labelBehavior:
-            NavigationDestinationLabelBehavior.onlyShowSelected,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const IconThemeData(color: AppColors.primary, size: 22);
@@ -285,7 +284,7 @@ class AppTheme {
           return const IconThemeData(color: AppColors.slate400, size: 22);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          return GoogleFonts.plusJakartaSans(
+          return estiloFuenteApp(
             fontSize: 11,
             fontWeight: states.contains(WidgetState.selected)
                 ? FontWeight.w800

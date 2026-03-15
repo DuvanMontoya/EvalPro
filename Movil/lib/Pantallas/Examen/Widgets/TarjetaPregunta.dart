@@ -11,8 +11,9 @@ import '../../../Modelos/Enums/TipoPregunta.dart';
 import '../../../Modelos/Pregunta.dart';
 import '../../../Modelos/RespuestaLocal.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/common/eval_badge.dart';
-import '../../../core/widgets/common/eval_surface.dart';
+import '../../../core/widgets/common/eval_card.dart';
 import 'CampoPreguntaAbierta.dart';
 import 'OpcionSeleccionable.dart';
 
@@ -34,48 +35,48 @@ class TarjetaPregunta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EvalSectionCard(
+    return EvalCard(
       key: ValueKey<String>('exam_question_card_${pregunta.id}'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          if (indiceActual != null && totalPreguntas != null) ...<Widget>[
-            Row(
-              children: <Widget>[
-                EvalBadge(
-                  'Pregunta $indiceActual de $totalPreguntas',
-                  variant: EvalBadgeVariant.primary,
-                ),
-                const SizedBox(width: 8),
-                EvalBadge(
-                  pregunta.tipo.name.replaceAll('_', ' '),
-                  variant: EvalBadgeVariant.neutral,
-                ),
-              ],
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            if (indiceActual != null && totalPreguntas != null) ...<Widget>[
+              Row(
+                children: <Widget>[
+                  EvalBadge(
+                    'Pregunta $indiceActual de $totalPreguntas',
+                    variant: EvalBadgeVariant.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  EvalBadge(
+                    pregunta.tipo.name.replaceAll('_', ' '),
+                    variant: EvalBadgeVariant.neutral,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+            Text(
+              pregunta.enunciado,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.slate900,
+                  ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            Text(
+              'Responde con atencion. Cada cambio se guarda durante el intento.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.slate500,
+                  ),
+            ),
+            const SizedBox(height: 20),
+            _construirEntrada(context),
           ],
-          Text(
-            pregunta.enunciado,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.slate900,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Responde con atencion. Cada cambio se guarda durante el intento.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.slate500,
-                ),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: SingleChildScrollView(
-              child: _construirEntrada(context),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

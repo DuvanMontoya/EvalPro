@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../Constantes/Dimensiones.dart';
+import '../../../Modelos/Enums/ModalidadExamen.dart';
 import '../../../Modelos/SesionExamen.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/common/eval_badge.dart';
@@ -43,12 +44,17 @@ class TarjetaSesionDisponible extends StatelessWidget {
             children: <Widget>[
               _TagDato(
                 icono: Icons.grid_view_rounded,
-                texto: sesion.examen.modalidad.name,
+                texto: _resolverEtiquetaModalidad(sesion.examen.modalidad),
               ),
               _TagDato(
                 icono: Icons.timer_outlined,
                 texto: '${sesion.examen.duracionMinutos} min',
               ),
+              if (sesion.examen.identificadorCuadernillo != null)
+                _TagDato(
+                  icono: Icons.badge_outlined,
+                  texto: sesion.examen.identificadorCuadernillo!,
+                ),
               if (sesion.examen.docente != null)
                 _TagDato(
                   icono: Icons.person_outline_rounded,
@@ -90,6 +96,13 @@ class TarjetaSesionDisponible extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _resolverEtiquetaModalidad(ModalidadExamen modalidad) {
+    if (modalidad == ModalidadExamen.HOJA_RESPUESTAS) {
+      return 'Solo respuestas';
+    }
+    return 'Contenido completo';
   }
 }
 

@@ -12,6 +12,7 @@ class Examen {
   final String titulo;
   final String? descripcion;
   final String? instrucciones;
+  final String? identificadorCuadernillo;
   final ModalidadExamen modalidad;
   final int duracionMinutos;
   final bool permitirNavegacion;
@@ -23,6 +24,7 @@ class Examen {
     required this.titulo,
     this.descripcion,
     this.instrucciones,
+    this.identificadorCuadernillo,
     required this.modalidad,
     required this.duracionMinutos,
     required this.permitirNavegacion,
@@ -40,6 +42,7 @@ class Examen {
       titulo: json['titulo'] as String,
       descripcion: json['descripcion'] as String?,
       instrucciones: json['instrucciones'] as String?,
+      identificadorCuadernillo: json['identificadorCuadernillo'] as String?,
       modalidad:
           ModalidadExamenTransformador.desdeNombre(json['modalidad'] as String),
       duracionMinutos: (json['duracionMinutos'] as num?)?.toInt() ?? 0,
@@ -58,6 +61,7 @@ class Examen {
       'titulo': titulo,
       'descripcion': descripcion,
       'instrucciones': instrucciones,
+      'identificadorCuadernillo': identificadorCuadernillo,
       'modalidad': modalidad.name,
       'duracionMinutos': duracionMinutos,
       'totalPreguntas': totalPreguntas,
@@ -73,6 +77,7 @@ class Examen {
     String? titulo,
     String? descripcion,
     String? instrucciones,
+    String? identificadorCuadernillo,
     ModalidadExamen? modalidad,
     int? duracionMinutos,
     bool? permitirNavegacion,
@@ -84,6 +89,8 @@ class Examen {
       titulo: titulo ?? this.titulo,
       descripcion: descripcion ?? this.descripcion,
       instrucciones: instrucciones ?? this.instrucciones,
+      identificadorCuadernillo:
+          identificadorCuadernillo ?? this.identificadorCuadernillo,
       modalidad: modalidad ?? this.modalidad,
       duracionMinutos: duracionMinutos ?? this.duracionMinutos,
       permitirNavegacion: permitirNavegacion ?? this.permitirNavegacion,

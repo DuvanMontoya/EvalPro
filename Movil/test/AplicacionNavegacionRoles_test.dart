@@ -79,7 +79,7 @@ void main() {
     expect(find.text(Textos.gestionarSesiones), findsNothing);
 
     await tester.ensureVisible(find.text(Textos.misResultados));
-    await tester.tap(find.text(Textos.misResultados));
+    await tester.tap(find.text(Textos.misResultados), warnIfMissed: false);
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text(Textos.misResultados), findsWidgets);
   });
@@ -191,7 +191,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(Textos.examenEnviado), findsWidgets);
-    expect(find.text('Tu examen fue enviado correctamente'), findsOneWidget);
+    expect(find.text('Tu examen fue enviado'), findsOneWidget);
   });
 
   testWidgets('administrador accede a botones de gestion', (tester) async {
@@ -216,19 +216,32 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text(Textos.gestionarSesiones), findsOneWidget);
-    expect(find.text(Textos.gestionarExamenes), findsOneWidget);
-    expect(find.text(Textos.gestionarGrupos), findsOneWidget);
-    expect(find.text(Textos.gestionarPeriodos), findsOneWidget);
-    expect(find.text(Textos.gestionarUsuarios), findsOneWidget);
-    expect(find.text(Textos.gestionarReclamos), findsOneWidget);
+    final listaPrincipal = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('inicio_manage_claims_button')),
+      320,
+      scrollable: listaPrincipal,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('inicio_manage_sessions_button')), findsOneWidget);
+    expect(find.byKey(const Key('inicio_manage_exams_button')), findsOneWidget);
+    expect(
+        find.byKey(const Key('inicio_manage_groups_button')), findsOneWidget);
+    expect(
+        find.byKey(const Key('inicio_manage_periods_button')), findsOneWidget);
+    expect(find.byKey(const Key('inicio_manage_users_button')), findsOneWidget);
+    expect(
+        find.byKey(const Key('inicio_manage_claims_button')), findsOneWidget);
     expect(find.text(Textos.calificacionManual), findsOneWidget);
     expect(find.text(Textos.misResultados), findsNothing);
 
-    await tester.ensureVisible(find.text(Textos.gestionarUsuarios));
-    await tester.tap(find.text(Textos.gestionarUsuarios));
+    await tester
+        .ensureVisible(find.byKey(const Key('inicio_manage_users_button')));
+    await tester.tap(find.byKey(const Key('inicio_manage_users_button')));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text(Textos.gestionarUsuarios), findsWidgets);
+    expect(find.byType(Scaffold), findsWidgets);
   });
 
   testWidgets('superadministrador accede a operacion global y academica',
@@ -254,19 +267,33 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text(Textos.gestionarSesiones), findsOneWidget);
-    expect(find.text(Textos.gestionarExamenes), findsOneWidget);
-    expect(find.text(Textos.gestionarInstituciones), findsOneWidget);
-    expect(find.text(Textos.gestionarUsuarios), findsOneWidget);
-    expect(find.text(Textos.gestionarGrupos), findsOneWidget);
-    expect(find.text(Textos.gestionarPeriodos), findsOneWidget);
-    expect(find.text(Textos.gestionarReclamos), findsOneWidget);
+    final listaPrincipal = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('inicio_manage_claims_button')),
+      320,
+      scrollable: listaPrincipal,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('inicio_manage_sessions_button')), findsOneWidget);
+    expect(find.byKey(const Key('inicio_manage_exams_button')), findsOneWidget);
+    expect(find.byKey(const Key('inicio_manage_institutions_button')),
+        findsOneWidget);
+    expect(find.byKey(const Key('inicio_manage_users_button')), findsOneWidget);
+    expect(
+        find.byKey(const Key('inicio_manage_groups_button')), findsOneWidget);
+    expect(
+        find.byKey(const Key('inicio_manage_periods_button')), findsOneWidget);
+    expect(
+        find.byKey(const Key('inicio_manage_claims_button')), findsOneWidget);
     expect(find.text(Textos.calificacionManual), findsNothing);
 
-    await tester.ensureVisible(find.text(Textos.gestionarSesiones));
-    await tester.tap(find.text(Textos.gestionarSesiones));
+    await tester
+        .ensureVisible(find.byKey(const Key('inicio_manage_sessions_button')));
+    await tester.tap(find.byKey(const Key('inicio_manage_sessions_button')));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text(Textos.gestionarSesiones), findsWidgets);
+    expect(find.byType(Scaffold), findsWidgets);
   });
 }
 

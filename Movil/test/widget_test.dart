@@ -6,11 +6,14 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:movil/Aplicacion.dart';
 import 'package:movil/Constantes/Textos.dart';
 
 void main() {
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   testWidgets(
       'La aplicacion se construye y muestra la pantalla de inicio de sesion',
       (WidgetTester tester) async {

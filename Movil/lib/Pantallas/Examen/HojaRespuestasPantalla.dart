@@ -15,6 +15,7 @@ import '../../Constantes/Rutas.dart';
 import '../../Modelos/Enums/TipoEventoTelemetria.dart';
 import '../../Providers/AutenticacionProvider.dart';
 import '../../Providers/ExamenProvider.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/common/eval_surface.dart';
 import 'Widgets/CuadriculaOMR.dart';
 import 'Widgets/IndicadorConexion.dart';
@@ -121,6 +122,29 @@ class HojaRespuestasPantalla extends ConsumerWidget {
                       .irAPregunta(indice),
                 ),
               ),
+              if ((estado.examen.identificadorCuadernillo ?? '').isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.primaryLight),
+                    ),
+                    child: Text(
+                      'Cuadernillo ${estado.examen.identificadorCuadernillo}',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: AppColors.primaryDark,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ),
+                ),
               Expanded(
                 child: CuadriculaOMR(
                   totalPreguntas: estado.preguntasAleatorizadas.length,

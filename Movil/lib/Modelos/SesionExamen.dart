@@ -12,6 +12,7 @@ class ResumenExamenSesion {
   final String titulo;
   final ModalidadExamen modalidad;
   final int duracionMinutos;
+  final String? identificadorCuadernillo;
   final String? docente;
 
   const ResumenExamenSesion({
@@ -19,6 +20,7 @@ class ResumenExamenSesion {
     required this.titulo,
     required this.modalidad,
     required this.duracionMinutos,
+    this.identificadorCuadernillo,
     this.docente,
   });
 
@@ -30,6 +32,7 @@ class ResumenExamenSesion {
       modalidad:
           ModalidadExamenTransformador.desdeNombre(json['modalidad'] as String),
       duracionMinutos: (json['duracionMinutos'] as num?)?.toInt() ?? 0,
+      identificadorCuadernillo: json['identificadorCuadernillo'] as String?,
       docente: json['docente'] as String?,
     );
   }
@@ -41,6 +44,7 @@ class ResumenExamenSesion {
       'titulo': titulo,
       'modalidad': modalidad.name,
       'duracionMinutos': duracionMinutos,
+      'identificadorCuadernillo': identificadorCuadernillo,
       'docente': docente,
     };
   }

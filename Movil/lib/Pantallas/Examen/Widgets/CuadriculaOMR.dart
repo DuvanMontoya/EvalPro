@@ -8,8 +8,24 @@ import 'package:flutter/material.dart';
 
 import 'BotonRespuestaOMR.dart';
 
+class OpcionOmr {
+  final String valor;
+  final String etiqueta;
+
+  const OpcionOmr({
+    required this.valor,
+    required this.etiqueta,
+  });
+}
+
 class CuadriculaOMR extends StatelessWidget {
-  static const _letras = <String>['A', 'B', 'C', 'D', 'E'];
+  static const _opciones = <OpcionOmr>[
+    OpcionOmr(valor: 'A', etiqueta: 'A'),
+    OpcionOmr(valor: 'B', etiqueta: 'B'),
+    OpcionOmr(valor: 'C', etiqueta: 'C'),
+    OpcionOmr(valor: 'D', etiqueta: 'D'),
+    OpcionOmr(valor: 'E', etiqueta: 'No lo sé'),
+  ];
 
   final int totalPreguntas;
   final Map<int, String?> respuestas;
@@ -45,12 +61,13 @@ class CuadriculaOMR extends StatelessWidget {
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _letras.map((letra) {
-                      final seleccionada = actual == letra;
+                    children: _opciones.map((opcion) {
+                      final seleccionada = actual == opcion.valor;
                       return BotonRespuestaOMR(
-                        letra: letra,
+                        valor: opcion.valor,
+                        etiqueta: opcion.etiqueta,
                         seleccionada: seleccionada,
-                        alPresionar: () => alSeleccionar(numero, letra),
+                        alPresionar: () => alSeleccionar(numero, opcion.valor),
                       );
                     }).toList(),
                   ),

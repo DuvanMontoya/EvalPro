@@ -18,6 +18,7 @@ import { EstadoExamen, EstadoGrupo, EstadoIntento, EstadoSesion, RolUsuario } fr
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { generarCodigoSesion } from '../Comun/Utilidades/GeneradorCodigo.util';
+import { sanitizarExamenParaEstudiante } from '../Comun/Utilidades/SanitizadorExamenEstudiante.util';
 import { RespuestasService } from '../Respuestas/Respuestas.service';
 import { CrearSesionDto } from './Dto/CrearSesion.dto';
 import { SesionesExamenGateway } from './SesionesExamen.gateway';
@@ -400,25 +401,28 @@ export class SesionesExamenService {
       }
     }
 
+    const examenSanitizado = sanitizarExamenParaEstudiante({
+      id: sesion.examen.id,
+      titulo: sesion.examen.titulo,
+      instrucciones: sesion.examen.instrucciones,
+      modalidad: sesion.examen.modalidad,
+      duracionMinutos: sesion.examen.duracionMinutos,
+      version: sesion.examen.version,
+      preguntas: [],
+    });
+
     return {
       id: sesion.id,
       codigoAcceso: sesion.codigoAcceso,
       estado: sesion.estado,
       fechaActivacion: sesion.fechaInicio,
       examen: {
-        id: sesion.examen.id,
-        titulo: sesion.examen.titulo,
-        instrucciones: sesion.examen.instrucciones,
-        modalidad: sesion.examen.modalidad,
-        duracionMinutos: sesion.examen.duracionMinutos,
-        preguntas: sesion.examen.preguntas.map((pregunta) => ({
-          id: pregunta.id,
-          enunciado: pregunta.enunciado,
-          tipo: pregunta.tipo,
-          puntaje: pregunta.puntaje,
-          orden: pregunta.orden,
-          opciones: pregunta.opciones.map(({ esCorrecta: _esCorrecta, ...opcion }) => opcion),
-        })),
+        id: examenSanitizado.id,
+        titulo: examenSanitizado.titulo,
+        instrucciones: examenSanitizado.instrucciones,
+        modalidad: examenSanitizado.modalidad,
+        duracionMinutos: examenSanitizado.duracionMinutos,
+        identificadorCuadernillo: examenSanitizado.identificadorCuadernillo,
       },
       intentosPrevios,
       intentosMaximos: sesion.asignacion?.intentosMaximos ?? 1,

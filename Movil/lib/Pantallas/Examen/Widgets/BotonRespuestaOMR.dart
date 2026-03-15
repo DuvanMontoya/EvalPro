@@ -10,13 +10,15 @@ import '../../../Constantes/Colores.dart';
 import '../../../Constantes/Dimensiones.dart';
 
 class BotonRespuestaOMR extends StatelessWidget {
-  final String letra;
+  final String valor;
+  final String etiqueta;
   final bool seleccionada;
   final VoidCallback alPresionar;
 
   const BotonRespuestaOMR({
     super.key,
-    required this.letra,
+    required this.valor,
+    required this.etiqueta,
     required this.seleccionada,
     required this.alPresionar,
   });
@@ -25,7 +27,7 @@ class BotonRespuestaOMR extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: Dimensiones.tamanoMinimoBotonOmar,
+      width: etiqueta.length > 1 ? 108 : Dimensiones.tamanoMinimoBotonOmar,
       height: Dimensiones.tamanoMinimoBotonOmar,
       child: OutlinedButton(
         onPressed: alPresionar,
@@ -37,7 +39,15 @@ class BotonRespuestaOMR extends StatelessWidget {
               color: seleccionada ? Colores.azulPrimario : Colores.grisBorde),
           padding: EdgeInsets.zero,
         ),
-        child: Text(letra, style: const TextStyle(fontWeight: FontWeight.w700)),
+        child: Text(
+          etiqueta,
+          semanticsLabel: valor == 'E' ? 'No lo sé' : etiqueta,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: etiqueta.length > 1 ? 12 : 14,
+          ),
+        ),
       ),
     );
   }

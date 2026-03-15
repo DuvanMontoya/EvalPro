@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:movil/Aplicacion.dart';
 import 'package:movil/Modelos/Enums/RolUsuario.dart';
 import 'package:movil/Modelos/Usuario.dart';
@@ -14,6 +15,7 @@ import 'package:movil/Providers/AutenticacionProvider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   testWidgets('golden login base', (tester) async {
     await _configurarSuperficie(tester, const Size(1080, 1920));

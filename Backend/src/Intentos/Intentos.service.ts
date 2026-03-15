@@ -12,6 +12,8 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { aleatorizarConSemilla } from '../Comun/Utilidades/AleatorizadorPreguntas.util';
 import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
+import { ordenarPreguntasSegunIntento } from '../Comun/Utilidades/OrdenPreguntasIntento.util';
+import { sanitizarExamenParaEstudiante } from '../Comun/Utilidades/SanitizadorExamenEstudiante.util';
 import { IniciarIntentoDto, IntegridadDispositivoIntentoDto } from './Dto/IniciarIntento.dto';
 import { SesionesExamenGateway } from '../SesionesExamen/SesionesExamen.gateway';
 
@@ -239,13 +241,25 @@ export class IntentosService {
       throw new ForbiddenException('No tiene permisos sobre este intento');
     }
 
-    const semillaCombinada = intento.semillaPersonal + intento.sesion.semillaGrupo + intento.sesion.examen.semillaAleatorizacion;
-    const preguntasAleatorias = aleatorizarConSemilla(intento.sesion.examen.preguntas, semillaCombinada).map((pregunta) => ({
-      ...pregunta,
-      opciones: aleatorizarConSemilla(pregunta.opciones, semillaCombinada + pregunta.orden).map(
-        ({ esCorrecta: _esCorrecta, ...opcion }) => opcion,
-      ),
-    }));
+    const preguntasOrdenadas = ordenarPreguntasSegunIntento(
+      intento.sesion.examen.preguntas,
+      intento.ordenPreguntasAplicado,
+    );
+    const examenSanitizado = sanitizarExamenParaEstudiante({
+      id: intento.sesion.examen.id,
+      titulo: intento.sesion.examen.titulo,
+      descripcion: intento.sesion.examen.descripcion,
+      instrucciones: intento.sesion.examen.instrucciones,
+      modalidad: intento.sesion.examen.modalidad,
+      duracionMinutos: intento.sesion.examen.duracionMinutos,
+      permitirNavegacion: intento.sesion.examen.permitirNavegacion,
+      mostrarPuntaje: intento.sesion.examen.mostrarPuntaje,
+      version: intento.sesion.examen.version,
+      preguntas: preguntasOrdenadas.map((pregunta) => ({
+        ...pregunta,
+        opciones: pregunta.opciones.map(({ esCorrecta: _esCorrecta, ...opcion }) => opcion),
+      })),
+    });
 
     return {
       idIntento: intento.id,
@@ -254,17 +268,7 @@ export class IntentosService {
         id: intento.sesion.id,
         codigoAcceso: intento.sesion.codigoAcceso,
       },
-      examen: {
-        id: intento.sesion.examen.id,
-        titulo: intento.sesion.examen.titulo,
-        descripcion: intento.sesion.examen.descripcion,
-        instrucciones: intento.sesion.examen.instrucciones,
-        modalidad: intento.sesion.examen.modalidad,
-        duracionMinutos: intento.sesion.examen.duracionMinutos,
-        permitirNavegacion: intento.sesion.examen.permitirNavegacion,
-        mostrarPuntaje: intento.sesion.examen.mostrarPuntaje,
-        preguntas: preguntasAleatorias,
-      },
+      examen: examenSanitizado,
     };
   }
 

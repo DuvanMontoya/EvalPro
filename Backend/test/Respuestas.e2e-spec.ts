@@ -188,6 +188,112 @@ describe('Respuestas (e2e)', () => {
     expect(intentosPersistidos).toBe(0);
   });
 
+  it('sirve hoja de respuestas sin exponer enunciados y respetando el orden persistido del intento', async () => {
+    const docente = await crearUsuarioPrueba(RolUsuario.DOCENTE, true);
+    const estudiante = await crearUsuarioPrueba(RolUsuario.ESTUDIANTE, true);
+    const sesionDocente = await iniciarSesionE2e(aplicacion, docente.correo, docente.contrasena);
+    const sesionEstudiante = await iniciarSesionE2e(aplicacion, estudiante.correo, estudiante.contrasena);
+
+    const examen = await request(aplicacion.getHttpServer())
+      .post('/api/v1/examenes')
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({
+        titulo: 'Examen cuadernillo físico',
+        descripcion: 'No debe filtrar enunciados',
+        modalidad: ModalidadExamen.HOJA_RESPUESTAS,
+        duracionMinutos: 25,
+        permitirNavegacion: true,
+        mostrarPuntaje: true,
+      });
+    const datosExamen = examen.body?.datos ?? examen.body;
+    expect(examen.status).toBe(201);
+
+    const preguntasBase = [
+      { enunciado: 'Pregunta completa A', correcta: 'A' },
+      { enunciado: 'Pregunta completa B', correcta: 'B' },
+      { enunciado: 'Pregunta completa C', correcta: 'C' },
+    ];
+
+    for (let indice = 0; indice < preguntasBase.length; indice += 1) {
+      const pregunta = preguntasBase[indice]!;
+      const respuestaPregunta = await request(aplicacion.getHttpServer())
+        .post(`/api/v1/examenes/${datosExamen?.id}/preguntas`)
+        .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+        .send({
+          enunciado: pregunta.enunciado,
+          tipo: TipoPregunta.OPCION_MULTIPLE,
+          puntaje: 1,
+          opciones: [
+            { letra: 'A', contenido: `Opcion A ${indice}`, esCorrecta: pregunta.correcta === 'A', orden: 1 },
+            { letra: 'B', contenido: `Opcion B ${indice}`, esCorrecta: pregunta.correcta === 'B', orden: 2 },
+            { letra: 'C', contenido: `Opcion C ${indice}`, esCorrecta: pregunta.correcta === 'C', orden: 3 },
+            { letra: 'D', contenido: `Opcion D ${indice}`, esCorrecta: false, orden: 4 },
+          ],
+        });
+      expect(respuestaPregunta.status).toBe(201);
+    }
+
+    await request(aplicacion.getHttpServer())
+      .post(`/api/v1/examenes/${datosExamen?.id}/publicar`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .expect(201);
+
+    const sesion = await request(aplicacion.getHttpServer())
+      .post('/api/v1/sesiones')
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`)
+      .send({ idExamen: datosExamen?.id });
+    const datosSesion = sesion.body?.datos ?? sesion.body;
+    expect(sesion.status).toBe(201);
+
+    const activacion = await request(aplicacion.getHttpServer())
+      .post(`/api/v1/sesiones/${datosSesion?.id}/activar`)
+      .set('Authorization', `Bearer ${sesionDocente.tokenAcceso}`);
+    const datosActivacion = activacion.body?.datos ?? activacion.body;
+    expect(activacion.status).toBe(201);
+
+    const busqueda = await request(aplicacion.getHttpServer())
+      .get(`/api/v1/sesiones/buscar/${datosActivacion?.codigoAcceso}`)
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`);
+    expect(busqueda.status).toBe(200);
+    expect(busqueda.body?.datos?.examen?.preguntas).toBeUndefined();
+    expect(busqueda.body?.datos?.examen?.identificadorCuadernillo).toContain('CUAD-');
+
+    const intento = await request(aplicacion.getHttpServer())
+      .post('/api/v1/intentos')
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`)
+      .send({ idSesion: datosSesion?.id, codigoAcceso: datosActivacion?.codigoAcceso });
+    const datosIntento = intento.body?.datos ?? intento.body;
+    expect(intento.status).toBe(201);
+
+    const intentoPersistido = await prisma.intentoExamen.findUnique({
+      where: { id: datosIntento?.id },
+      select: { ordenPreguntasAplicado: true },
+    });
+    const idsPersistidos =
+      (
+        intentoPersistido?.ordenPreguntasAplicado as
+          | { preguntas?: Array<{ idPregunta?: string }> }
+          | null
+          | undefined
+      )?.preguntas
+        ?.map((pregunta) => pregunta.idPregunta ?? '')
+        .filter((idPregunta) => idPregunta.length > 0) ?? [];
+
+    const examenIntento = await request(aplicacion.getHttpServer())
+      .get(`/api/v1/intentos/${datosIntento?.id}/examen`)
+      .set('Authorization', `Bearer ${sesionEstudiante.tokenAcceso}`);
+    const datosExamenIntento = examenIntento.body?.datos ?? examenIntento.body;
+    expect(examenIntento.status).toBe(200);
+    expect(datosExamenIntento?.examen?.identificadorCuadernillo).toContain('CUAD-');
+    expect(datosExamenIntento?.examen?.preguntas?.map((pregunta: { id: string }) => pregunta.id)).toEqual(idsPersistidos);
+    expect(datosExamenIntento?.examen?.preguntas?.every((pregunta: { enunciado: string }) => pregunta.enunciado === '')).toBe(true);
+    expect(
+      datosExamenIntento?.examen?.preguntas?.every((pregunta: { opciones: Array<{ contenido: string }> }) =>
+        pregunta.opciones.every((opcion) => opcion.contenido === ''),
+      ),
+    ).toBe(true);
+  });
+
   it('mantiene búsqueda disponible con intento en progreso y agota intentos solo tras envío', async () => {
     const admin = await crearUsuarioPrueba(RolUsuario.ADMINISTRADOR, true);
     const docente = await crearUsuarioPrueba(RolUsuario.DOCENTE, true);
