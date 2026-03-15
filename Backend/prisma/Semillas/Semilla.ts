@@ -10,11 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
-const NOMBRE_INSTITUCION_INICIAL = 'EvalPro Institución Inicial';
-const NOMBRE_PERIODO_INICIAL = '2026-1';
-const NOMBRE_GRUPO_INICIAL = 'Grupo Demo EvalPro';
 const MAX_INTENTOS_CODIGO_GRUPO = 10;
-const CONTRASENA_INICIAL_DEFECTO = 'Gaussiano1008*';
 
 interface DefinicionCuentaInicial {
   correo: string;
@@ -29,26 +25,20 @@ interface DefinicionCuentaInicial {
  * Inserta cuentas iniciales y estructura mínima demo en la base de datos.
  */
 async function ejecutarSemilla(): Promise<void> {
-  const correoAdministrador = process.env.ADMIN_CORREO_INICIAL;
-  const contrasenaAdministrador =
-    process.env.ADMIN_CONTRASENA_INICIAL ?? CONTRASENA_INICIAL_DEFECTO;
-  const correoSuperadmin = process.env.SUPERADMIN_CORREO_INICIAL ?? 'superadmin@evalpro.com';
-  const contrasenaSuperadmin = process.env.SUPERADMIN_CONTRASENA_INICIAL ?? contrasenaAdministrador;
-  const correoDocente = process.env.DOCENTE_CORREO_INICIAL ?? 'docente@evalpro.com';
-  const contrasenaDocente = process.env.DOCENTE_CONTRASENA_INICIAL ?? CONTRASENA_INICIAL_DEFECTO;
-  const correoEstudiante = process.env.ESTUDIANTE_CORREO_INICIAL ?? 'estudiante@evalpro.com';
-  const contrasenaEstudiante = process.env.ESTUDIANTE_CONTRASENA_INICIAL ?? CONTRASENA_INICIAL_DEFECTO;
-  const rondasHash = Number(process.env.BCRYPT_RONDAS_HASH ?? '12');
-
-  if (!correoAdministrador || !contrasenaAdministrador) {
-    throw new Error('Faltan ADMIN_CORREO_INICIAL o ADMIN_CONTRASENA_INICIAL en el entorno.');
-  }
-  if (!contrasenaSuperadmin) {
-    throw new Error('No se pudo resolver SUPERADMIN_CONTRASENA_INICIAL.');
-  }
-  if (!contrasenaDocente || !contrasenaEstudiante) {
-    throw new Error('No se pudieron resolver contraseñas de DOCENTE/ESTUDIANTE inicial.');
-  }
+  const correoAdministrador = obtenerTextoEntornoObligatorio('ADMIN_CORREO_INICIAL');
+  const contrasenaAdministrador = obtenerTextoEntornoObligatorio('ADMIN_CONTRASENA_INICIAL');
+  const correoSuperadmin = obtenerTextoEntornoObligatorio('SUPERADMIN_CORREO_INICIAL');
+  const contrasenaSuperadmin = obtenerTextoEntornoObligatorio('SUPERADMIN_CONTRASENA_INICIAL');
+  const correoDocente = obtenerTextoEntornoObligatorio('DOCENTE_CORREO_INICIAL');
+  const contrasenaDocente = obtenerTextoEntornoObligatorio('DOCENTE_CONTRASENA_INICIAL');
+  const correoEstudiante = obtenerTextoEntornoObligatorio('ESTUDIANTE_CORREO_INICIAL');
+  const contrasenaEstudiante = obtenerTextoEntornoObligatorio('ESTUDIANTE_CONTRASENA_INICIAL');
+  const nombreInstitucionInicial = obtenerTextoEntornoObligatorio('INSTITUCION_NOMBRE_INICIAL');
+  const dominioInstitucionInicial = obtenerTextoEntornoObligatorio('INSTITUCION_DOMINIO_INICIAL');
+  const nombrePeriodoInicial = obtenerTextoEntornoObligatorio('PERIODO_NOMBRE_INICIAL');
+  const nombreGrupoInicial = obtenerTextoEntornoObligatorio('GRUPO_NOMBRE_INICIAL');
+  const descripcionGrupoInicial = obtenerTextoEntornoObligatorio('GRUPO_DESCRIPCION_INICIAL');
+  const rondasHash = obtenerEnteroEntorno('BCRYPT_RONDAS_HASH', 12);
 
   const correoAdministradorNormalizado = correoAdministrador.trim().toLowerCase();
   const correoSuperadminNormalizado = correoSuperadmin.trim().toLowerCase();
@@ -65,11 +55,11 @@ async function ejecutarSemilla(): Promise<void> {
   }
 
   const institucion = await prisma.institucion.upsert({
-    where: { nombre: NOMBRE_INSTITUCION_INICIAL },
+    where: { nombre: nombreInstitucionInicial },
     update: {},
     create: {
-      nombre: NOMBRE_INSTITUCION_INICIAL,
-      dominio: process.env.ADMIN_DOMINIO_INICIAL ?? 'evalpro.local',
+      nombre: nombreInstitucionInicial,
+      dominio: dominioInstitucionInicial,
       estado: EstadoInstitucion.ACTIVA,
     },
   });
@@ -134,7 +124,7 @@ async function ejecutarSemilla(): Promise<void> {
   const periodoExistente = await prisma.periodoAcademico.findFirst({
     where: {
       idInstitucion: institucion.id,
-      nombre: NOMBRE_PERIODO_INICIAL,
+      nombre: nombrePeriodoInicial,
     },
   });
   const periodo = periodoExistente
@@ -149,7 +139,7 @@ async function ejecutarSemilla(): Promise<void> {
     : await prisma.periodoAcademico.create({
         data: {
           idInstitucion: institucion.id,
-          nombre: NOMBRE_PERIODO_INICIAL,
+          nombre: nombrePeriodoInicial,
           fechaInicio: new Date('2026-01-15T08:00:00.000Z'),
           fechaFin: new Date('2026-12-15T18:00:00.000Z'),
           activo: true,
@@ -160,7 +150,7 @@ async function ejecutarSemilla(): Promise<void> {
     where: {
       idInstitucion: institucion.id,
       idPeriodo: periodo.id,
-      nombre: NOMBRE_GRUPO_INICIAL,
+      nombre: nombreGrupoInicial,
     },
   });
 
@@ -170,8 +160,8 @@ async function ejecutarSemilla(): Promise<void> {
       data: {
         idInstitucion: institucion.id,
         idPeriodo: periodo.id,
-        nombre: NOMBRE_GRUPO_INICIAL,
-        descripcion: 'Grupo de demostración inicial para validaciones móviles.',
+        nombre: nombreGrupoInicial,
+        descripcion: descripcionGrupoInicial,
         estado: EstadoGrupo.BORRADOR,
         codigoAcceso: await generarCodigoGrupoUnico(),
       },
@@ -275,6 +265,22 @@ async function generarCodigoGrupoUnico(): Promise<string> {
     }
   }
   throw new Error('No se pudo generar código único para el grupo inicial');
+}
+
+function obtenerTextoEntornoObligatorio(clave: string): string {
+  const valor = process.env[clave]?.trim();
+  if (!valor) {
+    throw new Error(`Falta la variable de entorno obligatoria ${clave}.`);
+  }
+  return valor;
+}
+
+function obtenerEnteroEntorno(clave: string, minimo: number): number {
+  const valor = Number.parseInt(process.env[clave] ?? '', 10);
+  if (!Number.isFinite(valor) || valor < minimo) {
+    throw new Error(`La variable ${clave} debe ser un entero mayor o igual a ${minimo}.`);
+  }
+  return valor;
 }
 
 ejecutarSemilla()

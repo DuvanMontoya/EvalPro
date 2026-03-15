@@ -8,10 +8,17 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './BaseDatos.config';
+import { validarEntornoBackend } from './Entorno.config';
 
 @Global()
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true })],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      validate: validarEntornoBackend,
+    }),
+  ],
   providers: [PrismaService],
   exports: [ConfigModule, PrismaService],
 })

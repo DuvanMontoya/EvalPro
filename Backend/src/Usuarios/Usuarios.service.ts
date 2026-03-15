@@ -313,7 +313,7 @@ export class UsuariosService {
   }
 
   private obtenerRondasHash(): number {
-    const valorConfigurado = Number(this.servicioConfiguracion.get<string>('BCRYPT_RONDAS_HASH', '12'));
+    const valorConfigurado = Number(this.servicioConfiguracion.getOrThrow<string>('BCRYPT_RONDAS_HASH'));
     return Number.isFinite(valorConfigurado) && valorConfigurado >= 12 ? valorConfigurado : 12;
   }
 }

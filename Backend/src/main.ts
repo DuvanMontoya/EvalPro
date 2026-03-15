@@ -14,6 +14,7 @@ import { ExcepcionGlobalFiltro } from './Comun/Filtros/ExcepcionGlobal.filtro';
 import { ValidacionGlobalPipe } from './Comun/Pipes/ValidacionGlobal.pipe';
 import { TransformRespuestaInterceptor } from './Comun/Interceptores/TransformRespuesta.interceptor';
 import { RegistroActividadInterceptor } from './Comun/Interceptores/RegistroActividad.interceptor';
+import { construirConfiguracionCors } from './Configuracion/Cors.config';
 
 /**
  * Arranca el servidor HTTP aplicando filtros, pipes e interceptores globales.
@@ -32,13 +33,7 @@ async function iniciarAplicacion(): Promise<void> {
   SwaggerModule.setup('api/docs', aplicacion, especificacion);
 
   aplicacion.setGlobalPrefix('api/v1');
-  aplicacion.enableCors({
-    origin: (servicioConfiguracion.get<string>('CORS_ORIGENES_PERMITIDOS') ?? '')
-      .split(',')
-      .map((origen: string) => origen.trim())
-      .filter((origen: string) => origen.length > 0),
-    credentials: true,
-  });
+  aplicacion.enableCors(construirConfiguracionCors(servicioConfiguracion));
 
   aplicacion.useGlobalFilters(new ExcepcionGlobalFiltro());
   aplicacion.useGlobalPipes(new ValidacionGlobalPipe());
@@ -47,8 +42,8 @@ async function iniciarAplicacion(): Promise<void> {
     aplicacion.get(RegistroActividadInterceptor),
   );
 
-  const puerto = servicioConfiguracion.get<number>('PUERTO_APP') ?? 3001;
-  const host = servicioConfiguracion.get<string>('HOST_APP') ?? '0.0.0.0';
+  const puerto = servicioConfiguracion.getOrThrow<number>('PUERTO_APP');
+  const host = servicioConfiguracion.getOrThrow<string>('HOST_APP');
   await aplicacion.listen(puerto, host);
   Logger.log(`Servidor listo en http://${host}:${puerto}`, 'EvalPro');
 }

@@ -9,7 +9,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class IniciarSesionDto {
-  @ApiProperty({ description: 'Correo institucional del usuario', example: 'docente@evalpro.com' })
+  @ApiProperty({ description: 'Correo institucional del usuario', example: 'usuario@institucion.edu' })
   @IsEmail()
   @IsNotEmpty()
   correo!: string;

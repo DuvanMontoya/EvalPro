@@ -29,11 +29,7 @@ import {
 } from '../Comun/Constantes/Eventos.constantes';
 import { AutorizacionSocketSesionesService, UsuarioSocket } from './AutorizacionSocketSesiones.service';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
-
-const ORIGENES_SOCKET = (process.env.CORS_ORIGENES_PERMITIDOS ?? 'http://localhost:3000')
-  .split(',')
-  .map((origen) => origen.trim())
-  .filter((origen) => origen.length > 0);
+import { validarOrigenSocket } from '../Configuracion/Cors.config';
 
 interface UnionSalaPayload {
   idSesion: string;
@@ -66,7 +62,7 @@ interface SocketAutenticado extends Socket {
 @Injectable()
 @WebSocketGateway({
   namespace: ESPACIO_NOMBRES_SESIONES,
-  cors: { origin: ORIGENES_SOCKET, credentials: true },
+  cors: { origin: validarOrigenSocket, credentials: true },
 })
 export class SesionesExamenGateway implements OnGatewayConnection {
   private readonly logger = new Logger(SesionesExamenGateway.name);

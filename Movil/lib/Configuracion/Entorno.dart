@@ -12,9 +12,6 @@ import '../Constantes/Textos.dart';
 
 /// Configuracion de entorno obtenida por --dart-define.
 abstract class Entorno {
-  static const _apiUrlPorDefecto = 'http://10.0.2.2:3001/api/v1';
-  static const _websocketUrlPorDefecto = 'http://10.0.2.2:3001';
-  static const _versionAppPorDefecto = '1.0.0';
   static const _rutaEntornoDev = 'Entornos/dev.json';
 
   static const _apiUrlDartDefine = String.fromEnvironment(
@@ -34,10 +31,10 @@ abstract class Entorno {
     defaultValue: 7,
   );
 
-  static String _apiUrl = _apiUrlPorDefecto;
-  static String _websocketUrl = _websocketUrlPorDefecto;
+  static String _apiUrl = '';
+  static String _websocketUrl = '';
   static int _diasRetencionTelemetria = _diasRetencionDartDefine;
-  static String _versionApp = _versionAppPorDefecto;
+  static String _versionApp = '';
   static bool _inicializado = false;
 
   static String get apiUrl => _apiUrl;
@@ -61,18 +58,16 @@ abstract class Entorno {
 
     _apiUrl = _apiUrlDartDefine.trim().isNotEmpty
         ? _apiUrlDartDefine.trim()
-        : (apiUrlJson.isNotEmpty ? apiUrlJson : _apiUrlPorDefecto);
+        : apiUrlJson;
     _websocketUrl = _websocketUrlDartDefine.trim().isNotEmpty
         ? _websocketUrlDartDefine.trim()
-        : (websocketUrlJson.isNotEmpty
-            ? websocketUrlJson
-            : _websocketUrlPorDefecto);
+        : websocketUrlJson;
     _versionApp = _versionAppDartDefine.trim().isNotEmpty
         ? _versionAppDartDefine.trim()
-        : (versionAppJson.isNotEmpty ? versionAppJson : _versionAppPorDefecto);
+        : versionAppJson;
     _diasRetencionTelemetria = _diasRetencionDartDefine >= 1
         ? _diasRetencionDartDefine
-        : (diasRetencionJson ?? 7);
+        : (diasRetencionJson ?? 0);
 
     _inicializado = true;
   }
@@ -85,9 +80,9 @@ abstract class Entorno {
       );
     }
 
-    if (apiUrl.isEmpty || websocketUrl.isEmpty) {
+    if (apiUrl.isEmpty || websocketUrl.isEmpty || versionApp.isEmpty) {
       throw StateError(
-        '${Textos.errorGeneral} Configura API_URL y WEBSOCKET_URL por dart-define.',
+        '${Textos.errorGeneral} Configura API_URL, WEBSOCKET_URL y VERSION_APP por dart-define o archivo de entorno.',
       );
     }
 

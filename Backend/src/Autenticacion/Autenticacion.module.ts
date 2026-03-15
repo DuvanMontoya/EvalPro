@@ -24,8 +24,8 @@ import { JwtTemporalGuard } from '../Comun/Guards/JwtTemporal.guard';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (servicioConfiguracion: ConfigService) => ({
-        secret: servicioConfiguracion.get<string>('JWT_SECRETO_ACCESO', ''),
-        signOptions: { expiresIn: servicioConfiguracion.get<string>('JWT_EXPIRACION_ACCESO', '15m') },
+        secret: servicioConfiguracion.getOrThrow<string>('JWT_SECRETO_ACCESO'),
+        signOptions: { expiresIn: servicioConfiguracion.getOrThrow<string>('JWT_EXPIRACION_ACCESO') },
       }),
     }),
   ],

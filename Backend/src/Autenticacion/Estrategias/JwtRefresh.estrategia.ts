@@ -11,9 +11,6 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 
-const EMISOR_JWT_DEFECTO = 'evalpro-backend';
-const AUDIENCIA_JWT_DEFECTO = 'evalpro-cliente';
-
 interface PayloadRefresh {
   sub: string;
   correo: string;
@@ -30,9 +27,9 @@ export class JwtRefreshEstrategia extends PassportStrategy(Strategy, 'jwt-refres
           typeof solicitud.body?.tokenRefresh === 'string' ? solicitud.body.tokenRefresh : null,
       ]),
       ignoreExpiration: false,
-      secretOrKey: servicioConfiguracion.get<string>('JWT_SECRETO_REFRESH', ''),
-      issuer: servicioConfiguracion.get<string>('JWT_EMISOR', EMISOR_JWT_DEFECTO),
-      audience: servicioConfiguracion.get<string>('JWT_AUDIENCIA', AUDIENCIA_JWT_DEFECTO),
+      secretOrKey: servicioConfiguracion.getOrThrow<string>('JWT_SECRETO_REFRESH'),
+      issuer: servicioConfiguracion.getOrThrow<string>('JWT_EMISOR'),
+      audience: servicioConfiguracion.getOrThrow<string>('JWT_AUDIENCIA'),
       passReqToCallback: true,
     });
   }

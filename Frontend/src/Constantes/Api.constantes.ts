@@ -5,11 +5,19 @@
  * @autor     EvalPro
  * @fecha     2026-03-02
  */
+function obtenerVariableEntornoObligatoria(nombre: 'NEXT_PUBLIC_API_URL' | 'NEXT_PUBLIC_WEBSOCKET_URL' | 'NEXT_PUBLIC_VERSION_APP' | 'API_BASE_INTERNA'): string {
+  const valor = process.env[nombre]?.trim();
+  if (!valor) {
+    throw new Error(`La variable de entorno ${nombre} es obligatoria para el frontend.`);
+  }
+  return valor;
+}
+
 export const API = {
-  BASE_PUBLICA: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1',
-  BASE_INTERNA: process.env.API_BASE_INTERNA ?? 'http://backend:3001/api/v1',
-  WEBSOCKET: process.env.NEXT_PUBLIC_WEBSOCKET_URL ?? 'http://localhost:3001',
-  VERSION: process.env.NEXT_PUBLIC_VERSION_APP ?? '1.0.0',
+  BASE_PUBLICA: obtenerVariableEntornoObligatoria('NEXT_PUBLIC_API_URL'),
+  BASE_INTERNA: obtenerVariableEntornoObligatoria('API_BASE_INTERNA'),
+  WEBSOCKET: obtenerVariableEntornoObligatoria('NEXT_PUBLIC_WEBSOCKET_URL'),
+  VERSION: obtenerVariableEntornoObligatoria('NEXT_PUBLIC_VERSION_APP'),
   COOKIE_REFRESH: 'token_refresh_evalpro',
   AUTENTICACION: {
     INICIAR_SESION: '/autenticacion/iniciar-sesion',

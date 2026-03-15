@@ -16,9 +16,6 @@ import { CODIGOS_ERROR } from '../Comun/Constantes/Mensajes.constantes';
 import { PrismaService } from '../Configuracion/BaseDatos.config';
 import { RegistrarUsuarioDto } from './Dto/RegistrarUsuario.dto';
 import { BlacklistTokensService } from './Servicios/BlacklistTokens.service';
-
-const EMISOR_JWT_DEFECTO = 'evalpro-backend';
-const AUDIENCIA_JWT_DEFECTO = 'evalpro-cliente';
 const INTENTOS_MAXIMOS_LOGIN = 5;
 const MINUTOS_BLOQUEO_LOGIN = 30;
 const HORAS_VIGENCIA_CREDENCIAL_TEMPORAL = 48;
@@ -171,9 +168,9 @@ export class AutenticacionService {
     if (tokenAcceso) {
       try {
         const payload = await this.jwtService.verifyAsync<{ jti?: string; exp?: number }>(tokenAcceso, {
-          secret: this.servicioConfiguracion.get<string>('JWT_SECRETO_ACCESO', ''),
-          issuer: this.servicioConfiguracion.get<string>('JWT_EMISOR', EMISOR_JWT_DEFECTO),
-          audience: this.servicioConfiguracion.get<string>('JWT_AUDIENCIA', AUDIENCIA_JWT_DEFECTO),
+          secret: this.servicioConfiguracion.getOrThrow<string>('JWT_SECRETO_ACCESO'),
+          issuer: this.servicioConfiguracion.getOrThrow<string>('JWT_EMISOR'),
+          audience: this.servicioConfiguracion.getOrThrow<string>('JWT_AUDIENCIA'),
         });
         if (payload.jti && payload.exp) {
           this.blacklistTokensService.revocar(payload.jti, payload.exp);
@@ -316,11 +313,11 @@ export class AutenticacionService {
     const tokenTemporal = await this.jwtService.signAsync(
       { ...payloadBase, scope: 'CAMBIO_CONTRASENA_PRIMER_LOGIN' },
       {
-        secret: this.servicioConfiguracion.get<string>('JWT_SECRETO_ACCESO', ''),
+        secret: this.servicioConfiguracion.getOrThrow<string>('JWT_SECRETO_ACCESO'),
         expiresIn: EXPIRACION_TOKEN_TEMPORAL,
         jwtid: randomUUID(),
-        issuer: this.servicioConfiguracion.get<string>('JWT_EMISOR', EMISOR_JWT_DEFECTO),
-        audience: this.servicioConfiguracion.get<string>('JWT_AUDIENCIA', AUDIENCIA_JWT_DEFECTO),
+        issuer: this.servicioConfiguracion.getOrThrow<string>('JWT_EMISOR'),
+        audience: this.servicioConfiguracion.getOrThrow<string>('JWT_AUDIENCIA'),
       },
     );
 
@@ -345,21 +342,21 @@ export class AutenticacionService {
 
   private async emitirSesionCompleta(usuario: UsuarioConInstitucion): Promise<RespuestaSesion> {
     const configuracionFirmado = {
-      issuer: this.servicioConfiguracion.get<string>('JWT_EMISOR', EMISOR_JWT_DEFECTO),
-      audience: this.servicioConfiguracion.get<string>('JWT_AUDIENCIA', AUDIENCIA_JWT_DEFECTO),
+      issuer: this.servicioConfiguracion.getOrThrow<string>('JWT_EMISOR'),
+      audience: this.servicioConfiguracion.getOrThrow<string>('JWT_AUDIENCIA'),
     };
     const payload = this.construirPayload(usuario);
 
     const tokenAcceso = await this.jwtService.signAsync(payload, {
-      secret: this.servicioConfiguracion.get<string>('JWT_SECRETO_ACCESO', ''),
-      expiresIn: this.servicioConfiguracion.get<string>('JWT_EXPIRACION_ACCESO', '15m'),
+      secret: this.servicioConfiguracion.getOrThrow<string>('JWT_SECRETO_ACCESO'),
+      expiresIn: this.servicioConfiguracion.getOrThrow<string>('JWT_EXPIRACION_ACCESO'),
       jwtid: randomUUID(),
       ...configuracionFirmado,
     });
 
     const tokenRefresh = await this.jwtService.signAsync(payload, {
-      secret: this.servicioConfiguracion.get<string>('JWT_SECRETO_REFRESH', ''),
-      expiresIn: this.servicioConfiguracion.get<string>('JWT_EXPIRACION_REFRESH', '180d'),
+      secret: this.servicioConfiguracion.getOrThrow<string>('JWT_SECRETO_REFRESH'),
+      expiresIn: this.servicioConfiguracion.getOrThrow<string>('JWT_EXPIRACION_REFRESH'),
       jwtid: randomUUID(),
       ...configuracionFirmado,
     });
@@ -478,7 +475,7 @@ export class AutenticacionService {
   }
 
   private obtenerRondasHash(): number {
-    const valorConfigurado = Number(this.servicioConfiguracion.get<string>('BCRYPT_RONDAS_HASH', '12'));
+    const valorConfigurado = Number(this.servicioConfiguracion.getOrThrow<string>('BCRYPT_RONDAS_HASH'));
     return Number.isFinite(valorConfigurado) && valorConfigurado >= 12 ? valorConfigurado : 12;
   }
 

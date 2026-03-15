@@ -22,7 +22,7 @@ export class RegistrarUsuarioDto {
   @MaxLength(100)
   apellidos!: string;
 
-  @ApiProperty({ description: 'Correo del usuario', example: 'laura.pineda@evalpro.com' })
+  @ApiProperty({ description: 'Correo del usuario', example: 'laura.pineda@institucion.edu' })
   @IsEmail()
   correo!: string;
 

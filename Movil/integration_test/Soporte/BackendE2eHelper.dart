@@ -9,6 +9,15 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:movil/Configuracion/Entorno.dart';
 
+const _correoAdminInicial = String.fromEnvironment(
+  'E2E_ADMIN_EMAIL',
+  defaultValue: '',
+);
+const _contrasenaAdminInicial = String.fromEnvironment(
+  'E2E_ADMIN_PASSWORD',
+  defaultValue: '',
+);
+
 class CredencialesActorE2e {
   final String correo;
   final String contrasena;
@@ -56,8 +65,6 @@ class _SesionAutenticadaE2e {
 }
 
 class BackendE2eHelper {
-  static const _correoAdminInicial = 'admin@evalpro.com';
-  static const _contrasenaAdminInicial = 'Gaussiano1008*';
   static const _totalPreguntasPrueba = 3;
 
   final Dio _cliente;
@@ -108,6 +115,7 @@ class BackendE2eHelper {
   }
 
   Future<EscenarioFlujoMovilE2e> prepararEscenario() async {
+    _validarCredencialesAdmin();
     final sufijo = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
     final docente = CredencialesActorE2e(
       correo: 'docente.$sufijo@evalpro-e2e.local',
@@ -603,5 +611,13 @@ class BackendE2eHelper {
       throw StateError('La clave $clave no estuvo presente en $origen');
     }
     return valor;
+  }
+
+  void _validarCredencialesAdmin() {
+    if (_correoAdminInicial.trim().isEmpty || _contrasenaAdminInicial.isEmpty) {
+      throw StateError(
+        'Define E2E_ADMIN_EMAIL y E2E_ADMIN_PASSWORD para preparar el escenario movil.',
+      );
+    }
   }
 }

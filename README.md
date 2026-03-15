@@ -113,41 +113,25 @@ El archivo `.env` en la raíz del proyecto contiene **todas las variables necesa
 
 ### 3.3. Credenciales iniciales de desarrollo (todos los perfiles)
 
-Después de ejecutar semillas (`npm run prisma:sembrar` en `Backend/`), quedan creadas cuentas iniciales listas para iniciar sesión en móvil/web:
+Las semillas ya no dependen de credenciales hardcodeadas en el repositorio. Antes de ejecutar `npm run prisma:sembrar` en `Backend/`, define en tu `.env` los cuatro pares obligatorios:
 
-| Rol | Correo | Contraseña |
-|---|---|---|
-| SUPERADMINISTRADOR | `superadmin@evalpro.com` | `Gaussiano1008*` |
-| ADMINISTRADOR | `admin@evalpro.com` | `Gaussiano1008*` |
-| DOCENTE | `docente@evalpro.com` | `Gaussiano1008*` |
-| ESTUDIANTE | `estudiante@evalpro.com` | `Gaussiano1008*` |
+- `SUPERADMIN_CORREO_INICIAL`, `SUPERADMIN_CONTRASENA_INICIAL`
+- `ADMIN_CORREO_INICIAL`, `ADMIN_CONTRASENA_INICIAL`
+- `DOCENTE_CORREO_INICIAL`, `DOCENTE_CONTRASENA_INICIAL`
+- `ESTUDIANTE_CORREO_INICIAL`, `ESTUDIANTE_CONTRASENA_INICIAL`
 
-Credenciales demo adicionales (si tu base local venía con datos previos inconsistentes):
+La semilla también exige estos valores para la estructura mínima inicial:
 
-| Rol | Correo | Contraseña |
-|---|---|---|
-| SUPERADMINISTRADOR | `superadmin.gauss@evalpro.com` | `Gaussiano1008*` |
-| DOCENTE | `docente.demo@evalpro.com` | `Gaussiano1008*` |
-| ESTUDIANTE | `estudiante.demo@evalpro.com` | `Gaussiano1008*` |
+- `INSTITUCION_NOMBRE_INICIAL`
+- `INSTITUCION_DOMINIO_INICIAL`
+- `PERIODO_NOMBRE_INICIAL`
+- `GRUPO_NOMBRE_INICIAL`
+- `GRUPO_DESCRIPCION_INICIAL`
 
 Notas:
-- Estas cuentas son de desarrollo local.
-- Si ya habías sembrado antes, vuelve a ejecutar `npm run prisma:sembrar` para asegurar estos usuarios y datos demo mínimos (periodo/grupo/membresías).
-- Si `docente@evalpro.com` o `estudiante@evalpro.com` no inician en una base vieja, reinicia el stack con:
-  - `docker compose -f docker-compose.dev.yml down -v`
-  - `docker compose -f docker-compose.dev.yml up --build`
-- Si tu stack estaba levantado antes del cambio de contraseña global, puedes entrar de inmediato con:
-  - `superadmin.gauss@evalpro.com` / `Gaussiano1008*`
-  - `docente.demo@evalpro.com` / `Gaussiano1008*`
-  - `estudiante.demo@evalpro.com` / `Gaussiano1008*`
-- Si `SUPERADMINISTRADOR` recibe `SIN_PERMISOS` al editar usuarios desde móvil/web:
-  - `docker compose -f docker-compose.dev.yml up --build backend`
-  - Esto recompila backend y aplica reglas actuales de autorización.
-- Las credenciales se pueden sobreescribir por variables de entorno:
-  - `SUPERADMIN_CORREO_INICIAL`, `SUPERADMIN_CONTRASENA_INICIAL`
-  - `ADMIN_CORREO_INICIAL`, `ADMIN_CONTRASENA_INICIAL`
-  - `DOCENTE_CORREO_INICIAL`, `DOCENTE_CONTRASENA_INICIAL`
-  - `ESTUDIANTE_CORREO_INICIAL`, `ESTUDIANTE_CONTRASENA_INICIAL`
+- Usa `.env.ejemplo` y `Backend/.env.ejemplo` como plantilla segura y reemplaza todos los placeholders antes de sembrar.
+- Si ya habías sembrado antes con cuentas previas, vuelve a ejecutar `npm run prisma:sembrar` para regenerar usuarios iniciales y estructura mínima.
+- Si el backend rechaza operaciones de `SUPERADMINISTRADOR` tras actualizar reglas de autorización, recompila con `docker compose -f docker-compose.dev.yml up --build backend`.
 
 ### 3.4. Reparar acceso a PostgreSQL y resembrar (cuando Prisma falla por permisos)
 

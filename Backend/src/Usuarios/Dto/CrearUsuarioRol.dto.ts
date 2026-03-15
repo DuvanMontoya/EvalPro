@@ -21,7 +21,7 @@ export class CrearUsuarioRolDto {
   @MaxLength(100)
   apellidos!: string;
 
-  @ApiProperty({ description: 'Correo institucional del usuario', example: 'laura.martinez@evalpro.com' })
+  @ApiProperty({ description: 'Correo institucional del usuario', example: 'laura.martinez@institucion.edu' })
   @IsEmail()
   correo!: string;
 

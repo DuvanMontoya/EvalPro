@@ -16,9 +16,6 @@ import { CODIGOS_ERROR } from '../../Comun/Constantes/Mensajes.constantes';
 import { BlacklistTokensService } from '../Servicios/BlacklistTokens.service';
 import { UsuarioAutenticado } from '../../Comun/Tipos/UsuarioAutenticado.tipo';
 
-const EMISOR_JWT_DEFECTO = 'evalpro-backend';
-const AUDIENCIA_JWT_DEFECTO = 'evalpro-cliente';
-
 interface PayloadJwt {
   sub: string;
   correo: string;
@@ -38,9 +35,9 @@ export class JwtAccesoEstrategia extends PassportStrategy(Strategy, 'jwt-acceso'
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: servicioConfiguracion.get<string>('JWT_SECRETO_ACCESO', ''),
-      issuer: servicioConfiguracion.get<string>('JWT_EMISOR', EMISOR_JWT_DEFECTO),
-      audience: servicioConfiguracion.get<string>('JWT_AUDIENCIA', AUDIENCIA_JWT_DEFECTO),
+      secretOrKey: servicioConfiguracion.getOrThrow<string>('JWT_SECRETO_ACCESO'),
+      issuer: servicioConfiguracion.getOrThrow<string>('JWT_EMISOR'),
+      audience: servicioConfiguracion.getOrThrow<string>('JWT_AUDIENCIA'),
     });
   }
 
